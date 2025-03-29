@@ -1,42 +1,93 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+*{
     padding: 0;
-    background: linear-gradient(to right, #007bff, #00c6ff);
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    box-sizing: border-box;
+}
+
+body{
+    width: 100%;
+    height: 100vh;
+    background-image: url(fundo.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+nav{
+    width: 100%;
+    height: 10vh;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
     color: white;
-    text-align: center;
+    background-color: grey;
+    box-shadow: 0 0 10px white;
 }
-header {
-    background: rgba(0, 0, 0, 0.7);
-    padding: 20px;
+
+nav .logo{
+    font-size: 1.5rem;
 }
-.container {
-    margin-top: 50px;
-}
-.hero {
-    padding: 80px 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    margin: auto;
-    width: 80%;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
-}
-.btn {
-    display: inline-block;
-    margin: 20px;
-    padding: 15px 30px;
-    font-size: 18px;
-    background-color: #ffcc00;
+
+nav .logo span{
     color: black;
+}
+
+nav .links{
+    display: flex;
+}
+nav .links .link a{
+    position: relative;
+    color: white;
     text-decoration: none;
+    font-size: 1.2rem;
+    margin: 0 15px;
+    transition: 0.3s linear;  
+}
+
+nav .links .link a::before{
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    width: 0;
+    height: 3px;
+    background-color: white;
+    transition: 0.3s linear;
+}
+
+nav .links .link a:hover::before,
+nav .links .link a:hover{
+    width: 100%;
+    color: white;
+}
+
+nav .buttons{
+    width: 250px;
+    height: 10vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+nav .buttons btn{
+    margin: 0 5px;
+    width: 50%;
+    height: 5vh;    
+}
+
+.buttons .btn button{
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: white;
     border-radius: 5px;
-    transition: 0.3s;
+    background-color: rgb(66, 63, 63);
+    transition: 0.2s linear;
 }
-.btn:hover {
-    background-color: #ff9900;
-}
-footer {
-    margin-top: 100px;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.7);
-}
+
