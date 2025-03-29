@@ -73,9 +73,9 @@ nav .buttons{
 }
 
 nav .buttons btn{
-    margin: 0 5px;
+    margin: 0 15px;
     width: 50%;
-    height: 5vh;    
+    height: 5vh;
 }
 
 .buttons .btn button{
@@ -91,3 +91,15 @@ nav .buttons btn{
     transition: 0.2s linear;
 }
 
+.buttons .btn button:hover{
+    color: rgb(142, 112, 112);
+    border: 3px solid rgb(165, 147, 147);
+    background-color: white;
+}
+
+
+
+
+
+
+CORNO DA MERDA
