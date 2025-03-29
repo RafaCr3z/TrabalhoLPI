@@ -17,7 +17,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Banco de dados: `FelixBus`
+-- Banco de dados: `criar_bd`
 --
 CREATE DATABASE IF NOT EXISTS FelixBus;
 USE FelixBus;
