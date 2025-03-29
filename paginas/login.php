@@ -14,7 +14,7 @@
         $nome = $_POST["nome"];
         $pass = $_POST["pass"];
 
-        $sql = "SELECT * FROM `cliente` WHERE `nome` = '$nome' AND `password` = '$pass'";
+        $sql = "SELECT * FROM `utilizador` WHERE `nome` = '$nome' AND `password` = '$pass'";
         $result = mysqli_query($conexao, $sql);
 
         $row = mysqli_fetch_array($result);

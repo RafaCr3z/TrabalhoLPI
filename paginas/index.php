@@ -20,11 +20,11 @@
             <h2>Explore novas rotas com segurança e comodidade!</h2>
             <p>O seu transporte confiável, sempre à sua disposição.</p>
             <a href="login.php" class="btn">Login</a>
-            <a href="register.php" class="btn">Registar</a>
+            <a href="registar.php" class="btn">Registar</a>
         </div>
     </div>
     <footer>
-        <p>&copy; 2025 <img src="estcb.png" style="max-height: 30px; filter: grayscale(100%);"> FelixBus Joo Resina & Rafael Cruz</p>
+        <p>&copy; 2025 <img src="estcb.png" style="max-height: 20px; filter: grayscale(100%);"> João Resina & Rafael Cruz</p>
     </footer>
 </body>
 </html>
