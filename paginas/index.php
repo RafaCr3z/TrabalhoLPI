@@ -24,7 +24,7 @@
         </div>
     </div>
     <footer>
-        <p>&copy; 2025 FelixBus Joo Resina & Rafael Cruz</p>
+        <p>&copy; 2025 <img src="estcb.png" style="max-height: 30px; filter: grayscale(100%);"> FelixBus Joo Resina & Rafael Cruz</p>
     </footer>
 </body>
 </html>
