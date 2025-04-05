@@ -1,18 +1,19 @@
 <?php
     session_start();
     include '../basedados/basedados.h';
-    if (isset($_SESSION["id_nivel"]) > 0) {
+    if (isset($_SESSION["id_nivel"]) && $_SESSION["id_nivel"] > 0){
         header("Location: erro.php");
     }
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale = 1.0">
-<link rel="stylesheet" href="index.css">
-<title>FelixBus</title>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale = 1.0">
+    <link rel="stylesheet" href="index.css">
+    <title>FelixBus</title>
+</head>
 <body>
     <nav>
         <a href="index.php" class="logo">
@@ -31,6 +32,4 @@
 <section>
     </section>
 </body>
-</head>
-
 </html>

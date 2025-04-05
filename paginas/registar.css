@@ -1,14 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;400;700&display=swap');
 
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f3f4f6;
-    margin: 0;
-    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    background-image: url(fundo.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
 }
 
 .register-container {

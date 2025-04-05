@@ -54,7 +54,6 @@ mysqli_close($conn);
 
 <!DOCTYPE html>
 <html lang="pt">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -77,9 +76,6 @@ mysqli_close($conn);
         <form action="index.php" method="get">
             <button type="submit" style="margin-top: 10px;">Voltar</button>
         </form>
-
-
-
     </div>
 </body>
 
