@@ -1,12 +1,14 @@
 <?php
-	$dbhost = 'localhost';
-	$dbuser = 'root';
-	$dbpass = '';
-	$dbname = 'FelixBus';
+    $dbhost = 'localhost';
+    $dbuser = 'root';
+    $dbpass = '';
+    $dbname = 'felixbus';
 
-	$conn = mysqli_connect($dbhost, $dbuser, $dbpass);
-	if (!$conn)
-		die('Falha tecnica: '. mysqli_error($conn));
+    // Criar conexão
+    $conn = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
 
-	mysqli_select_db($conn, $dbname);
+    // Verificar conexão
+    if (!$conn) {
+        die('Falha técnica: ' . mysqli_connect_error());
+    }
 ?>
