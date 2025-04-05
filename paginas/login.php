@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 session_start();
 include '../basedados/basedados.h';
 
@@ -35,6 +36,34 @@ if (isset($_POST["nome"]) && isset($_POST["pass"])) {
     $_SESSION["nome"] = $nome;
     $_SESSION["id_nivel"] = $id_nivel;
     $_SESSION["id_utilizador"] = $id_utilizador;
+=======
+    session_start();
+    include '../basedados/basedados.h';
+
+    if (isset($_SESSION["id_nivel"]) > 0) {
+        header("Location: erro.php");
+    }
+
+    if (isset($_POST["nome"]) && isset($_POST["pass"])) {
+        $nome = $_POST["nome"];
+        echo $nome;
+        $pass = $_POST["pass"];
+        echo $pass;
+
+        $sql = "SELECT * FROM `utilizadores` WHERE `nome` = '$nome' AND `pwd` = '$pass'";
+        $result = mysqli_query($conn, $sql);
+
+        if (!$result) {
+            die("Erro na consulta: " . mysqli_error($conn));
+        }
+
+        if (mysqli_num_rows($result) == 0) { 
+            mysqli_close($conn);
+            header("Location: login.php");
+            echo "<script>alert('Usuário ou senha inválidos.');</script>";
+            exit();
+        }
+>>>>>>> 5a4d63a1c91c54f7b6584aaeb515c4c4a9021c08
 
     if ($id_nivel == 1) {
         header("Location: admin.php");
@@ -49,12 +78,19 @@ if (isset($_POST["nome"]) && isset($_POST["pass"])) {
     }
 }
 
+<<<<<<< HEAD
 mysqli_close($conn);
 ?>
+=======
+        // Use o nome correto da coluna 'tipo_perfil'
+        $id_nivel = $row['tipo_perfil'];
+        $id_utilizador = $row['id'];
+>>>>>>> 5a4d63a1c91c54f7b6584aaeb515c4c4a9021c08
 
 <!DOCTYPE html>
 <html lang="pt">
 
+<<<<<<< HEAD
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -126,6 +162,32 @@ mysqli_close($conn);
     </style>
 </head>
 
+=======
+        if ($id_nivel == 1) {
+            header("Location: admin.php");
+        } else if ($id_nivel == 2) {
+            header("Location: funcionario.php");
+        } else if ($id_nivel == 3) {
+            header("Location: cliente.php");
+        } else {
+            mysqli_close($conn);
+            header("Location: login.php");
+            exit();
+        }
+    }
+    
+    mysqli_close($conn);
+?>
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="login.css">
+    <title>Login</title>
+</head>
+>>>>>>> 5a4d63a1c91c54f7b6584aaeb515c4c4a9021c08
 <body>
     <div class="login-container">
         <h2>Login</h2>
@@ -137,6 +199,7 @@ mysqli_close($conn);
             <input type="password" id="pass" name="pass" required>
             <br>
             <button type="submit">Entrar</button>
+<<<<<<< HEAD
 
         </form>
         <form action="index.php" method="get">
@@ -148,4 +211,10 @@ mysqli_close($conn);
     </div>
 </body>
 
+=======
+        </form>
+
+    </div>
+</body>
+>>>>>>> 5a4d63a1c91c54f7b6584aaeb515c4c4a9021c08
 </html>
