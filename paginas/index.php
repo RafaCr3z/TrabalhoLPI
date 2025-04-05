@@ -1,9 +1,9 @@
 <?php
-session_start();
-include '../basedados/basedados.h';
-if (isset($_SESSION["id_nivel"]) > 0) {
-    header("Location: erro.php");
-}
+    session_start();
+    include '../basedados/basedados.h';
+    if (isset($_SESSION["id_nivel"]) > 0) {
+        header("Location: erro.php");
+    }
 ?>
 
 <!DOCTYPE html>
@@ -12,9 +12,7 @@ if (isset($_SESSION["id_nivel"]) > 0) {
 <meta name="viewport" content="width=device-width, initial-scale = 1.0">
 <link rel="stylesheet" href="index.css">
 <title>FelixBus</title>
-
 <head>
-
 <body>
     <nav>
         <div class="logo">
