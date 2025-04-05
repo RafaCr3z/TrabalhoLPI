@@ -52,6 +52,7 @@
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
+            <div class="btn-cliente"><a href="#"><button>Área de Cliente</button></a></div>
         </div>
     </nav>
     <section>

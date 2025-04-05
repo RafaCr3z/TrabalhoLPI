@@ -8,12 +8,10 @@
 }
 
 body {
-    width: 100%;
-    min-height: 100vh;
-    background-image: url(fundo.png);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
 }
 
 /* Navbar */
@@ -57,14 +55,8 @@ nav {
     position: relative;
     color: white;
     text-decoration: none;
-<<<<<<< HEAD
     font-size: 1.1rem;
     transition: 0.3s;
-=======
-    font-size: 1.2rem;
-    margin: 0 15px;
-    transition: 0.3s linear;
->>>>>>> 3a0a63a66d89e49aa57a9794bb882dcfd3fd04f4
 }
 
 .link a::before {
@@ -78,7 +70,6 @@ nav {
     transition: 0.3s;
 }
 
-<<<<<<< HEAD
 .link a:hover::before {
     width: 100%;
 }
@@ -114,9 +105,4 @@ nav {
 .btn button:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-=======
-nav .links .link a:hover::before,
-nav .links{
-    
->>>>>>> 3a0a63a66d89e49aa57a9794bb882dcfd3fd04f4
 }
