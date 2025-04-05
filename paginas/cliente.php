@@ -9,12 +9,13 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
 
 <!DOCTYPE html>
 <html lang="en">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale = 1.0">
+<link rel="stylesheet" href="index.css">
+<title>FelixBus</title>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale = 1.0">
-    <link rel="stylesheet" href="cliente.css">
-    <title>FelixBus</title>
-</head>
+
 <body>
     <nav>
         <div class="logo">
@@ -26,10 +27,12 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
             <div class="link"> <a href="bilhetes.php">Bilhetes</a></div>
         </div>
         <div class="buttons">
-            <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
+            <div class="btn"><a href="logout.php"><button>Logout</button></div>
         </div>
     </nav>
-    <section>    
+    <section>
     </section>
 </body>
+</head>
+
 </html>
