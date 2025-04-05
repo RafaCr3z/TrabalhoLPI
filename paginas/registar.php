@@ -2,7 +2,7 @@
     session_start();
     include '../basedados/basedados.h';
 
-    if (isset($_SESSION["id_nivel"]) > 0) {
+    if (isset($_SESSION["id_nivel"]) && $_SESSION["id_nivel"] > 0) {
         header("Location: erro.php");
     }
 
@@ -12,6 +12,9 @@
         $email = $_POST["email"];
         $telemovel = $_POST["telemovel"];
         $morada = $_POST["morada"];
+
+        // Gerar hash da senha (ADICIONADO)
+        $hashed_pwd = password_hash($pwd, PASSWORD_DEFAULT);
 
         // Verifica se o nome já existe
         $check_user_sql = "SELECT * FROM utilizadores WHERE nome = '$nome'";
@@ -83,7 +86,7 @@
             <label for="morada">Morada:</label>
             <input type="text" id="morada" name="morada" required>
 
-            <button type="submit">Registar</button>
+            <button type="submit">Criar Conta</button>
         </form>
         <form action="index.php" method="get">
             <button type="submit" style="margin-top: 10px;">Voltar</button>
