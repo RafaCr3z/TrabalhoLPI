@@ -32,7 +32,7 @@
         }
 
         // Verifica se o telemóvel já existe
-        check_telemovel_sql = "SELECT * FROM utilizadores WHERE telemovel = '$telemovel'";
+        $check_telemovel_sql = "SELECT * FROM utilizadores WHERE telemovel = '$telemovel'";
         $check_telemovel_result = mysqli_query($conn, $check_telemovel_sql);
         if (mysqli_num_rows($check_telemovel_result) > 0) {
             echo "<script>alert('Telemóvel já existe. Tente outro.');</script>";
