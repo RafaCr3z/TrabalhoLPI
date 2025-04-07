@@ -98,6 +98,18 @@ nav {
     box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
 }
 
+/* Texto "Área de Cliente" (não clicável) */
+.btn-cliente {
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0 15px;
+    opacity: 0.9;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+
 /* ===== SECTION ===== */
 section {
     max-width: 800px;

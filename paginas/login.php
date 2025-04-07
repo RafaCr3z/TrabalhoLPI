@@ -37,11 +37,11 @@
     $_SESSION["id_utilizador"] = $id_utilizador;
 
     if ($id_nivel == 1) {
-        header("Location: admin.php");
+        header("Location: pg_admin.php");
     } else if ($id_nivel == 2) {
-        header("Location: funcionario.php");
+        header("Location: pg_funcionario.php");
     } else if ($id_nivel == 3) {
-        header("Location: cliente.php");
+        header("Location: pg_cliente.php");
     } else {
         mysqli_close($conn);
         header("Location: login.php");

@@ -63,9 +63,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <h1>Felix<span>Bus</span></h1>
             </div>
             <div class="links">
-                <div class="link"> <a href="perfil.php">Perfil</a></div>
-                <div class="link"> <a href="cliente.php">Página Inicial</a></div>
-                <div class="link"> <a href="bilhetes.php">Bilhetes</a></div>
+                <div class="link"> <a href="perfil_cliente.php">Perfil</a></div>
+                <div class="link"> <a href="pg_cliente.php">Página Inicial</a></div>
+                <div class="link"> <a href="bilhetes_cliente.php">Bilhetes</a></div>
             </div>
             <div class="buttons">
                 <div class="btn"><a href="logout.php"><button>Logout</button></a></div>

@@ -36,7 +36,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="perfil.css">
+    <link rel="stylesheet" href="perfil_cliente.css">
     <title>FelixBus - Meu Perfil</title>
 </head>
 
@@ -46,8 +46,8 @@
             <h1>Felix<span>Bus</span></h1>
         </div>
         <div class="links">
-            <div class="link"> <a href="cliente.php">Página Inicial</a></div>
-            <div class="link"> <a href="carteira.php">Carteira</a></div>
+            <div class="link"> <a href="pg_cliente.php">Página Inicial</a></div>
+            <div class="link"> <a href="carteira_cliente.php">Carteira</a></div>
             <div class="link"> <a href="bilhetes.php">Bilhetes</a></div>
         </div>
         <div class="buttons">
@@ -64,7 +64,7 @@
         
         <!-- Botão de Editar Perfil alinhado à direita -->
         <div class="btn-edit">
-            <a href="editarPerfil.php"><button>Editar Perfil</button></a>
+            <a href="editar_perfil.php"><button>Editar Perfil</button></a>
         </div>
     </section>
 </body>
