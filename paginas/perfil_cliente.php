@@ -48,7 +48,7 @@
         <div class="links">
             <div class="link"> <a href="pg_cliente.php">Página Inicial</a></div>
             <div class="link"> <a href="carteira_cliente.php">Carteira</a></div>
-            <div class="link"> <a href="bilhetes.php">Bilhetes</a></div>
+            <div class="link"> <a href="bilhetes_cliente.php">Bilhetes</a></div>
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>

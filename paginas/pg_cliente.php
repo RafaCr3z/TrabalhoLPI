@@ -23,7 +23,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
         <div class="links">
             <div class="link"> <a href="perfil_cliente.php">Perfil</a></div>
             <div class="link"> <a href="carteira_cliente.php">Carteira</a></div>
-            <div class="link"> <a href="bilhetes.php">Bilhetes</a></div>
+            <div class="link"> <a href="bilhetes_cliente.php">Bilhetes</a></div>
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>

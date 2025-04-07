@@ -51,6 +51,7 @@ nav {
     gap: 2rem;
     justify-content: center;
     flex: 1;
+    margin-left: 120px;
 }
 
 .link a {
