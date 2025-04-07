@@ -76,7 +76,8 @@ nav {
     width: 100%;
 }
 
-/* Botões Separados */
+/*------------- Botões Separados -------------*/
+
 .buttons {
     display: flex;
     gap: 1.5rem;
@@ -109,7 +110,7 @@ nav {
     box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
 }
 .carteira-container {
-    background-color: #ffffff;
+    background-color:rgb(255, 255, 255, 0.9);
     padding: 20px 30px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -150,7 +151,7 @@ select {
     font-size: 14px;
 }
 
-    button {
+button {
     padding: 10px;
     background-color: #007BFF;
     color: white;
