@@ -45,6 +45,18 @@
             }
         }
     }
+
+    // Busca alertas dinâmicos
+    $mensagens = [];
+    $data_atual = date('Y-m-d H:i:s'); // Data e hora atual
+    $sql_mensagens = "SELECT mensagem AS conteudo FROM alertas WHERE data_inicio <= '$data_atual' AND data_fim >= '$data_atual'";
+    $resultado_mensagens = mysqli_query($conn, $sql_mensagens);
+
+    if ($resultado_mensagens) {
+        while ($mensagem = mysqli_fetch_assoc($resultado_mensagens)) {
+            $mensagens[] = $mensagem;
+        }
+    }
 ?>
 
 <!DOCTYPE html>
@@ -130,6 +142,27 @@
             </div>
         <?php endif; ?>
     </div>
+</section>
+
+<section class="alertas">
+    <?php if (!empty($mensagens)): ?>
+        <div class="alertas-container">
+            <table class="alertas-table">
+                <thead>
+                    <tr>
+                        <th>Informação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($mensagens as $mensagem): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($mensagem['conteudo']); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
 </section>
 </body>
 </html>

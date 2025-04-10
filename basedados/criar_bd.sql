@@ -165,4 +165,9 @@ INSERT INTO carteira_felixbus (saldo) VALUES (0.00);
 INSERT INTO carteiras (id_cliente, saldo) VALUES
 ((SELECT id FROM utilizadores WHERE user = 'cliente'), 100.00);
 
+--Criando alertas
+INSERT INTO alertas (mensagem, data_inicio, data_fim) VALUES
+('Promoção: 20% de desconto em todas as viagens!', '2025-04-01 05:00', '2025-04-30 23:55'),
+('Aviso: Alteração nos horários de Lisboa para Porto.', '2025-04-05 10:00', '2025-04-15 21:59');
+
 COMMIT;
