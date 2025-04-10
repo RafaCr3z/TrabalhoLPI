@@ -156,7 +156,7 @@ $totais = mysqli_fetch_assoc($result_totais);
 
         <div class="transacoes-container">
             <h2>Registro de Transações</h2>
-            <div class="scroll-indicator">(Deslize para ver mais transações)</div>
+            <div class="scroll-indicator">Deslize para ver mais transações</div>
             <?php if (mysqli_num_rows($result) > 0): ?>
                 <div class="transacoes-table-wrapper">
                     <table class="transacoes-table">
