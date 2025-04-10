@@ -225,7 +225,7 @@ button:hover {
 
 .transacoes-table-wrapper {
     max-height: 500px;
-    overflow-y: auto;
+    overflow-y: scroll;
     margin-top: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
