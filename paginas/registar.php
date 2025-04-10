@@ -6,15 +6,25 @@
         header("Location: erro.php");
     }
 
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["user"]) && isset($_POST["pwd"]) && isset($_POST["nome"]) && isset($_POST["email"]) && isset($_POST["telemovel"]) && isset($_POST["morada"])) {
+        $user = $_POST["user"];
         $pwd = $_POST["pwd"];
         $nome = $_POST["nome"];
         $email = $_POST["email"];
         $telemovel = $_POST["telemovel"];
         $morada = $_POST["morada"];
 
-        // Gerar hash da senha (ADICIONADO)
+        // Gerar hash da senha
         $hashed_pwd = password_hash($pwd, PASSWORD_DEFAULT);
+
+        // Verifica se o nome de utilizador já existe
+        $check_username_sql = "SELECT * FROM utilizadores WHERE user = '$user'";
+        $check_username_result = mysqli_query($conn, $check_username_sql);
+        if (mysqli_num_rows($check_username_result) > 0) {
+            echo "<script>alert('Nome de utilizador já existe. Tente outro.');</script>";
+            mysqli_close($conn);
+            exit();
+        }
 
         // Verifica se o nome já existe
         $check_user_sql = "SELECT * FROM utilizadores WHERE nome = '$nome'";
@@ -43,15 +53,20 @@
             exit();
         }
 
-        $sql = "INSERT INTO utilizadores (pwd, nome, email, telemovel, morada, tipo_perfil) 
-                VALUES ('$hashed_pwd', '$nome', '$email', '$telemovel', '$morada', 3)";
+        $sql = "INSERT INTO utilizadores (user, pwd, nome, email, telemovel, morada, tipo_perfil)
+                VALUES ('$user', '$hashed_pwd', '$nome', '$email', '$telemovel', '$morada', 3)";
 
         if (mysqli_query($conn, $sql)) {
-            echo "<script>alert('Usuário registrado com sucesso!');</script>";
-            header("Location: index.php");
+            // Criar carteira para o novo cliente
+            $id_cliente = mysqli_insert_id($conn);
+            $sql_carteira = "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_cliente, 0.00)";
+            mysqli_query($conn, $sql_carteira);
+
+            // Redirecionar para a página inicial
+            echo "<script>alert('Usuário registrado com sucesso!'); window.location.href = 'index.php';</script>";
             exit();
         } else {
-            echo "Erro ao registrar usuário: " . mysqli_error($conn);
+            echo "<script>alert('Erro ao registrar usuário: " . mysqli_error($conn) . "');</script>";
         }
 
         mysqli_close($conn);
@@ -71,7 +86,10 @@
         <h2>Registar</h2>
         <form action="registar.php" method="post">
 
-            <label for="nome">Nome:</label>
+            <label for="user">Nome de Utilizador:</label>
+            <input type="text" id="user" name="user" required>
+
+            <label for="nome">Nome Completo:</label>
             <input type="text" id="nome" name="nome" required>
 
             <label for="pwd">Senha:</label>

@@ -21,32 +21,33 @@ while ($perfil = mysqli_fetch_assoc($result_perfis)) {
 }
 
 // Adicionar novo utilizador
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar']) && isset($_POST['user']) && isset($_POST['nome']) && isset($_POST['email']) && isset($_POST['pwd']) && isset($_POST['telemovel']) && isset($_POST['morada']) && isset($_POST['tipo_perfil'])) {
+    $user = mysqli_real_escape_string($conn, $_POST['user']);
     $nome = mysqli_real_escape_string($conn, $_POST['nome']);
     $email = mysqli_real_escape_string($conn, $_POST['email']);
     $pwd = $_POST['pwd'];
     $telemovel = mysqli_real_escape_string($conn, $_POST['telemovel']);
     $morada = mysqli_real_escape_string($conn, $_POST['morada']);
     $tipo_perfil = intval($_POST['tipo_perfil']);
-    
-    // Verificar se o nome ou email já existem
-    $sql_check = "SELECT * FROM utilizadores WHERE nome = '$nome' OR email = '$email'";
+
+    // Verificar se o nome de utilizador, nome ou email já existem
+    $sql_check = "SELECT * FROM utilizadores WHERE user = '$user' OR nome = '$nome' OR email = '$email'";
     $result_check = mysqli_query($conn, $sql_check);
-    
+
     if (mysqli_num_rows($result_check) > 0) {
         $mensagem = "Nome de utilizador ou email já existem no sistema.";
         $tipo_mensagem = "error";
     } else {
         // Gerar hash da senha
         $hashed_pwd = password_hash($pwd, PASSWORD_DEFAULT);
-        
-        $sql = "INSERT INTO utilizadores (nome, email, pwd, telemovel, morada, tipo_perfil) 
-                VALUES ('$nome', '$email', '$hashed_pwd', '$telemovel', '$morada', $tipo_perfil)";
-        
+
+        $sql = "INSERT INTO utilizadores (user, nome, email, pwd, telemovel, morada, tipo_perfil)
+                VALUES ('$user', '$nome', '$email', '$hashed_pwd', '$telemovel', '$morada', $tipo_perfil)";
+
         if (mysqli_query($conn, $sql)) {
             $mensagem = "Utilizador adicionado com sucesso!";
             $tipo_mensagem = "success";
-            
+
             // Se for cliente, criar carteira automaticamente
             if ($tipo_perfil == 3) {
                 $id_cliente = mysqli_insert_id($conn);
@@ -64,23 +65,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
 if (isset($_GET['alterar_perfil']) && isset($_GET['id']) && isset($_GET['perfil'])) {
     $id = intval($_GET['id']);
     $perfil = intval($_GET['perfil']);
-    
+
     // Não permitir alterar o próprio perfil
     if ($id == $_SESSION['id_utilizador']) {
         $mensagem = "Não é possível alterar o seu próprio perfil.";
         $tipo_mensagem = "error";
     } else {
         $sql = "UPDATE utilizadores SET tipo_perfil = $perfil WHERE id = $id";
-        
+
         if (mysqli_query($conn, $sql)) {
             $mensagem = "Perfil do utilizador alterado com sucesso!";
             $tipo_mensagem = "success";
-            
+
             // Se for alterado para cliente e não tiver carteira, criar uma
             if ($perfil == 3) {
                 $sql_check_carteira = "SELECT * FROM carteiras WHERE id_cliente = $id";
                 $result_check_carteira = mysqli_query($conn, $sql_check_carteira);
-                
+
                 if (mysqli_num_rows($result_check_carteira) == 0) {
                     $sql_carteira = "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id, 0.00)";
                     mysqli_query($conn, $sql_carteira);
@@ -94,9 +95,9 @@ if (isset($_GET['alterar_perfil']) && isset($_GET['id']) && isset($_GET['perfil'
 }
 
 // Buscar todos os utilizadores
-$sql_utilizadores = "SELECT u.*, p.descricao as perfil_nome 
-                    FROM utilizadores u 
-                    JOIN perfis p ON u.tipo_perfil = p.id 
+$sql_utilizadores = "SELECT u.*, p.descricao as perfil_nome
+                    FROM utilizadores u
+                    JOIN perfis p ON u.tipo_perfil = p.id
                     ORDER BY u.id";
 $result_utilizadores = mysqli_query($conn, $sql_utilizadores);
 ?>
@@ -129,42 +130,47 @@ $result_utilizadores = mysqli_query($conn, $sql_utilizadores);
 
     <section>
         <h1>Gestão de Utilizadores</h1>
-        
+
         <?php if (!empty($mensagem)): ?>
             <div class="alert alert-<?php echo $tipo_mensagem == 'success' ? 'success' : 'danger'; ?>">
                 <?php echo $mensagem; ?>
             </div>
         <?php endif; ?>
-        
+
         <div class="container">
             <div class="form-container">
                 <h2>Adicionar Novo Utilizador</h2>
                 <form method="post" action="gerir_utilizadores.php">
                     <div class="form-group">
-                        <label for="nome">Nome:</label>
+                        <label for="user">Nome de Utilizador:</label>
+                        <input type="text" id="user" name="user" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nome">Nome Completo:</label>
                         <input type="text" id="nome" name="nome" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="email">Email:</label>
                         <input type="email" id="email" name="email" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="pwd">Senha:</label>
                         <input type="password" id="pwd" name="pwd" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="telemovel">Telemóvel:</label>
                         <input type="text" id="telemovel" name="telemovel" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="morada">Morada:</label>
                         <textarea id="morada" name="morada" required></textarea>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="tipo_perfil">Tipo de Perfil:</label>
                         <select id="tipo_perfil" name="tipo_perfil" required>
@@ -173,17 +179,18 @@ $result_utilizadores = mysqli_query($conn, $sql_utilizadores);
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    
+
                     <button type="submit" name="adicionar">Adicionar Utilizador</button>
                 </form>
             </div>
-            
+
             <div class="table-container">
                 <h2>Utilizadores Cadastrados</h2>
                 <table class="utilizadores-table">
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Utilizador</th>
                             <th>Nome</th>
                             <th>Email</th>
                             <th>Telemóvel</th>
@@ -195,6 +202,7 @@ $result_utilizadores = mysqli_query($conn, $sql_utilizadores);
                         <?php while ($utilizador = mysqli_fetch_assoc($result_utilizadores)): ?>
                             <tr>
                                 <td><?php echo $utilizador['id']; ?></td>
+                                <td><?php echo htmlspecialchars($utilizador['user']); ?></td>
                                 <td><?php echo htmlspecialchars($utilizador['nome']); ?></td>
                                 <td><?php echo htmlspecialchars($utilizador['email']); ?></td>
                                 <td><?php echo htmlspecialchars($utilizador['telemovel']); ?></td>

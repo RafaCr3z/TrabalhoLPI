@@ -6,13 +6,12 @@
         header("Location: erro.php");
     }
 
-    if (isset($_POST["nome"]) && isset($_POST["pass"])) {
+    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["nome"]) && isset($_POST["pass"])) {
         $nome = $_POST["nome"];
-        echo $nome;
         $pass = $_POST["pass"];
-        echo $pass;
 
-        $sql = "SELECT * FROM `utilizadores` WHERE `nome` = '$nome' AND `pwd` = '$pass'";
+        // Buscar o usuário pelo nome de utilizador
+        $sql = "SELECT * FROM `utilizadores` WHERE `user` = '$nome'";
         $result = mysqli_query($conn, $sql);
 
         if (!$result) {
@@ -20,13 +19,18 @@
         }
 
         if (mysqli_num_rows($result) == 0) {
-            mysqli_close($conn);
-            header("Location: login.php");
-            echo "<script>alert('Usuário ou senha inválidos.');</script>";
+            echo "<script>alert('Usuário não encontrado.');</script>";
             exit();
         }
-        
-    $row = mysqli_fetch_array($result);
+
+        // Verificar a senha
+        $row = mysqli_fetch_array($result);
+        if (password_verify($pass, $row['pwd']) || $pass == $row['pwd']) { // Aceita tanto senha com hash quanto sem hash (para compatibilidade)
+            // Login bem-sucedido
+        } else {
+            echo "<script>alert('Senha incorreta.');</script>";
+            exit();
+        }
 
     // Use o nome correto da coluna 'tipo_perfil'
     $id_nivel = $row['tipo_perfil'];
@@ -64,7 +68,7 @@ mysqli_close($conn);
     <div class="login-container">
         <h2>Login</h2>
         <form action="login.php" method="post">
-            <label for="nome">Usuário:</label>
+            <label for="nome">Nome de Utilizador:</label>
             <input type="text" id="nome" name="nome" required>
             <br>
             <label for="pass">Senha:</label>
