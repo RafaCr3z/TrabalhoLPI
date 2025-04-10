@@ -212,19 +212,28 @@ button:hover {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-height: 600px;
-    overflow: hidden;
 }
 
 .scroll-indicator {
     text-align: center;
-    margin: 5px 0;
+    margin: 10px 0;
     color: #0056b3;
-    font-size: 0.9em;
+    font-size: 1em;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 8px;
+    background-color: #e6f0ff;
+    border: 1px solid #0056b3;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.scroll-indicator:hover {
+    background-color: #0056b3;
+    color: white;
 }
 
 .scroll-indicator::after {
@@ -233,6 +242,10 @@ button:hover {
     margin-left: 5px;
     font-size: 1.2em;
     animation: bounce 1s infinite alternate;
+}
+
+.scroll-indicator.bottom::after {
+    content: '\2191';
 }
 
 @keyframes bounce {
@@ -245,14 +258,28 @@ button:hover {
 }
 
 .transacoes-table-wrapper {
-    max-height: 500px;
-    overflow-y: scroll;
+    height: 300px;
+    overflow-y: scroll !important;
     margin-top: 10px;
-    border: 1px solid #ddd;
+    border: 2px solid #0056b3;
     border-radius: 4px;
     position: relative;
     scrollbar-width: auto;
     scrollbar-color: #0056b3 #e0e0e0;
+    box-shadow: 0 0 10px rgba(0, 86, 179, 0.2);
+    -webkit-overflow-scrolling: touch;
+}
+
+.transacoes-table-wrapper::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.9));
+    pointer-events: none;
+    z-index: 5;
 }
 
 .transacoes-table-wrapper::-webkit-scrollbar {
@@ -277,13 +304,14 @@ button:hover {
 .transacoes-table {
     width: 100%;
     border-collapse: collapse;
-    min-height: 200px;
+    min-height: 600px;
 }
 
 .transacoes-table th, .transacoes-table td {
-    padding: 12px 15px;
+    padding: 15px;
     text-align: left;
     border-bottom: 1px solid #ddd;
+    height: 50px;
 }
 
 .transacoes-table th {
@@ -296,7 +324,17 @@ button:hover {
 }
 
 .transacoes-table tr:hover {
+    background-color: #e6f0ff;
+}
+
+.transacoes-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.transacoes-table tr.spacer-row {
+    height: 60px;
     background-color: #f5f5f5;
+    border-bottom: 1px dashed #ddd;
 }
 
 .no-results {

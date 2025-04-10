@@ -155,10 +155,9 @@ $totais = mysqli_fetch_assoc($result_totais);
         </div>
 
         <div class="transacoes-container">
-            <h2>Registro de Transações</h2>
-            <div class="scroll-indicator">Deslize para ver mais transações</div>
+            <h2>REGISTRO DE TRANSAÇÕES</h2>
             <?php if (mysqli_num_rows($result) > 0): ?>
-                <div class="transacoes-table-wrapper">
+                <div class="transacoes-table-wrapper" style="height: 300px; overflow-y: scroll !important;">
                     <table class="transacoes-table">
                     <thead>
                         <tr>
@@ -194,6 +193,14 @@ $totais = mysqli_fetch_assoc($result_totais);
                                 <td><?php echo htmlspecialchars($transacao['descricao']); ?></td>
                             </tr>
                         <?php endwhile; ?>
+                        <?php
+                        // Adicionar linhas vazias para garantir que a tabela tenha rolagem
+                        $num_rows = mysqli_num_rows($result);
+                        // Sempre adicionar pelo menos 15 linhas vazias para garantir a rolagem
+                        for ($i = 0; $i < 15; $i++) {
+                            echo '<tr class="spacer-row"><td colspan="6">&nbsp;</td></tr>';
+                        }
+                        ?>
                     </tbody>
                 </table>
                 </div>
@@ -202,5 +209,68 @@ $totais = mysqli_fetch_assoc($result_totais);
             <?php endif; ?>
         </div>
     </section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Garantir que a tabela tenha rolagem
+        const tableWrapper = document.querySelector('.transacoes-table-wrapper');
+        if (tableWrapper) {
+            // Forçar a rolagem a ser visível
+            tableWrapper.style.overflowY = 'scroll';
+
+            // Verificar se a tabela precisa de mais linhas para ter rolagem
+            const table = tableWrapper.querySelector('.transacoes-table');
+            const tbody = table.querySelector('tbody');
+
+            // Garantir que a tabela tenha altura suficiente para rolar
+            if (tableWrapper.scrollHeight <= tableWrapper.clientHeight) {
+                // Adicionar mais linhas vazias para forçar a rolagem
+                for (let i = 0; i < 15; i++) {
+                    const tr = document.createElement('tr');
+                    tr.className = 'spacer-row';
+                    const td = document.createElement('td');
+                    td.colSpan = 6;
+                    td.innerHTML = '&nbsp;';
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
+                }
+            }
+
+            // Adicionar evento de clique nos indicadores de rolagem
+            const topIndicator = document.querySelector('.scroll-indicator:not(.bottom)');
+            const bottomIndicator = document.querySelector('.scroll-indicator.bottom');
+
+            if (topIndicator) {
+                topIndicator.addEventListener('click', function() {
+                    tableWrapper.scrollTop = 0;
+                });
+            }
+
+            if (bottomIndicator) {
+                bottomIndicator.addEventListener('click', function() {
+                    tableWrapper.scrollTop = tableWrapper.scrollHeight;
+                });
+            }
+
+            // Adicionar evento de rolagem para mostrar/ocultar indicadores
+            tableWrapper.addEventListener('scroll', function() {
+                if (tableWrapper.scrollTop === 0) {
+                    topIndicator.style.opacity = '0.5';
+                    bottomIndicator.style.opacity = '1';
+                } else if (tableWrapper.scrollTop + tableWrapper.clientHeight >= tableWrapper.scrollHeight) {
+                    topIndicator.style.opacity = '1';
+                    bottomIndicator.style.opacity = '0.5';
+                } else {
+                    topIndicator.style.opacity = '1';
+                    bottomIndicator.style.opacity = '1';
+                }
+            });
+
+            // Iniciar com rolagem no topo
+            tableWrapper.scrollTop = 0;
+            topIndicator.style.opacity = '0.5';
+        }
+    });
+</script>
 </body>
 </html>
