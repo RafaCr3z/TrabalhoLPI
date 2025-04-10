@@ -63,8 +63,14 @@ nav {
 
 .buttons {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    gap: 15px;
     width: 20%;
+    align-items: center;
+}
+
+.btn {
+    display: flex;
     align-items: center;
 }
 
@@ -83,6 +89,8 @@ nav {
 .btn-admin {
     color: #ff6b6b;
     font-weight: 500;
+    display: flex;
+    align-items: center;
 }
 
 section {
@@ -247,11 +255,11 @@ button:hover {
     .container {
         flex-direction: column;
     }
-    
+
     .form-container, .tables-container {
         min-width: 100%;
     }
-    
+
     .links, .buttons {
         width: auto;
     }
