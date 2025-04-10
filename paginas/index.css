@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;400;500;600;700&display=swap');
 
 /* Reset básico */
 * {
@@ -15,37 +15,43 @@ body {
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
+    color: white;
 }
 
 /* Navbar */
 nav {
     width: 100%;
-    height: 80px;
+    height: 60px;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
+    padding: 0 50px;
     color: white;
-    background: rgba(0, 0, 0, 0.8);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.7);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
 }
 
 .logo {
-    cursor: pointer; /* Muda o cursor para pointer */
-    text-decoration: none !important; /* Remove sublinhado */
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.5rem;
+    color: white;
 }
 
 .logo h1 {
-    color: white; /* Mantém a cor original */
-    font-size: 1.8rem;
+    color: white;
+    font-size: 1.5rem;
     letter-spacing: 1px;
+    margin: 0;
 }
 
 .logo span {
-    color: #ff6b6b;
-}
-
-.logo:hover h1 {
-    opacity: 0.9; /* Efeito de hover sutil */
+    color: #ff3a3a;
 }
 
 /* Links */
@@ -58,54 +64,198 @@ nav {
     position: relative;
     color: white;
     text-decoration: none;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     transition: 0.3s;
 }
 
-.link a::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: -5px;
-    width: 0;
-    height: 2px;
-    background: #ff6b6b;
-    transition: 0.3s;
+.link a:hover {
+    color: #ff3a3a;
 }
 
-.link a:hover::before {
-    width: 100%;
-}
-
-/* Botões Separados */
+/* Botões */
 .buttons {
     display: flex;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .btn {
-    width: 120px;
-    height: 40px;
+    min-width: 100px;
 }
 
 .btn button {
     width: 100%;
-    height: 100%;
+    padding: 8px 20px;
     border: none;
     border-radius: 25px;
-    background: #ff6b6b;
-    color: white;
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 500;
     cursor: pointer;
     transition: 0.3s;
 }
 
+.btn:first-child button {
+    background: #ff3a3a;
+    color: white;
+}
+
 .btn:last-child button {
     background: transparent;
-    border: 2px solid #ff6b6b;
+    border: 1px solid white;
+    color: white;
 }
 
 .btn button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* Seção principal */
+.main-section {
+    padding-top: 60px;
+    min-height: 100vh;
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7));
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 80px 50px 50px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Conteúdo do hero */
+.hero-content {
+    margin-bottom: 30px;
+    color: white;
+}
+
+.hero-content h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.hero-content p {
+    font-size: 1.2rem;
+    margin-bottom: 40px;
+}
+
+/* Container de consulta de rotas */
+.consulta-container {
+    background: transparent;
+    padding: 0;
+    width: 100%;
+    max-width: 1000px;
+}
+
+.consulta-container h2 {
+    color: white;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+}
+
+.consulta-container h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 20px 0 10px;
+}
+
+/* Formulário de pesquisa */
+.search-form {
+    width: 100%;
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    color: white;
+    font-size: 1rem;
+}
+
+.form-group input {
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: white;
+    font-size: 1rem;
+    width: 100%;
+}
+
+.form-group input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.search-btn {
+    padding: 10px 20px;
+    background-color: #ff3a3a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    height: 36px;
+}
+
+.search-btn:hover {
+    background-color: #ff5252;
+}
+
+/* Resultados da pesquisa */
+.results-container {
+    margin-top: 30px;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.no-results {
+    color: white;
+    text-align: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+
+.results-table th,
+.results-table td {
+    padding: 12px 15px;
+    text-align: left;
+    color: white;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.results-table th {
+    background-color: rgba(0, 0, 0, 0.3);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+.results-table tr:hover {
+    background-color: rgba(255, 58, 58, 0.1);
 }

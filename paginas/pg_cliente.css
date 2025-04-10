@@ -33,8 +33,7 @@ nav {
 /* ===== LOGO ===== */
 .logo {
     cursor: pointer;
-    flex: 0 1 auto;
-    margin-left: 20px;
+    text-decoration: none !important;
 }
 
 .logo h1 {
@@ -49,14 +48,10 @@ nav {
 /* ===== LINKS CENTRAIS ===== */
 .links {
     display: flex;
-    gap: 3rem;
+    gap: 2rem;
     justify-content: center;
-    flex: 1 1 auto;
-    margin: 0 auto;
-    position: relative;
-    left: 20px;
-    padding-left: 20px;
-    margin-left: 100px;
+    flex: 1;
+    margin-left: 120px;
 }
 
 .link a {
