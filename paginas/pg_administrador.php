@@ -1,7 +1,7 @@
 <?php
 session_start();
 include '../basedados/basedados.h';
-if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
+if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     header("Location: erro.php");
     exit();
 }
