@@ -156,8 +156,10 @@ $totais = mysqli_fetch_assoc($result_totais);
 
         <div class="transacoes-container">
             <h2>Registro de Transações</h2>
+            <div class="scroll-indicator">(Deslize para ver mais transações)</div>
             <?php if (mysqli_num_rows($result) > 0): ?>
-                <table class="transacoes-table">
+                <div class="transacoes-table-wrapper">
+                    <table class="transacoes-table">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -194,6 +196,7 @@ $totais = mysqli_fetch_assoc($result_totais);
                         <?php endwhile; ?>
                     </tbody>
                 </table>
+                </div>
             <?php else: ?>
                 <p class="no-results">Nenhuma transação encontrada com os filtros selecionados.</p>
             <?php endif; ?>
