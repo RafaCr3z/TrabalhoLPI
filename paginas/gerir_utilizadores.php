@@ -185,7 +185,7 @@ $result_utilizadores = mysqli_query($conn, $sql_utilizadores);
             </div>
 
             <div class="table-container">
-                <h2>Utilizadores</h2>
+                <h2>Utilizadores Cadastrados</h2>
                 <table class="utilizadores-table">
                     <thead>
                         <tr>

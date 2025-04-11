@@ -147,15 +147,11 @@ h2 {
 
 .table-container {
     flex: 2;
-    min-width: 600px;
+    min-width: 850px;
     background-color: rgba(255, 255, 255, 0.9);
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    overflow-x: auto; /* Adiciona rolagem horizontal quando necessário */
-    max-width: 100%; /* Garante que não ultrapasse a largura da tela */
-    max-height: 70vh; /* Altura máxima para evitar tabelas muito grandes */
-    overflow-y: auto; /* Adiciona rolagem vertical quando necessário */
 }
 
 .form-group {
@@ -202,56 +198,17 @@ button:hover {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
-    table-layout: fixed; /* Melhora o comportamento da tabela */
 }
 
 .utilizadores-table th, .utilizadores-table td {
     padding: 10px;
     text-align: left;
     border-bottom: 1px solid #ddd;
-    word-wrap: break-word; /* Quebra palavras longas */
-    overflow: hidden; /* Evita que o conteúdo ultrapasse a célula */
 }
 
 .utilizadores-table th {
     background-color: #f2f2f2;
     font-weight: 500;
-}
-
-/* Definir larguras para as colunas da tabela */
-.utilizadores-table th:nth-child(1), /* ID */
-.utilizadores-table td:nth-child(1) {
-    width: 5%;
-}
-
-.utilizadores-table th:nth-child(2), /* Utilizador */
-.utilizadores-table td:nth-child(2) {
-    width: 12%;
-}
-
-.utilizadores-table th:nth-child(3), /* Nome */
-.utilizadores-table td:nth-child(3) {
-    width: 20%;
-}
-
-.utilizadores-table th:nth-child(4), /* Email */
-.utilizadores-table td:nth-child(4) {
-    width: 20%;
-}
-
-.utilizadores-table th:nth-child(5), /* Telemóvel */
-.utilizadores-table td:nth-child(5) {
-    width: 12%;
-}
-
-.utilizadores-table th:nth-child(6), /* Perfil */
-.utilizadores-table td:nth-child(6) {
-    width: 12%;
-}
-
-.utilizadores-table th:nth-child(7), /* Ações */
-.utilizadores-table td:nth-child(7) {
-    width: 15%;
 }
 
 .utilizadores-table tr:hover {
@@ -350,9 +307,5 @@ button:hover {
 
     .links, .buttons {
         width: auto;
-    }
-
-    .utilizadores-table {
-        min-width: 800px; /* Garante que a tabela tenha uma largura mínima para visualização */
     }
 }
