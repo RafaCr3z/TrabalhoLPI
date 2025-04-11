@@ -150,13 +150,52 @@ INSERT INTO utilizadores (user, pwd, nome, email, telemovel, morada, tipo_perfil
 INSERT INTO rotas (origem, destino, preco, capacidade) VALUES
 ('Lisboa', 'Porto', 25.00, 50),
 ('Porto', 'Coimbra', 15.00, 40),
-('Coimbra', 'Faro', 35.00, 30);
+('Coimbra', 'Faro', 35.00, 30),
+('Lisboa', 'Faro', 30.00, 45),
+('Porto', 'Braga', 10.00, 35),
+('Braga', 'Guimarães', 8.00, 30),
+('Faro', 'Portimão', 12.00, 35),
+('Lisboa', 'Coimbra', 20.00, 45),
+('Porto', 'Lisboa', 25.00, 50),
+('Coimbra', 'Porto', 15.00, 40),
+('Faro', 'Lisboa', 30.00, 45),
+('Braga', 'Porto', 10.00, 35),
+('Guimarães', 'Braga', 8.00, 30),
+('Portimão', 'Faro', 12.00, 35),
+('Coimbra', 'Lisboa', 20.00, 45);
 
 -- Criando horários das viagens
 INSERT INTO horarios (id_rota, horario_partida) VALUES
 (1, '08:00:00'),
 (1, '14:00:00'),
-(2, '12:30:00');
+(2, '12:30:00'),
+(4, '07:30:00'),
+(4, '15:30:00'),
+(5, '09:00:00'),
+(5, '17:00:00'),
+(6, '08:30:00'),
+(6, '16:30:00'),
+(7, '10:00:00'),
+(7, '18:00:00'),
+(8, '07:00:00'),
+(8, '13:00:00'),
+(8, '19:00:00'),
+(9, '06:30:00'),
+(9, '12:00:00'),
+(9, '18:30:00'),
+(10, '07:30:00'),
+(10, '13:30:00'),
+(11, '08:00:00'),
+(11, '16:00:00'),
+(12, '09:30:00'),
+(12, '17:30:00'),
+(13, '08:15:00'),
+(13, '16:15:00'),
+(14, '10:30:00'),
+(14, '18:30:00'),
+(15, '07:45:00'),
+(15, '13:45:00'),
+(15, '19:45:00');
 
 -- Criando carteira da empresa
 INSERT INTO carteira_felixbus (saldo) VALUES (0.00);
