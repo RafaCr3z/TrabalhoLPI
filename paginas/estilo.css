@@ -116,7 +116,7 @@ nav {
 .main-section {
     padding-top: 60px;
     min-height: 100vh;
-    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7));
+    background: rgba(0, 0, 0, 0.5); /* Removido o gradient que causava desfoque */
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -326,73 +326,70 @@ nav {
 /* Alertas */
 .alertas {
     position: fixed;
-    top: 100px; /* Ajuste conforme necessário */
-    right: 20px; /* Distância da borda direita */
-    width: 300px; /* Largura da seção */
-    background-color: #f9f9f9;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    z-index: 1000; /* Certifique-se de que está acima de outros elementos */
+    top: 100px;
+    right: 20px;
+    width: 300px;
+    background: rgba(255, 255, 255, 0.95); 
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 .alertas-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.alerta {
-    background-color: #fff;
-    border: 1px solid #ccc;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.alerta h3 {
-    margin: 0 0 10px;
-    font-size: 18px;
-    color: #333;
-}
-
-.alerta p {
-    margin: 0;
-    font-size: 14px;
-    color: #555;
+    padding: 15px;
 }
 
 .alertas-table {
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-    font-size: 0.9rem;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
-.alertas-table th,
-.alertas-table td {
-    padding: 10px 15px;
-    text-align: left;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    color: #333;
-    line-height: 1.4;
-    white-space: nowrap;
+.alertas-table thead {
+    background: #ff6b6b;
 }
 
 .alertas-table th {
-    background-color: rgba(0, 0, 0, 0.1);
-    color: #333;
+    color: white;
+    padding: 12px 15px;
+    font-size: 0.9rem;
     font-weight: 500;
     text-transform: uppercase;
-    font-size: 0.8rem;
     letter-spacing: 0.5px;
+    border-radius: 8px 8px 0 0;
 }
 
-.alertas-table tr {
-    background-color: rgba(0, 0, 0, 0.05);
+.alertas-table td {
+    padding: 12px 15px;
+    color: #333;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: white; /* Fundo branco sólido para as células */
 }
 
-.alertas-table tr:hover {
-    background-color: rgba(255, 58, 58, 0.1);
+.alertas-table tr:last-child td {
+    border-bottom: none;
+}
+
+.alertas-table tr:hover td {
+    background-color: rgba(255, 107, 107, 0.05);
+}
+
+.alertas-table td::before {
+    content: "ℹ️";
+    margin-right: 8px;
+    opacity: 0.7;
 }
