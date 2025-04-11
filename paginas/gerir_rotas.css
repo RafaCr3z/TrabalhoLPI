@@ -152,6 +152,10 @@ h2 {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow-x: auto; /* Adiciona rolagem horizontal quando necessário */
+    max-width: 100%; /* Garante que não ultrapasse a largura da tela */
+    max-height: 70vh; /* Altura máxima para evitar tabelas muito grandes */
+    overflow-y: auto; /* Adiciona rolagem vertical quando necessário */
 }
 
 .form-group {
@@ -194,6 +198,7 @@ button:hover {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
+    table-layout: fixed; /* Melhora o comportamento da tabela */
 }
 
 .rotas-table th, .rotas-table td,
@@ -201,11 +206,80 @@ button:hover {
     padding: 10px;
     text-align: left;
     border-bottom: 1px solid #ddd;
+    word-wrap: break-word; /* Quebra palavras longas */
+    overflow: hidden; /* Evita que o conteúdo ultrapasse a célula */
+    line-height: 1.4;
+}
+
+/* Diminuir o tamanho da fonte na tabela de rotas */
+.rotas-table {
+    font-size: 13px;
 }
 
 .rotas-table th, .horarios-table th {
     background-color: #f2f2f2;
     font-weight: 500;
+}
+
+.rotas-table th {
+    font-size: 13px;
+}
+
+/* Definir larguras para as colunas da tabela de rotas */
+.rotas-table th:nth-child(1), /* ID */
+.rotas-table td:nth-child(1) {
+    width: 5%;
+}
+
+.rotas-table th:nth-child(2), /* Origem */
+.rotas-table td:nth-child(2) {
+    width: 15%;
+}
+
+.rotas-table th:nth-child(3), /* Destino */
+.rotas-table td:nth-child(3) {
+    width: 15%;
+}
+
+.rotas-table th:nth-child(4), /* Preço */
+.rotas-table td:nth-child(4) {
+    width: 10%;
+}
+
+.rotas-table th:nth-child(5), /* Capacidade */
+.rotas-table td:nth-child(5) {
+    width: 10%;
+}
+
+.rotas-table th:nth-child(6), /* Horários */
+.rotas-table td:nth-child(6) {
+    width: 10%;
+}
+
+.rotas-table th:nth-child(7), /* Status */
+.rotas-table td:nth-child(7) {
+    width: 15%;
+}
+
+.rotas-table th:nth-child(8), /* Ações */
+.rotas-table td:nth-child(8) {
+    width: 15%;
+}
+
+/* Definir larguras para as colunas da tabela de horários */
+.horarios-table th:nth-child(1), /* ID */
+.horarios-table td:nth-child(1) {
+    width: 10%;
+}
+
+.horarios-table th:nth-child(2), /* Rota */
+.horarios-table td:nth-child(2) {
+    width: 60%;
+}
+
+.horarios-table th:nth-child(3), /* Horário */
+.horarios-table td:nth-child(3) {
+    width: 30%;
 }
 
 .rotas-table tr:hover, .horarios-table tr:hover {
@@ -214,9 +288,9 @@ button:hover {
 
 .status-badge {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 4px 8px;
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
 }
 
@@ -232,11 +306,11 @@ button:hover {
 
 .action-btn {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 4px 8px;
     border-radius: 4px;
     text-decoration: none;
     color: white;
-    font-size: 12px;
+    font-size: 11px;
 }
 
 .activate {
@@ -258,9 +332,19 @@ button:hover {
 
     .form-container, .tables-container {
         min-width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
     }
 
     .links, .buttons {
         width: auto;
+    }
+
+    .rotas-table {
+        min-width: 800px; /* Garante que a tabela tenha uma largura mínima para visualização */
+    }
+
+    .horarios-table {
+        min-width: 600px; /* Garante que a tabela tenha uma largura mínima para visualização */
     }
 }

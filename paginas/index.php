@@ -118,26 +118,37 @@
                     <p class="no-results">Nenhum resultado encontrado para a sua pesquisa.</p>
                 <?php else: ?>
                     <h3>Resultados da Pesquisa</h3>
-                    <table class="results-table">
-                        <thead>
-                            <tr>
-                                <th>Origem</th>
-                                <th>Destino</th>
-                                <th>Horário</th>
-                                <th>Preço</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($resultados as $rota): ?>
+                    <div class="results-table-wrapper">
+                        <table class="results-table">
+                            <thead>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($rota['origem']); ?></td>
-                                    <td><?php echo htmlspecialchars($rota['destino']); ?></td>
-                                    <td><?php echo htmlspecialchars($rota['horario_partida']); ?></td>
-                                    <td><?php echo '€' . number_format($rota['preco'], 2, ',', '.'); ?></td>
+                                    <th>Origem</th>
+                                    <th>Destino</th>
+                                    <th>Horário</th>
+                                    <th>Preço</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($resultados as $rota): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($rota['origem']); ?></td>
+                                        <td><?php echo htmlspecialchars($rota['destino']); ?></td>
+                                        <td><?php echo htmlspecialchars($rota['horario_partida']); ?></td>
+                                        <td><?php echo '€' . number_format($rota['preco'], 2, ',', '.'); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <?php
+                                // Adicionar algumas linhas vazias para garantir que a tabela tenha rolagem
+                                $num_rows = count($resultados);
+                                if ($num_rows < 5) {
+                                    for ($i = 0; $i < (5 - $num_rows); $i++) {
+                                        echo '<tr class="spacer-row"><td colspan="4">&nbsp;</td></tr>';
+                                    }
+                                }
+                                ?>
+                            </tbody>
+                        </table>
+                    </div>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
@@ -164,5 +175,15 @@
         </div>
     <?php endif; ?>
 </section>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Garantir que a tabela tenha rolagem
+        const tableWrapper = document.querySelector('.results-table-wrapper');
+        if (tableWrapper) {
+            // Forçar a rolagem a ser visível
+            tableWrapper.style.overflowY = 'scroll';
+        }
+    });
+</script>
 </body>
 </html>

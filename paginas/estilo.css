@@ -234,36 +234,93 @@ nav {
     padding: 15px;
 }
 
+.results-table-wrapper {
+    height: 300px;
+    overflow-y: scroll;
+    overflow-x: auto;
+    margin-top: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    position: relative;
+}
+
+.results-table-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.results-table-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.results-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
 .results-table {
     width: 100%;
+    min-width: 500px; /* Garante que a tabela tenha uma largura mínima */
     border-collapse: collapse;
-    margin-top: 10px;
-    font-size: 0.9rem;
+    margin-top: 0;
+    font-size: 0.8rem;
 }
 
 .results-table th,
 .results-table td {
-    padding: 10px 15px;
+    padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
+    line-height: 1.4;
+    white-space: nowrap;
 }
 
 .results-table th {
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.5);
     color: white;
     font-weight: 500;
     text-transform: uppercase;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.3);
 }
 
 .results-table tr {
     background-color: rgba(0, 0, 0, 0.2);
+    height: 40px;
 }
 
 .results-table tr:hover {
-    background-color: rgba(255, 58, 58, 0.1);
+    background-color: rgba(255, 58, 58, 0.2);
+}
+
+.results-table tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.results-table tr.spacer-row {
+    height: 30px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Definir larguras para as colunas da tabela de resultados */
+.results-table th:nth-child(1),
+.results-table td:nth-child(1),
+.results-table th:nth-child(2),
+.results-table td:nth-child(2) {
+    width: 30%;
+}
+
+.results-table th:nth-child(3),
+.results-table td:nth-child(3),
+.results-table th:nth-child(4),
+.results-table td:nth-child(4) {
+    width: 20%;
 }
 
 /* Alertas */
@@ -319,6 +376,8 @@ nav {
     text-align: left;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     color: #333;
+    line-height: 1.4;
+    white-space: nowrap;
 }
 
 .alertas-table th {

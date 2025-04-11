@@ -169,6 +169,8 @@ button:hover {
     padding: 10px;
     text-align: left;
     border-bottom: 1px solid #ddd;
+    line-height: 1.4;
+    white-space: nowrap;
 }
 
 .bilhetes-table th {
@@ -222,7 +224,7 @@ button:hover {
     .container {
         flex-direction: column;
     }
-    
+
     .comprar-bilhete, .meus-bilhetes {
         max-width: 100%;
     }
