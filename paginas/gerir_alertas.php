@@ -86,7 +86,7 @@ $result = mysqli_query($conn, "SELECT * FROM alertas ORDER BY data_inicio DESC")
             </div>
 
             <div class="table-container">
-                <h2>Alertas Cadastrados</h2>
+                <h2>Alertas Adicionados</h2>
                 <table class="alertas-table">
                     <thead>
                         <tr>
@@ -111,7 +111,7 @@ $result = mysqli_query($conn, "SELECT * FROM alertas ORDER BY data_inicio DESC")
                         <?php endwhile; ?>
                         <?php if (mysqli_num_rows($result) == 0): ?>
                             <tr>
-                                <td colspan="5" class="no-results">Nenhum alerta cadastrado.</td>
+                                <td colspan="5" class="no-results">Nenhum alerta adicionado.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

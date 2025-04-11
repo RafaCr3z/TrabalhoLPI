@@ -329,7 +329,7 @@ nav {
     top: 100px;
     right: 20px;
     width: 300px;
-    background: rgba(255, 255, 255, 0.95); 
+    background: white; /* Fundo totalmente branco e sólido */
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     overflow: hidden;
@@ -349,12 +349,14 @@ nav {
 
 .alertas-container {
     padding: 15px;
+    background: white; /* Garantindo fundo branco sólido */
 }
 
 .alertas-table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
+    background: white; /* Garantindo fundo branco sólido */
 }
 
 .alertas-table thead {
@@ -377,7 +379,7 @@ nav {
     font-size: 0.9rem;
     line-height: 1.5;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    background: white; /* Fundo branco sólido para as células */
+    background: white;
 }
 
 .alertas-table tr:last-child td {
