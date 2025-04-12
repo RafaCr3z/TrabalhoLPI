@@ -31,9 +31,10 @@
 
 // Processar compra de bilhete
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
-    $id_rota = $_POST['id_rota'];
+    $rota_horario = explode('|', $_POST['rota_horario']);
+    $id_rota = $rota_horario[0];
+    $hora_viagem = $rota_horario[1];
     $data_viagem = $_POST['data_viagem'];
-    $hora_viagem = $_POST['hora_viagem'];
 
     // Verificar se a rota existe e obter o preço
     $sql_rota = "SELECT r.preco, r.origem, r.destino
@@ -105,7 +106,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
 }
 
 // Buscar rotas disponíveis
-$sql_rotas = "SELECT r.id, r.origem, r.destino, r.preco, h.horario_partida
+$sql_rotas = "SELECT r.id as id_rota, r.origem, r.destino, r.preco, h.id as id_horario, h.horario_partida
              FROM rotas r
              JOIN horarios h ON r.id = h.id_rota
              WHERE r.disponivel = 1
@@ -163,11 +164,11 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
                 <h2>Comprar Bilhete</h2>
                 <form method="post" action="bilhetes_cliente.php">
                     <div class="form-group">
-                        <label for="id_rota">Rota:</label>
-                        <select id="id_rota" name="id_rota" required>
+                        <label for="rota_horario">Rota e Horário:</label>
+                        <select id="rota_horario" name="rota_horario" required>
                             <option value="">Selecione uma rota</option>
                             <?php while ($rota = mysqli_fetch_assoc($result_rotas)): ?>
-                                <option value="<?php echo $rota['id']; ?>">
+                                <option value="<?php echo $rota['id_rota'] . '|' . $rota['horario_partida']; ?>">
                                     <?php echo htmlspecialchars($rota['origem'] . ' → ' . $rota['destino'] . ' (' . $rota['horario_partida'] . ') - €' . number_format($rota['preco'], 2, ',', '.')); ?>
                                 </option>
                             <?php endwhile; ?>
@@ -177,11 +178,6 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
                     <div class="form-group">
                         <label for="data_viagem">Data da Viagem:</label>
                         <input type="date" id="data_viagem" name="data_viagem" required min="<?php echo date('Y-m-d'); ?>">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="hora_viagem">Hora da Viagem:</label>
-                        <input type="time" id="hora_viagem" name="hora_viagem" required>
                     </div>
 
                     <button type="submit" name="comprar">Comprar Bilhete</button>
