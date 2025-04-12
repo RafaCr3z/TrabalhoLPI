@@ -85,9 +85,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="carteira_cliente.css">
-    <title>FelixBus</title>
-    <link rel="stylesheet" href="index.css">
-    <title>FelixBus</title>
+    <title>FelixBus - Carteira</title>
 </head>
 <body>
 
@@ -130,50 +128,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <button type="submit">Confirmar</button>
             </form>
         </div>
-    </section>
 
-    <!-- Histórico de Transações -->
-    <div class="historico-container">
-        <h2>Histórico de Transações</h2>
-        <table class="historico-table">
-            <thead>
-                <tr>
-                    <th>Data</th>
-                    <th>Tipo</th>
-                    <th>Valor</th>
-                    <th>Descrição</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                // Buscar histórico de transações
-                $sql_historico = "SELECT * FROM transacoes WHERE id_cliente = $id_cliente ORDER BY data_transacao DESC LIMIT 10";
-                $result_historico = mysqli_query($conn, $sql_historico);
+        <div class="historico-container">
+            <h2>Histórico de Transações</h2>
+            <table class="historico-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Valor</th>
+                        <th>Descrição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    // Buscar histórico de transações
+                    $sql_historico = "SELECT * FROM transacoes WHERE id_cliente = $id_cliente ORDER BY data_transacao DESC LIMIT 10";
+                    $result_historico = mysqli_query($conn, $sql_historico);
 
-                if (mysqli_num_rows($result_historico) > 0) {
-                    while ($transacao = mysqli_fetch_assoc($result_historico)) {
-                        $classe_valor = '';
-                        if ($transacao['tipo'] == 'deposito') {
-                            $classe_valor = 'deposito';
-                            $valor_formatado = '+€' . number_format($transacao['valor'], 2, ',', '.');
-                        } else {
-                            $classe_valor = 'retirada';
-                            $valor_formatado = '-€' . number_format($transacao['valor'], 2, ',', '.');
+                    if (mysqli_num_rows($result_historico) > 0) {
+                        while ($transacao = mysqli_fetch_assoc($result_historico)) {
+                            $classe_valor = '';
+                            if ($transacao['tipo'] == 'deposito') {
+                                $classe_valor = 'deposito';
+                                $valor_formatado = '+€' . number_format($transacao['valor'], 2, ',', '.');
+                            } else {
+                                $classe_valor = 'retirada';
+                                $valor_formatado = '-€' . number_format($transacao['valor'], 2, ',', '.');
+                            }
+
+                            echo "<tr>";
+                            echo "<td>" . date('d/m/Y H:i', strtotime($transacao['data_transacao'])) . "</td>";
+                            echo "<td>" . ucfirst($transacao['tipo']) . "</td>";
+                            echo "<td class='$classe_valor'>$valor_formatado</td>";
+                            echo "<td>" . htmlspecialchars($transacao['descricao']) . "</td>";
+                            echo "</tr>";
                         }
-
-                        echo "<tr>";
-                        echo "<td>" . date('d/m/Y H:i', strtotime($transacao['data_transacao'])) . "</td>";
-                        echo "<td>" . ucfirst($transacao['tipo']) . "</td>";
-                        echo "<td class='$classe_valor'>$valor_formatado</td>";
-                        echo "<td>" . htmlspecialchars($transacao['descricao']) . "</td>";
-                        echo "</tr>";
+                    } else {
+                        echo "<tr><td colspan='4'>Nenhuma transação encontrada.</td></tr>";
                     }
-                } else {
-                    echo "<tr><td colspan='4'>Nenhuma transação encontrada.</td></tr>";
-                }
-                ?>
-            </tbody>
-        </table>
-    </div>
+                    ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </body>
 </html>

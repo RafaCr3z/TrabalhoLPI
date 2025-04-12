@@ -15,7 +15,7 @@
 
     if (!$resultado) {
         die("Erro na consulta: " . mysqli_error($conn));
-    }   
+    }
 
     if (mysqli_num_rows($resultado) > 0) {
         $dados = mysqli_fetch_assoc($resultado);
@@ -55,15 +55,20 @@
             <div class="btn-cliente">Área de Cliente</div>        </div>
     </nav>
     <section>
-        <h2>Meu Perfil</h2>
-        <p><strong>Nome:</strong> <?php echo htmlspecialchars($dados['nome']); ?></p>
-        <p><strong>Email:</strong> <?php echo htmlspecialchars($dados['email']); ?></p>
-        <p><strong>Telemóvel:</strong> <?php echo htmlspecialchars($dados['telemovel']); ?></p>
-        <p><strong>Morada:</strong> <?php echo nl2br(htmlspecialchars($dados['morada'])); ?></p>
-        
-        <!-- Botão de Editar Perfil alinhado à direita -->
-        <div class="btn-edit">
-            <a href="editar_perfil.php"><button>Editar Perfil</button></a>
+        <h1>Meu Perfil</h1>
+
+        <div class="profile-container">
+            <div class="profile-info">
+                <p><strong>Nome:</strong> <?php echo htmlspecialchars($dados['nome']); ?></p>
+                <p><strong>Email:</strong> <?php echo htmlspecialchars($dados['email']); ?></p>
+                <p><strong>Telemóvel:</strong> <?php echo htmlspecialchars($dados['telemovel']); ?></p>
+                <p><strong>Morada:</strong> <?php echo nl2br(htmlspecialchars($dados['morada'])); ?></p>
+            </div>
+
+            <!-- Botão de Editar Perfil alinhado à direita -->
+            <div class="btn-edit">
+                <a href="editar_perfil.php"><button>Editar Perfil</button></a>
+            </div>
         </div>
     </section>
 </body>
