@@ -1,10 +1,10 @@
 <?php
 session_start();
 include '../basedados/basedados.h';
-include '../includes/autenticacao.php';
-
-// Verificar se o usuário é cliente
-verificarAcesso([3]);
+if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
+    header("Location: erro.php");
+    exit();
+}
 ?>
 
 <!DOCTYPE html>

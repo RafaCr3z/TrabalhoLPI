@@ -1,10 +1,12 @@
 <?php
 session_start();
 include '../basedados/basedados.h';
-include '../includes/autenticacao.php';
 
-// Verificar se o usuário é administrador
-verificarAcesso([1]);
+// Verificar se é administrador
+if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
+    header("Location: erro.php");
+    exit();
+}
 
 // Verificar campo 'ativo'
 if (mysqli_num_rows(mysqli_query($conn, "SHOW COLUMNS FROM utilizadores LIKE 'ativo'")) == 0) {

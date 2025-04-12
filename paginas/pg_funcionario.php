@@ -1,10 +1,12 @@
 <?php
 session_start();
 include '../basedados/basedados.h';
-include '../includes/autenticacao.php';
 
 // Verificar se o usuário é funcionário
-verificarAcesso([2]);
+if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 2) {
+    header("Location: erro.php");
+    exit();
+}
 ?>
 
 <!DOCTYPE html>

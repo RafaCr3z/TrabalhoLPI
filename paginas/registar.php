@@ -1,10 +1,10 @@
 <?php
     session_start();
     include '../basedados/basedados.h';
-    include '../includes/autenticacao.php';
 
-    // Verificar se o usuário já está logado
-    verificarJaLogado();
+    if (isset($_SESSION["id_nivel"]) && $_SESSION["id_nivel"] > 0) {
+        header("Location: erro.php");
+    }
 
     if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["user"]) && isset($_POST["pwd"]) && isset($_POST["nome"]) && isset($_POST["email"]) && isset($_POST["telemovel"]) && isset($_POST["morada"])) {
         $user = $_POST["user"];

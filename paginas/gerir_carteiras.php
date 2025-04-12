@@ -1,10 +1,12 @@
 <?php
 session_start();
 include '../basedados/basedados.h';
-include '../includes/autenticacao.php';
 
 // Verificar se o usuário é funcionário ou administrador
-verificarAcesso([1, 2]);
+if (!isset($_SESSION["id_nivel"]) || ($_SESSION["id_nivel"] != 1 && $_SESSION["id_nivel"] != 2)) {
+    header("Location: erro.php");
+    exit();
+}
 
 // Obter ID da carteira FelixBus
 $sql_felixbus = "SELECT id FROM carteira_felixbus LIMIT 1";
