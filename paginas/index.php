@@ -46,22 +46,32 @@
         }
     }
 
+    // Debug: Mostrar todas as mensagens
+    $sql_todas = "SELECT * FROM alertas";
+    $result_todas = mysqli_query($conn, $sql_todas);
+    echo "<!-- Todas as mensagens na tabela: -->";
+    while ($row = mysqli_fetch_assoc($result_todas)) {
+        echo "<!-- Mensagem: " . $row['mensagem'] . " -->";
+    }
+
     // Busca alertas dinâmicos
     $mensagens = [];
     $data_atual = date('Y-m-d H:i:s');
 
-    // Consulta corrigida para pegar a mensagem completa
-    $sql_mensagens = "SELECT mensagem FROM alertas 
-                     WHERE data_inicio <= '$data_atual' 
-                     AND data_fim >= '$data_atual'";
-
+    // Consulta simplificada
+    $sql_mensagens = "SELECT * FROM alertas";
     $resultado_mensagens = mysqli_query($conn, $sql_mensagens);
 
-    if ($resultado_mensagens) {
+    if (!$resultado_mensagens) {
+        echo "<!-- Erro na consulta: " . mysqli_error($conn) . " -->";
+    } else {
         while ($row = mysqli_fetch_assoc($resultado_mensagens)) {
             $mensagens[] = ['conteudo' => $row['mensagem']];
         }
     }
+
+    // Debug: Número de mensagens encontradas
+    echo "<!-- Número de mensagens: " . count($mensagens) . " -->";
 ?>
 
 <!DOCTYPE html>
@@ -161,16 +171,18 @@
 </section>
 
     <!-- Alertas -->
-    <?php if (!empty($mensagens)): ?>
-        <div class="alertas-box">
-            <div class="alertas-titulo">AVISOS IMPORTANTES</div>
+    <div class="alertas-box">
+        <div class="alertas-titulo">AVISOS IMPORTANTES</div>
+        <?php if (empty($mensagens)): ?>
+            <div class="alerta-item">Nenhum aviso no momento.</div>
+        <?php else: ?>
             <?php foreach ($mensagens as $mensagem): ?>
                 <div class="alerta-item">
                     <?php echo htmlspecialchars($mensagem['conteudo']); ?>
                 </div>
             <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
+    </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
