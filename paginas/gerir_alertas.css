@@ -87,7 +87,7 @@ nav {
 }
 
 .btn-admin {
-    color: white;
+    color: white !important;
     font-weight: 500;
     display: flex;
     align-items: center;
@@ -95,7 +95,7 @@ nav {
 }
 
 .btn-admin:hover {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.8) !important;
 }
 
 section {
@@ -196,24 +196,24 @@ button:hover {
 }
 
 /* Definir larguras específicas para cada coluna */
-.alertas-table th:nth-child(1), 
+.alertas-table th:nth-child(1),
 .alertas-table td:nth-child(1) { /* ID */
     width: 5%;
 }
 
-.alertas-table th:nth-child(2), 
+.alertas-table th:nth-child(2),
 .alertas-table td:nth-child(2) { /* Mensagem */
     width: 45%;
 }
 
-.alertas-table th:nth-child(3), 
-.alertas-table td:nth-child(3), 
-.alertas-table th:nth-child(4), 
+.alertas-table th:nth-child(3),
+.alertas-table td:nth-child(3),
+.alertas-table th:nth-child(4),
 .alertas-table td:nth-child(4) { /* Datas */
     width: 20%;
 }
 
-.alertas-table th:nth-child(5), 
+.alertas-table th:nth-child(5),
 .alertas-table td:nth-child(5) { /* Ações */
     width: 10%;
     text-align: center;
