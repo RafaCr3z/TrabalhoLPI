@@ -198,13 +198,15 @@ button:hover {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
+    font-size: 13px; /* Reduz o tamanho da fonte */
 }
 
-.utilizadores-table th, .utilizadores-table td {
-    padding: 10px;
+.utilizadores-table th, 
+.utilizadores-table td {
+    padding: 6px 8px; /* Reduz o padding das células */
     text-align: left;
     border-bottom: 1px solid #ddd;
-    line-height: 1.4;
+    line-height: 1.2; /* Reduz o espaçamento entre linhas */
     white-space: nowrap;
 }
 
@@ -219,9 +221,9 @@ button:hover {
 
 .perfil-badge {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 3px 8px; /* Ajusta o padding */
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 11px; /* Reduz o tamanho da fonte */
     font-weight: 500;
 }
 
@@ -251,13 +253,13 @@ button:hover {
 }
 
 .dropdown-btn {
-    padding: 5px 10px;
+    padding: 4px 8px; /* Ajusta o padding */
     background-color: #6c757d;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px; /* Reduz o tamanho da fonte */
     margin: 0;
     width: auto;
 }
@@ -266,7 +268,7 @@ button:hover {
     display: none;
     position: absolute;
     background-color: #f9f9f9;
-    min-width: 120px;
+    min-width: 100px; /* Ajusta a largura mínima */
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
     z-index: 1;
     border-radius: 4px;
@@ -275,10 +277,10 @@ button:hover {
 
 .dropdown-content a {
     color: black;
-    padding: 8px 12px;
+    padding: 6px 10px; /* Ajusta o padding */
     text-decoration: none;
     display: block;
-    font-size: 12px;
+    font-size: 11px; /* Reduz o tamanho da fonte */
 }
 
 .dropdown-content a:hover {
@@ -296,6 +298,12 @@ button:hover {
     font-style: italic;
 }
 
+/* Ajusta a altura máxima do container da tabela */
+.table-container {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
 @media (max-width: 992px) {
     .container {
         flex-direction: column;
@@ -311,3 +319,4 @@ button:hover {
         width: auto;
     }
 }
+

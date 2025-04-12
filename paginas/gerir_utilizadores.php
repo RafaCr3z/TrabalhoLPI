@@ -185,7 +185,7 @@ $result_utilizadores = mysqli_query($conn, $sql_utilizadores);
             </div>
 
             <div class="table-container">
-                <h2>Utilizadores Cadastrados</h2>
+                <h2>Utilizadores Adicionados</h2>
                 <table class="utilizadores-table">
                     <thead>
                         <tr>
@@ -229,7 +229,7 @@ $result_utilizadores = mysqli_query($conn, $sql_utilizadores);
                         <?php endwhile; ?>
                         <?php if (mysqli_num_rows($result_utilizadores) == 0): ?>
                             <tr>
-                                <td colspan="6" class="no-results">Nenhum utilizador cadastrado.</td>
+                                <td colspan="6" class="no-results">Nenhum utilizador adicionado.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

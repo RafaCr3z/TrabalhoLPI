@@ -184,22 +184,5 @@
         <?php endif; ?>
     </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Função para reposicionar os alertas
-        function adjustAlertPosition() {
-            const alertas = document.querySelector('.alertas');
-            if (alertas) {
-                const nav = document.querySelector('nav');
-                const navHeight = nav ? nav.offsetHeight : 0;
-                alertas.style.top = (navHeight + 20) + 'px';
-            }
-        }
-
-        // Ajusta a posição inicial e quando a janela é redimensionada
-        adjustAlertPosition();
-        window.addEventListener('resize', adjustAlertPosition);
-    });
-    </script>
 </body>
 </html>
