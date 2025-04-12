@@ -127,7 +127,7 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="bilhetes_cliente.css">
-    <title>FelixBus - Meus Bilhetes</title>
+    <title>FelixBus - Bilhetes</title>
 </head>
 <body>
     <nav>
@@ -206,7 +206,7 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
                         <tbody>
                             <?php while ($bilhete = mysqli_fetch_assoc($result_bilhetes)): ?>
                                 <tr>
-                                    <td><?php echo substr($bilhete['id'], 0, 8); ?>...</td>
+                                    <td><?php echo $bilhete['id']; ?></td>
                                     <td><?php echo htmlspecialchars($bilhete['origem']); ?></td>
                                     <td><?php echo htmlspecialchars($bilhete['destino']); ?></td>
                                     <td><?php echo date('d/m/Y', strtotime($bilhete['data_viagem'])); ?></td>
