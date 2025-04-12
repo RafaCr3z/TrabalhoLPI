@@ -20,13 +20,6 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
         </div>
-        <div class="links">
-            <div class="link"> <a href="gerir_alertas.php">Alertas</a></div>
-            <div class="link"> <a href="gerir_rotas.php">Rotas</a></div>
-            <div class="link"> <a href="gerir_utilizadores.php">Utilizadores</a></div>
-            <div class="link"> <a href="auditoria_transacoes.php">Auditoria</a></div>
-            <div class="link"> <a href="perfil_admin.php">Meu Perfil</a></div>
-        </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
             <div class="btn-admin">Área de Administrador</div>
@@ -54,6 +47,18 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
                     <h2>Utilizadores</h2>
                     <p>Gerencie os utilizadores do sistema.</p>
                     <a href="gerir_utilizadores.php" class="card-btn">Acessar</a>
+                </div>
+
+                <div class="card">
+                    <h2>Gestão de Carteiras</h2>
+                    <p>Gerencie o saldo das carteiras dos clientes.</p>
+                    <a href="gerir_carteiras.php" class="card-btn">Acessar</a>
+                </div>
+
+                <div class="card">
+                    <h2>Gestão de Bilhetes</h2>
+                    <p>Compre bilhetes para clientes e gerencie bilhetes existentes.</p>
+                    <a href="gerir_bilhetes_func.php" class="card-btn">Acessar</a>
                 </div>
 
                 <div class="card">
