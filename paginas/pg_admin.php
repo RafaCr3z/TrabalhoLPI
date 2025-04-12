@@ -113,3 +113,4 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     </section>
 </body>
 </html>
+
