@@ -48,27 +48,20 @@
 
     // Busca alertas dinâmicos
     $mensagens = [];
-    $data_atual = date('Y-m-d H:i:s'); // Data e hora atual
+    $data_atual = date('Y-m-d H:i:s');
 
-    // Ajustando a consulta SQL para debug
-    $sql_mensagens = "SELECT mensagem AS conteudo 
-                     FROM alertas 
+    // Consulta corrigida para pegar a mensagem completa
+    $sql_mensagens = "SELECT mensagem FROM alertas 
                      WHERE data_inicio <= '$data_atual' 
                      AND data_fim >= '$data_atual'";
 
     $resultado_mensagens = mysqli_query($conn, $sql_mensagens);
 
-    // Adicionar verificação de erro
-    if (!$resultado_mensagens) {
-        echo "Erro na consulta: " . mysqli_error($conn);
-    } else {
-        while ($mensagem = mysqli_fetch_assoc($resultado_mensagens)) {
-            $mensagens[] = $mensagem;
+    if ($resultado_mensagens) {
+        while ($row = mysqli_fetch_assoc($resultado_mensagens)) {
+            $mensagens[] = ['conteudo' => $row['mensagem']];
         }
     }
-
-    // Adicionar debug temporário
-    echo "<!-- Número de mensagens encontradas: " . count($mensagens) . " -->";
 ?>
 
 <!DOCTYPE html>
