@@ -27,21 +27,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['atualizar'])) {
     $email = mysqli_real_escape_string($conn, $_POST['email']);
     $telemovel = mysqli_real_escape_string($conn, $_POST['telemovel']);
     $morada = mysqli_real_escape_string($conn, $_POST['morada']);
-    
+
     // Verificar se o email já existe (exceto para o próprio utilizador)
     $sql_check = "SELECT * FROM utilizadores WHERE email = '$email' AND id != $id_utilizador";
     $result_check = mysqli_query($conn, $sql_check);
-    
+
     if (mysqli_num_rows($result_check) > 0) {
         $mensagem = "Este email já está em uso por outro utilizador.";
         $tipo_mensagem = "error";
     } else {
         $sql_update = "UPDATE utilizadores SET email = '$email', telemovel = '$telemovel', morada = '$morada' WHERE id = $id_utilizador";
-        
+
         if (mysqli_query($conn, $sql_update)) {
             $mensagem = "Dados atualizados com sucesso!";
             $tipo_mensagem = "success";
-            
+
             // Atualizar dados na sessão
             $dados['email'] = $email;
             $dados['telemovel'] = $telemovel;
@@ -58,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
     $senha_atual = $_POST['senha_atual'];
     $nova_senha = $_POST['nova_senha'];
     $confirmar_senha = $_POST['confirmar_senha'];
-    
+
     // Verificar se a nova senha e a confirmação são iguais
     if ($nova_senha != $confirmar_senha) {
         $mensagem = "A nova senha e a confirmação não coincidem.";
@@ -68,13 +68,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
         $sql_senha = "SELECT pwd FROM utilizadores WHERE id = $id_utilizador";
         $result_senha = mysqli_query($conn, $sql_senha);
         $row_senha = mysqli_fetch_assoc($result_senha);
-        
-        if (password_verify($senha_atual, $row_senha['pwd']) || $senha_atual == $row_senha['pwd']) {
+
+        // Verificar se a senha está em formato de hash ou não
+        $senha_valida = false;
+        if (substr($row_senha['pwd'], 0, 4) === '$2y$') {
+            // Senha já está em formato de hash bcrypt
+            $senha_valida = password_verify($senha_atual, $row_senha['pwd']);
+        } else {
+            // Senha antiga sem hash - verificar diretamente
+            $senha_valida = ($senha_atual === $row_senha['pwd']);
+        }
+
+        if ($senha_valida) {
             // Gerar hash da nova senha
             $hashed_pwd = password_hash($nova_senha, PASSWORD_DEFAULT);
-            
+
             $sql_update = "UPDATE utilizadores SET pwd = '$hashed_pwd' WHERE id = $id_utilizador";
-            
+
             if (mysqli_query($conn, $sql_update)) {
                 $mensagem = "Senha alterada com sucesso!";
                 $tipo_mensagem = "success";
@@ -118,13 +128,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
 
     <section>
         <h1>Meu Perfil</h1>
-        
+
         <?php if (!empty($mensagem)): ?>
             <div class="alert alert-<?php echo $tipo_mensagem == 'success' ? 'success' : 'danger'; ?>">
                 <?php echo $mensagem; ?>
             </div>
         <?php endif; ?>
-        
+
         <div class="container">
             <div class="form-container">
                 <h2>Dados Pessoais</h2>
@@ -134,26 +144,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
                         <input type="text" id="nome" name="nome" value="<?php echo htmlspecialchars($dados['nome']); ?>" readonly>
                         <small>O nome não pode ser alterado.</small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="email">Email:</label>
                         <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($dados['email']); ?>" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="telemovel">Telemóvel:</label>
                         <input type="text" id="telemovel" name="telemovel" value="<?php echo htmlspecialchars($dados['telemovel']); ?>" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="morada">Morada:</label>
                         <textarea id="morada" name="morada" required><?php echo htmlspecialchars($dados['morada']); ?></textarea>
                     </div>
-                    
+
                     <button type="submit" name="atualizar">Atualizar Dados</button>
                 </form>
             </div>
-            
+
             <div class="form-container">
                 <h2>Alterar Senha</h2>
                 <form method="post" action="perfil_admin.php">
@@ -161,17 +171,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
                         <label for="senha_atual">Senha Atual:</label>
                         <input type="password" id="senha_atual" name="senha_atual" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="nova_senha">Nova Senha:</label>
                         <input type="password" id="nova_senha" name="nova_senha" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="confirmar_senha">Confirmar Nova Senha:</label>
                         <input type="password" id="confirmar_senha" name="confirmar_senha" required>
                     </div>
-                    
+
                     <button type="submit" name="alterar_senha">Alterar Senha</button>
                 </form>
             </div>

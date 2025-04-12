@@ -25,7 +25,25 @@
 
         // Verificar a senha
         $row = mysqli_fetch_array($result);
-        if (password_verify($pass, $row['pwd']) || $pass == $row['pwd']) { // Aceita tanto senha com hash quanto sem hash (para compatibilidade)
+
+        // Verificar se a senha está em formato de hash ou não
+        if (substr($row['pwd'], 0, 4) === '$2y$') {
+            // Senha já está em formato de hash bcrypt
+            $senha_valida = password_verify($pass, $row['pwd']);
+        } else {
+            // Senha antiga sem hash - verificar diretamente e atualizar para hash
+            $senha_valida = ($pass === $row['pwd']);
+
+            // Se a senha antiga for válida, atualizar para o formato com hash
+            if ($senha_valida) {
+                $hashed_pwd = password_hash($pass, PASSWORD_DEFAULT);
+                $id_usuario = $row['id'];
+                $sql_update = "UPDATE utilizadores SET pwd = '$hashed_pwd' WHERE id = $id_usuario";
+                mysqli_query($conn, $sql_update);
+            }
+        }
+
+        if ($senha_valida) {
             // Login bem-sucedido
             $id_nivel = $row['tipo_perfil'];
             $id_utilizador = $row['id'];
