@@ -67,7 +67,7 @@ if (!$result) {
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-admin">Área de Administrador</div>
+            <div class="btn-admin" style="color: white !important; font-weight: 600;">Área de Administrador</div>
         </div>
     </nav>
 
@@ -107,7 +107,7 @@ if (!$result) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php 
+                    <?php
                     if (mysqli_num_rows($result) > 0) {
                         while ($alerta = mysqli_fetch_assoc($result)) {
                             echo "<tr>";

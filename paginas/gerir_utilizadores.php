@@ -29,9 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
     if (mysqli_num_rows(mysqli_query($conn, "SELECT * FROM utilizadores WHERE user = '$user' OR email = '$email'")) > 0) {
         $mensagem = "Utilizador ou email já existe";
     } else {
-        $sql = "INSERT INTO utilizadores (user, nome, email, pwd, telemovel, morada, tipo_perfil) 
+        $sql = "INSERT INTO utilizadores (user, nome, email, pwd, telemovel, morada, tipo_perfil)
                 VALUES ('$user', '$nome', '$email', '$pwd', '$telemovel', '$morada', $tipo_perfil)";
-        
+
         if (mysqli_query($conn, $sql) && $tipo_perfil == 3) {
             mysqli_query($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES (" . mysqli_insert_id($conn) . ", 0.00)");
         }
@@ -64,18 +64,18 @@ if (isset($_GET['alterar_estado']) && isset($_GET['id']) && $_GET['id'] != $_SES
 if (isset($_GET['alterar_perfil']) && isset($_GET['id']) && isset($_GET['perfil'])) {
     $id = intval($_GET['id']);
     $novo_perfil = intval($_GET['perfil']);
-    
+
     // Se mudar para cliente (perfil 3), criar carteira
     if ($novo_perfil == 3) {
         mysqli_query($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id, 0.00)");
     }
-    
+
     mysqli_query($conn, "UPDATE utilizadores SET tipo_perfil = $novo_perfil WHERE id = $id");
 }
 
 // Buscar utilizadores
-$sql = "SELECT u.*, p.descricao as perfil_nome 
-        FROM utilizadores u 
+$sql = "SELECT u.*, p.descricao as perfil_nome
+        FROM utilizadores u
         JOIN perfis p ON u.tipo_perfil = p.id";
 if (!$mostrar_inativos) {
     $sql .= " WHERE u.ativo = 1";
@@ -113,7 +113,7 @@ while ($row = mysqli_fetch_assoc($result_perfis)) {
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-admin">Área de Administrador</div>
+            <div class="btn-admin" style="color: white !important; font-weight: 600;">Área de Administrador</div>
         </div>
     </nav>
 
