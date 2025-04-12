@@ -8,7 +8,6 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
 }
 
 $id_cliente = $_SESSION["id_utilizador"];
-$operacao_realizada = false; // Variável de controlo
 
 // Obter ID da carteira FelixBus
 $sql_felixbus = "SELECT id FROM carteira_felixbus LIMIT 1";
@@ -29,12 +28,17 @@ if (!$row_saldo) {
 }
 
 // Verifica se o formulário foi enviado
+// Variáveis para mensagens de alerta
+$mensagem = '';
+$tipo_mensagem = '';
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $valor = $_POST["valor"];
     $operacao = $_POST["operacao"];
 
     if ($valor <= 0) {
-        echo "<script>alert('Valor inválido.');</script>";
+        $mensagem = "Valor inválido. Por favor, insira um valor maior que zero.";
+        $tipo_mensagem = "danger";
     } else {
         // Iniciar transação para garantir integridade dos dados
         mysqli_begin_transaction($conn);
@@ -49,31 +53,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $tipo_transacao = "retirada";
                 $descricao = "Retirada de €$valor da carteira";
             } else {
-                echo "<script>alert('Saldo insuficiente.');</script>";
-                exit();
+                $mensagem = "Saldo insuficiente para realizar esta operação.";
+                $tipo_mensagem = "danger";
+                // Pular o resto do processamento
+                $sql_atualiza = null;
             }
 
-            // Atualizar saldo
-            if (mysqli_query($conn, $sql_atualiza)) {
+            // Atualizar saldo (apenas se tiver uma operação válida)
+            if ($sql_atualiza && mysqli_query($conn, $sql_atualiza)) {
                 // Registrar transação
                 $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
                                   VALUES ($id_cliente, $id_carteira_felixbus, $valor, '$tipo_transacao', '$descricao')";
 
                 if (mysqli_query($conn, $sql_transacao)) {
                     mysqli_commit($conn);
-                    $operacao_realizada = true;
-                    echo "<script>alert('Operação realizada com sucesso.');</script>";
-                    echo "<script>window.location.href = 'carteira_cliente.php?success=1';</script>";
-                    exit();
+                    // Atualizar o saldo exibido
+                    $result_saldo = mysqli_query($conn, $sql_saldo);
+                    $row_saldo = mysqli_fetch_assoc($result_saldo);
+                    // Operação realizada com sucesso
+                    $mensagem = "Operação realizada com sucesso!";
+                    $tipo_mensagem = "success";
                 } else {
                     throw new Exception("Erro ao registrar transação: " . mysqli_error($conn));
                 }
             } else {
-                throw new Exception("Erro ao atualizar saldo: " . mysqli_error($conn));
+                mysqli_rollback($conn);
+                $mensagem = "Erro ao atualizar saldo: " . mysqli_error($conn);
+                $tipo_mensagem = "danger";
             }
         } catch (Exception $e) {
             mysqli_rollback($conn);
-            echo "<script>alert('" . $e->getMessage() . "');</script>";
+            $mensagem = $e->getMessage();
+            $tipo_mensagem = "danger";
         }
     }
 }
@@ -89,25 +100,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
 
-    <?php if (!$operacao_realizada): ?>
-        <nav>
-            <div class="logo">
-                <h1>Felix<span>Bus</span></h1>
-            </div>
-            <div class="links">
-                <div class="link"> <a href="perfil_cliente.php">Perfil</a></div>
-                <div class="link"> <a href="pg_cliente.php">Página Inicial</a></div>
-                <div class="link"> <a href="bilhetes_cliente.php">Bilhetes</a></div>
-            </div>
-            <div class="buttons">
-                <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            </div>
-        </nav>
-    <?php endif; ?>
+    <nav>
+        <div class="logo">
+            <h1>Felix<span>Bus</span></h1>
+        </div>
+        <div class="links">
+            <div class="link"> <a href="perfil_cliente.php">Perfil</a></div>
+            <div class="link"> <a href="pg_cliente.php">Página Inicial</a></div>
+            <div class="link"> <a href="bilhetes_cliente.php">Bilhetes</a></div>
+        </div>
+        <div class="buttons">
+            <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
+            <div class="btn-cliente">Área de Cliente</div>
+        </div>
+    </nav>
 
     <section>
+        <h1>Minha Carteira</h1>
+
+        <?php if (!empty($mensagem)): ?>
+            <div class="alert alert-<?php echo $tipo_mensagem; ?>">
+                <?php echo $mensagem; ?>
+            </div>
+        <?php endif; ?>
+
         <div class="carteira-container">
-            <h2>Carteira</h2>
+            <h2>Saldo e Operações</h2>
             <p>Saldo atual:
                 <?php
                 if ($row_saldo) {

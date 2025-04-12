@@ -64,10 +64,9 @@ nav {
 .buttons {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 15px;
     width: 20%;
-    align-items: center;
-    height: 35px;
 }
 
 .btn {
@@ -96,17 +95,17 @@ nav {
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
+    padding: 8px 20px;
+    height: auto;
+    transform: translateY(-1px);
 }
 
 .btn-cliente {
     color: white;
     font-weight: 600;
     font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    height: 100%;
-    padding: 0 10px;
-    transition: all 0.3s ease;
+    padding: 6px 0;
+    transition: translateY (3px);
 }
 
 section {
