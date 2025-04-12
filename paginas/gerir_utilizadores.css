@@ -88,9 +88,14 @@ nav {
 
 .btn-admin {
     color: white;
-    font-weight: 600;
+    font-weight: 500;
     display: flex;
     align-items: center;
+    transition: all 0.3s ease;
+}
+
+.btn-admin:hover {
+    color: rgba(255, 255, 255, 0.8);
 }
 
 section {
@@ -558,3 +563,4 @@ button[type="submit"]:hover {
         margin: 20% auto;
     }
 }
+

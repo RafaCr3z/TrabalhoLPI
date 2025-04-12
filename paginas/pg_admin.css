@@ -91,6 +91,11 @@ nav {
     font-weight: 500;
     display: flex;
     align-items: center;
+    transition: all 0.3s ease;
+}
+
+.btn-admin:hover {
+    color: rgba(255, 255, 255, 0.8);
 }
 
 section {
@@ -216,3 +221,4 @@ section {
         max-width: 300px;
     }
 }
+
