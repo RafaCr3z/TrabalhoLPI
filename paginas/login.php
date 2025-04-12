@@ -19,7 +19,7 @@
         }
 
         if (mysqli_num_rows($result) == 0) {
-            echo "<script>alert('Usuário não encontrado.');</script>";
+            echo "<script>alert('Usuário não encontrado.'); window.location.href = 'login.php';</script>";
             exit();
         }
 
@@ -27,33 +27,31 @@
         $row = mysqli_fetch_array($result);
         if (password_verify($pass, $row['pwd']) || $pass == $row['pwd']) { // Aceita tanto senha com hash quanto sem hash (para compatibilidade)
             // Login bem-sucedido
+            $id_nivel = $row['tipo_perfil'];
+            $id_utilizador = $row['id'];
+
+            $_SESSION["nome"] = $nome;
+            $_SESSION["id_nivel"] = $id_nivel;
+            $_SESSION["id_utilizador"] = $id_utilizador;
+
+            if ($id_nivel == 1) {
+                header("Location: pg_admin.php");
+            } else if ($id_nivel == 2) {
+                header("Location: pg_funcionario.php");
+            } else if ($id_nivel == 3) {
+                header("Location: pg_cliente.php");
+            } else {
+                mysqli_close($conn);
+                header("Location: login.php");
+                exit();
+            }
         } else {
-            echo "<script>alert('Senha incorreta.');</script>";
+            echo "<script>alert('Senha incorreta.'); window.location.href = 'login.php';</script>";
             exit();
         }
-
-    // Use o nome correto da coluna 'tipo_perfil'
-    $id_nivel = $row['tipo_perfil'];
-    $id_utilizador = $row['id'];
-
-    $_SESSION["nome"] = $nome;
-    $_SESSION["id_nivel"] = $id_nivel;
-    $_SESSION["id_utilizador"] = $id_utilizador;
-
-    if ($id_nivel == 1) {
-        header("Location: pg_admin.php");
-    } else if ($id_nivel == 2) {
-        header("Location: pg_funcionario.php");
-    } else if ($id_nivel == 3) {
-        header("Location: pg_cliente.php");
-    } else {
-        mysqli_close($conn);
-        header("Location: login.php");
-        exit();
     }
-}
 
-mysqli_close($conn);
+    mysqli_close($conn);
 ?>
 
 <!DOCTYPE html>
