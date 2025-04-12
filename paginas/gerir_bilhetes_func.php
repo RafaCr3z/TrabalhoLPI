@@ -1,12 +1,10 @@
 <?php
 session_start();
 include '../basedados/basedados.h';
+include '../includes/autenticacao.php';
 
 // Verificar se o usuário é funcionário ou administrador
-if (!isset($_SESSION["id_nivel"]) || ($_SESSION["id_nivel"] != 1 && $_SESSION["id_nivel"] != 2)) {
-    header("Location: erro.php");
-    exit();
-}
+verificarAcesso([1, 2]);
 
 // Obter ID da carteira FelixBus
 $sql_felixbus = "SELECT id FROM carteira_felixbus LIMIT 1";
@@ -29,19 +27,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
     // Verificar se o cliente existe e é realmente um cliente
     $sql_check_cliente = "SELECT u.id, u.nome, u.tipo_perfil FROM utilizadores u WHERE u.id = $id_cliente AND u.tipo_perfil = 3";
     $result_check_cliente = mysqli_query($conn, $sql_check_cliente);
-    
+
     if (mysqli_num_rows($result_check_cliente) == 0) {
         $mensagem = "Cliente não encontrado ou ID inválido.";
         $tipo_mensagem = "danger";
     } else {
         $cliente = mysqli_fetch_assoc($result_check_cliente);
-        
+
         // Verificar se a rota existe e obter o preço
         $sql_rota = "SELECT r.preco, r.origem, r.destino
                     FROM rotas r
                     WHERE r.id = $id_rota";
         $result_rota = mysqli_query($conn, $sql_rota);
-        
+
         if (mysqli_num_rows($result_rota) == 0) {
             $mensagem = "Rota não encontrada.";
             $tipo_mensagem = "danger";
@@ -50,11 +48,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
             $preco = $rota['preco'];
             $origem = $rota['origem'];
             $destino = $rota['destino'];
-            
+
             // Verificar se o cliente tem carteira e saldo suficiente
             $sql_carteira = "SELECT saldo FROM carteiras WHERE id_cliente = $id_cliente";
             $result_carteira = mysqli_query($conn, $sql_carteira);
-            
+
             if (mysqli_num_rows($result_carteira) == 0) {
                 // Criar carteira para o cliente se não existir
                 $sql_criar_carteira = "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_cliente, 0.00)";
@@ -64,28 +62,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
                 $row_carteira = mysqli_fetch_assoc($result_carteira);
                 $saldo = $row_carteira['saldo'];
             }
-            
+
             if ($saldo < $preco) {
-                $mensagem = "Saldo insuficiente. O cliente precisa de €" . number_format($preco, 2, ',', '.') . 
+                $mensagem = "Saldo insuficiente. O cliente precisa de €" . number_format($preco, 2, ',', '.') .
                            " para comprar este bilhete, mas tem apenas €" . number_format($saldo, 2, ',', '.') . ".";
                 $tipo_mensagem = "danger";
             } else {
                 // Iniciar transação para garantir integridade dos dados
                 mysqli_begin_transaction($conn);
-                
+
                 try {
                     // 1. Atualizar saldo do cliente
                     $sql_update_cliente = "UPDATE carteiras SET saldo = saldo - $preco WHERE id_cliente = $id_cliente";
                     if (!mysqli_query($conn, $sql_update_cliente)) {
                         throw new Exception("Erro ao atualizar saldo do cliente: " . mysqli_error($conn));
                     }
-                    
+
                     // 2. Atualizar saldo da FelixBus
                     $sql_update_felixbus = "UPDATE carteira_felixbus SET saldo = saldo + $preco WHERE id = $id_carteira_felixbus";
                     if (!mysqli_query($conn, $sql_update_felixbus)) {
                         throw new Exception("Erro ao atualizar saldo da FelixBus: " . mysqli_error($conn));
                     }
-                    
+
                     // 3. Registrar a transação
                     $descricao = "Compra de bilhete: $origem para $destino (Cliente: {$cliente['nome']})";
                     $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
@@ -93,21 +91,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
                     if (!mysqli_query($conn, $sql_transacao)) {
                         throw new Exception("Erro ao registrar transação: " . mysqli_error($conn));
                     }
-                    
+
                     // 4. Criar o bilhete
                     $sql_bilhete = "INSERT INTO bilhetes (id_cliente, id_rota, data_viagem, hora_viagem)
                                    VALUES ($id_cliente, $id_rota, '$data_viagem', '$hora_viagem')";
                     if (!mysqli_query($conn, $sql_bilhete)) {
                         throw new Exception("Erro ao criar bilhete: " . mysqli_error($conn));
                     }
-                    
+
                     // Commit da transação
                     mysqli_commit($conn);
-                    
-                    $mensagem = "Bilhete comprado com sucesso para o cliente {$cliente['nome']}! Origem: $origem, Destino: $destino, Data: " . 
+
+                    $mensagem = "Bilhete comprado com sucesso para o cliente {$cliente['nome']}! Origem: $origem, Destino: $destino, Data: " .
                                date('d/m/Y', strtotime($data_viagem)) . ", Hora: $hora_viagem, Preço: €" . number_format($preco, 2, ',', '.');
                     $tipo_mensagem = "success";
-                    
+
                 } catch (Exception $e) {
                     // Rollback em caso de erro
                     mysqli_rollback($conn);
@@ -136,8 +134,8 @@ $sql_rotas = "SELECT r.id as id_rota, r.origem, r.destino, r.preco, h.id as id_h
 $result_rotas = mysqli_query($conn, $sql_rotas);
 
 // Buscar bilhetes recentes
-$sql_bilhetes = "SELECT b.id, b.data_compra, b.data_viagem, b.hora_viagem, 
-                       r.origem, r.destino, r.preco, 
+$sql_bilhetes = "SELECT b.id, b.data_compra, b.data_viagem, b.hora_viagem,
+                       r.origem, r.destino, r.preco,
                        u.nome as nome_cliente, u.email as email_cliente
                 FROM bilhetes b
                 JOIN rotas r ON b.id_rota = r.id
@@ -196,10 +194,10 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
                         <label for="id_cliente">Cliente:</label>
                         <select id="id_cliente" name="id_cliente" required>
                             <option value="">Selecione um cliente</option>
-                            <?php 
+                            <?php
                             // Reset the pointer to the beginning
                             mysqli_data_seek($result_clientes, 0);
-                            while ($cliente = mysqli_fetch_assoc($result_clientes)): 
+                            while ($cliente = mysqli_fetch_assoc($result_clientes)):
                             ?>
                                 <option value="<?php echo $cliente['id']; ?>">
                                     <?php echo htmlspecialchars($cliente['nome']) . ' (' . htmlspecialchars($cliente['email']) . ') - Saldo: €' . number_format($cliente['saldo'] ?? 0, 2, ',', '.'); ?>

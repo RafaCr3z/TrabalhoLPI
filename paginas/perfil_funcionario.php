@@ -1,12 +1,10 @@
 <?php
 session_start();
 include '../basedados/basedados.h';
+include '../includes/autenticacao.php';
 
 // Verificar se o usuário é funcionário
-if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 2) {
-    header("Location: erro.php");
-    exit();
-}
+verificarAcesso([2]);
 
 $id_utilizador = $_SESSION["id_utilizador"];
 $mensagem = '';
@@ -27,21 +25,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['atualizar_dados'])) {
     $email = $_POST['email'];
     $telemovel = $_POST['telemovel'];
     $morada = $_POST['morada'];
-    
+
     // Verificar se o email já está em uso por outro utilizador
     $sql_check = "SELECT id FROM utilizadores WHERE email = '$email' AND id != $id_utilizador";
     $result_check = mysqli_query($conn, $sql_check);
-    
+
     if (mysqli_num_rows($result_check) > 0) {
         $mensagem = "Este email já está em uso por outro utilizador.";
         $tipo_mensagem = "danger";
     } else {
         $sql_update = "UPDATE utilizadores SET email = '$email', telemovel = '$telemovel', morada = '$morada' WHERE id = $id_utilizador";
-        
+
         if (mysqli_query($conn, $sql_update)) {
             $mensagem = "Dados atualizados com sucesso!";
             $tipo_mensagem = "success";
-            
+
             // Atualizar dados na sessão
             $dados['email'] = $email;
             $dados['telemovel'] = $telemovel;
@@ -58,14 +56,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
     $senha_atual = $_POST['senha_atual'];
     $nova_senha = $_POST['nova_senha'];
     $confirmar_senha = $_POST['confirmar_senha'];
-    
+
     // Verificar se a senha atual está correta
     $sql_senha = "SELECT pwd FROM utilizadores WHERE id = $id_utilizador";
     $result_senha = mysqli_query($conn, $sql_senha);
     $row_senha = mysqli_fetch_assoc($result_senha);
-    
+
     $senha_valida = false;
-    
+
     // Verificar se a senha está em formato de hash ou não
     if (substr($row_senha['pwd'], 0, 4) === '$2y$') {
         // Senha já está em formato de hash bcrypt
@@ -74,7 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
         // Senha antiga sem hash - verificar diretamente
         $senha_valida = ($senha_atual === $row_senha['pwd']);
     }
-    
+
     if (!$senha_valida) {
         $mensagem = "Senha atual incorreta.";
         $tipo_mensagem = "danger";
@@ -85,7 +83,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
         // Atualizar a senha com hash
         $hashed_pwd = password_hash($nova_senha, PASSWORD_DEFAULT);
         $sql_update = "UPDATE utilizadores SET pwd = '$hashed_pwd' WHERE id = $id_utilizador";
-        
+
         if (mysqli_query($conn, $sql_update)) {
             $mensagem = "Senha alterada com sucesso!";
             $tipo_mensagem = "success";

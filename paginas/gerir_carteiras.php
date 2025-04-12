@@ -1,12 +1,10 @@
 <?php
 session_start();
 include '../basedados/basedados.h';
+include '../includes/autenticacao.php';
 
 // Verificar se o usuário é funcionário ou administrador
-if (!isset($_SESSION["id_nivel"]) || ($_SESSION["id_nivel"] != 1 && $_SESSION["id_nivel"] != 2)) {
-    header("Location: erro.php");
-    exit();
-}
+verificarAcesso([1, 2]);
 
 // Obter ID da carteira FelixBus
 $sql_felixbus = "SELECT id FROM carteira_felixbus LIMIT 1";
@@ -23,7 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
     $id_cliente = $_POST['id_cliente'];
     $valor = $_POST['valor'];
     $operacao = $_POST['operacao'];
-    
+
     if ($valor <= 0) {
         $mensagem = "Valor inválido. Por favor, insira um valor maior que zero.";
         $tipo_mensagem = "danger";
@@ -31,17 +29,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
         // Verificar se o cliente existe e é realmente um cliente
         $sql_check_cliente = "SELECT u.id, u.nome, u.tipo_perfil FROM utilizadores u WHERE u.id = $id_cliente AND u.tipo_perfil = 3";
         $result_check_cliente = mysqli_query($conn, $sql_check_cliente);
-        
+
         if (mysqli_num_rows($result_check_cliente) == 0) {
             $mensagem = "Cliente não encontrado ou ID inválido.";
             $tipo_mensagem = "danger";
         } else {
             $cliente = mysqli_fetch_assoc($result_check_cliente);
-            
+
             // Verificar se o cliente tem carteira
             $sql_check_carteira = "SELECT saldo FROM carteiras WHERE id_cliente = $id_cliente";
             $result_check_carteira = mysqli_query($conn, $sql_check_carteira);
-            
+
             if (mysqli_num_rows($result_check_carteira) == 0) {
                 // Criar carteira para o cliente se não existir
                 $sql_criar_carteira = "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_cliente, 0.00)";
@@ -51,10 +49,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
                 $row_carteira = mysqli_fetch_assoc($result_check_carteira);
                 $saldo_atual = $row_carteira['saldo'];
             }
-            
+
             // Iniciar transação para garantir integridade dos dados
             mysqli_begin_transaction($conn);
-            
+
             try {
                 if ($operacao == "adicionar") {
                     $sql_atualiza = "UPDATE carteiras SET saldo = saldo + $valor WHERE id_cliente = $id_cliente";
@@ -68,26 +66,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
                     $tipo_transacao = "retirada";
                     $descricao = "Retirada de €$valor da carteira do cliente {$cliente['nome']} (ID: $id_cliente) por {$_SESSION['nome']}";
                 }
-                
+
                 if (!mysqli_query($conn, $sql_atualiza)) {
                     throw new Exception("Erro ao atualizar saldo: " . mysqli_error($conn));
                 }
-                
+
                 // Registrar a transação
                 $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
                                   VALUES ($id_cliente, $id_carteira_felixbus, $valor, '$tipo_transacao', '$descricao')";
                 if (!mysqli_query($conn, $sql_transacao)) {
                     throw new Exception("Erro ao registrar transação: " . mysqli_error($conn));
                 }
-                
+
                 // Commit da transação
                 mysqli_commit($conn);
-                
-                $mensagem = "Operação realizada com sucesso! " . ucfirst($tipo_transacao) . " de €$valor " . 
-                           ($operacao == "adicionar" ? "adicionado à" : "retirado da") . 
+
+                $mensagem = "Operação realizada com sucesso! " . ucfirst($tipo_transacao) . " de €$valor " .
+                           ($operacao == "adicionar" ? "adicionado à" : "retirado da") .
                            " carteira do cliente {$cliente['nome']}.";
                 $tipo_mensagem = "success";
-                
+
             } catch (Exception $e) {
                 // Rollback em caso de erro
                 mysqli_rollback($conn);

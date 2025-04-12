@@ -1,12 +1,10 @@
 <?php
 session_start();
 include '../basedados/basedados.h';
+include '../includes/autenticacao.php';
 
-// Verifica se o usuário é administrador
-if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
-    header("Location: erro.php");
-    exit();
-}
+// Verificar se o usuário é administrador
+verificarAcesso([1]);
 
 // Conexão com o banco de dados
 $conn = mysqli_connect("localhost", "root", "", "FelixBus");
