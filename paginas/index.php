@@ -49,14 +49,26 @@
     // Busca alertas dinâmicos
     $mensagens = [];
     $data_atual = date('Y-m-d H:i:s'); // Data e hora atual
-    $sql_mensagens = "SELECT mensagem AS conteudo FROM alertas WHERE data_inicio <= '$data_atual' AND data_fim >= '$data_atual'";
+
+    // Ajustando a consulta SQL para debug
+    $sql_mensagens = "SELECT mensagem AS conteudo 
+                     FROM alertas 
+                     WHERE data_inicio <= '$data_atual' 
+                     AND data_fim >= '$data_atual'";
+
     $resultado_mensagens = mysqli_query($conn, $sql_mensagens);
 
-    if ($resultado_mensagens) {
+    // Adicionar verificação de erro
+    if (!$resultado_mensagens) {
+        echo "Erro na consulta: " . mysqli_error($conn);
+    } else {
         while ($mensagem = mysqli_fetch_assoc($resultado_mensagens)) {
             $mensagens[] = $mensagem;
         }
     }
+
+    // Adicionar debug temporário
+    echo "<!-- Número de mensagens encontradas: " . count($mensagens) . " -->";
 ?>
 
 <!DOCTYPE html>
@@ -115,7 +127,7 @@
         <?php if ($pesquisa_realizada): ?>
             <div class="results-container">
                 <?php if (empty($resultados)): ?>
-                    <p class="no-results">Nenhum resultado encontrado para a sua pesquisa.</p>
+                    <p class="no-results">Nenhum resultado encontrado.</p>
                 <?php else: ?>
                     <h3>Resultados da Pesquisa</h3>
                     <div class="results-table-wrapper">
@@ -155,35 +167,34 @@
     </div>
 </section>
 
-<section class="alertas">
+    <!-- Alertas -->
     <?php if (!empty($mensagens)): ?>
-        <div class="alertas-container">
-            <table class="alertas-table">
-                <thead>
-                    <tr>
-                        <th>Informação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($mensagens as $mensagem): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($mensagem['conteudo']); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <div class="alertas-box">
+            <div class="alertas-titulo">AVISOS IMPORTANTES</div>
+            <?php foreach ($mensagens as $mensagem): ?>
+                <div class="alerta-item">
+                    <?php echo htmlspecialchars($mensagem['conteudo']); ?>
+                </div>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
-</section>
-<script>
+
+    <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Garantir que a tabela tenha rolagem
-        const tableWrapper = document.querySelector('.results-table-wrapper');
-        if (tableWrapper) {
-            // Forçar a rolagem a ser visível
-            tableWrapper.style.overflowY = 'scroll';
+        // Função para reposicionar os alertas
+        function adjustAlertPosition() {
+            const alertas = document.querySelector('.alertas');
+            if (alertas) {
+                const nav = document.querySelector('nav');
+                const navHeight = nav ? nav.offsetHeight : 0;
+                alertas.style.top = (navHeight + 20) + 'px';
+            }
         }
+
+        // Ajusta a posição inicial e quando a janela é redimensionada
+        adjustAlertPosition();
+        window.addEventListener('resize', adjustAlertPosition);
     });
-</script>
+    </script>
 </body>
 </html>
