@@ -1,0 +1,277 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;400;700&display=swap');
+
+* {
+    padding: 0;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
+    background-image: url(fundo.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+/* Navbar */
+nav {
+    width: 100%;
+    height: 10vh;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+.logo {
+    cursor: pointer;
+    text-decoration: none !important;
+}
+
+.logo h1 {
+    color: white;
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+}
+
+.logo span {
+    color: #ff6b6b;
+}
+
+.links {
+    display: flex;
+    justify-content: space-around;
+    width: 30%;
+}
+
+.link a {
+    color: white;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.link a:hover {
+    color: #ff6b6b;
+}
+
+.buttons {
+    display: flex;
+    justify-content: space-around;
+    width: 15%;
+}
+
+.btn a {
+    text-decoration: none;
+}
+
+.btn button {
+    padding: 10px 20px;
+    background-color: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.btn button:hover {
+    background-color: #ff5252;
+}
+
+/* Conteúdo da página */
+section {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+section h1 {
+    color: white;
+    font-size: 2rem;
+    margin-bottom: 30px;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.servicos-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.servico-card {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 350px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.servico-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.servico-card h3 {
+    color: #333;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.servico-card h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 3px;
+    background-color: #ff6b6b;
+}
+
+.servico-card p {
+    color: #555;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.servico-card .icon {
+    font-size: 3rem;
+    color: #ff6b6b;
+    margin-bottom: 15px;
+}
+
+.vantagens-container {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-width: 1000px;
+    margin: 40px auto 0;
+}
+
+.vantagens-container h2 {
+    color: #333;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    text-align: center;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.vantagens-container h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 3px;
+    background-color: #ff6b6b;
+}
+
+.vantagens-lista {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.vantagem-item {
+    flex: 1;
+    min-width: 200px;
+    padding: 15px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.vantagem-item .icon {
+    color: #ff6b6b;
+    font-size: 1.5rem;
+    margin-top: 3px;
+}
+
+.vantagem-item .texto {
+    flex: 1;
+}
+
+.vantagem-item h4 {
+    color: #333;
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+}
+
+.vantagem-item p {
+    color: #555;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .links {
+        width: 50%;
+    }
+    
+    .buttons {
+        width: 30%;
+    }
+    
+    .servico-card {
+        width: 100%;
+        max-width: 350px;
+    }
+    
+    .vantagens-container {
+        padding: 20px;
+    }
+    
+    .vantagem-item {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    nav {
+        flex-direction: column;
+        height: auto;
+        padding: 20px 0;
+    }
+    
+    .logo {
+        margin-bottom: 15px;
+    }
+    
+    .links {
+        width: 90%;
+        margin-bottom: 15px;
+    }
+    
+    .buttons {
+        width: 90%;
+    }
+    
+    section {
+        padding: 20px;
+    }
+}
