@@ -50,9 +50,10 @@ nav {
 }
 
 .link a {
-    text-decoration: none;
     color: white;
-    font-weight: 500;
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 300;
     transition: all 0.3s ease;
 }
 
@@ -62,27 +63,39 @@ nav {
 
 .buttons {
     display: flex;
-    gap: 20px;
+    justify-content: flex-end;
+    gap: 15px;
+    width: 20%;
     align-items: center;
+    height: 35px;
 }
 
-.btn button {
-    padding: 8px 16px;
-    background-color: #ff6b6b;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-}
-
-.btn button:hover {
-    background-color: #ff5252;
+.btn {
+    display: flex;
+    align-items: center;
+    height: 100%;
 }
 
 .btn a {
     text-decoration: none;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.btn button {
+    height: 100%;
+    padding: 0 20px;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
 }
 
 .btn-admin {
@@ -94,6 +107,10 @@ nav {
     height: 100%;
     padding: 0 10px;
     transition: all 0.3s ease;
+}
+
+.btn-admin:hover {
+    color: rgba(255, 255, 255, 0.8);
 }
 
 section {
@@ -181,8 +198,8 @@ input, select {
 
 button {
     width: 100%;
-    padding: 10px;
-    background-color: #ff6b6b;
+    padding: 12px;
+    background-color: #007BFF;
     color: white;
     border: none;
     border-radius: 4px;
@@ -192,7 +209,7 @@ button {
 }
 
 button:hover {
-    background-color: #ff5252;
+    background-color: #0056b3;
 }
 
 .table-responsive {

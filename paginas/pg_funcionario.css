@@ -110,7 +110,7 @@ nav {
 }
 
 .btn-admin:hover {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 section {
@@ -176,6 +176,49 @@ section {
 .card-btn.disabled {
     background-color: #6c757d;
     cursor: not-allowed;
+}
+
+.resumo-financeiro {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 30px;
+}
+
+.resumo-financeiro h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.resumo-cards {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.resumo-card {
+    flex: 1;
+    min-width: 200px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.resumo-card h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+.valor {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007BFF;
 }
 
 @media (max-width: 768px) {
