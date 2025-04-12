@@ -131,6 +131,14 @@ h2 {
     color: #333;
 }
 
+h3 {
+    margin: 20px 0 10px;
+    color: #333;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #007BFF;
+    padding-bottom: 5px;
+}
+
 .alert {
     padding: 15px;
     margin-bottom: 20px;
@@ -214,21 +222,38 @@ button:hover {
     background-color: #0056b3;
 }
 
-.rotas-table, .horarios-table {
+.rotas-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
+    margin-bottom: 20px;
     table-layout: fixed; /* Melhora o comportamento da tabela */
 }
 
-.rotas-table th, .rotas-table td,
-.horarios-table th, .horarios-table td {
+.horarios-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 5px;
+    table-layout: fixed; /* Melhora o comportamento da tabela */
+}
+
+.rotas-table th, .rotas-table td {
     padding: 10px;
     text-align: left;
     border-bottom: 1px solid #ddd;
     word-wrap: break-word; /* Quebra palavras longas */
     overflow: hidden; /* Evita que o conteúdo ultrapasse a célula */
     line-height: 1.4;
+}
+
+.horarios-table th, .horarios-table td {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    word-wrap: break-word; /* Quebra palavras longas */
+    overflow: hidden; /* Evita que o conteúdo ultrapasse a célula */
+    font-size: 0.9rem;
+    line-height: 1.2;
 }
 
 /* Diminuir o tamanho da fonte na tabela de rotas */
@@ -289,17 +314,29 @@ button:hover {
 /* Definir larguras para as colunas da tabela de horários */
 .horarios-table th:nth-child(1), /* ID */
 .horarios-table td:nth-child(1) {
-    width: 10%;
+    width: 5%;
 }
 
 .horarios-table th:nth-child(2), /* Rota */
 .horarios-table td:nth-child(2) {
-    width: 60%;
+    width: 45%;
 }
 
 .horarios-table th:nth-child(3), /* Horário */
 .horarios-table td:nth-child(3) {
-    width: 30%;
+    width: 15%;
+}
+
+.horarios-table th:nth-child(4), /* Status */
+.horarios-table td:nth-child(4) {
+    width: 15%;
+    text-align: center;
+}
+
+.horarios-table th:nth-child(5), /* Ações */
+.horarios-table td:nth-child(5) {
+    width: 20%;
+    text-align: center;
 }
 
 .rotas-table tr:hover, .horarios-table tr:hover {
@@ -314,6 +351,12 @@ button:hover {
     font-weight: 500;
 }
 
+.horarios-table .status-badge {
+    padding: 3px 6px;
+    font-size: 10px;
+    border-radius: 15px;
+}
+
 .active {
     background-color: #d4edda;
     color: #155724;
@@ -324,6 +367,14 @@ button:hover {
     color: #721c24;
 }
 
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+    min-width: 60px;
+}
+
 .action-btn {
     display: inline-block;
     padding: 4px 8px;
@@ -331,6 +382,14 @@ button:hover {
     text-decoration: none;
     color: white;
     font-size: 11px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.horarios-table .action-btn {
+    padding: 3px 6px;
+    font-size: 10px;
+    min-width: 35px;
 }
 
 .activate {
@@ -341,8 +400,36 @@ button:hover {
     background-color: #dc3545;
 }
 
+.edit {
+    background-color: #007bff;
+}
+
 .action-btn:hover {
     opacity: 0.8;
+}
+
+.update-btn {
+    background-color: #007bff;
+}
+
+.cancel-btn {
+    display: inline-block;
+    padding: 12px;
+    background-color: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    text-align: center;
+    margin-top: 10px;
+    width: 100%;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
+    text-decoration: none;
+    color: white;
 }
 
 @media (max-width: 992px) {

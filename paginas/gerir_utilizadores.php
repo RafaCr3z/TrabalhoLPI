@@ -14,6 +14,7 @@ if (mysqli_num_rows(mysqli_query($conn, "SHOW COLUMNS FROM utilizadores LIKE 'at
 }
 
 $mensagem = '';
+$tipo_mensagem = '';
 $mostrar_inativos = isset($_GET['mostrar_inativos']) ? (int)$_GET['mostrar_inativos'] : 0;
 
 // Adicionar utilizador
@@ -28,12 +29,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
 
     if (mysqli_num_rows(mysqli_query($conn, "SELECT * FROM utilizadores WHERE user = '$user' OR email = '$email'")) > 0) {
         $mensagem = "Utilizador ou email já existe";
+        $tipo_mensagem = "danger";
     } else {
         $sql = "INSERT INTO utilizadores (user, nome, email, pwd, telemovel, morada, tipo_perfil)
                 VALUES ('$user', '$nome', '$email', '$pwd', '$telemovel', '$morada', $tipo_perfil)";
 
-        if (mysqli_query($conn, $sql) && $tipo_perfil == 3) {
-            mysqli_query($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES (" . mysqli_insert_id($conn) . ", 0.00)");
+        if (mysqli_query($conn, $sql)) {
+            $id_novo = mysqli_insert_id($conn);
+            if ($tipo_perfil == 3) {
+                mysqli_query($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_novo, 0.00)");
+            }
+            $mensagem = "Utilizador adicionado com sucesso!";
+            $tipo_mensagem = "success";
+        } else {
+            $mensagem = "Erro ao adicionar utilizador: " . mysqli_error($conn);
+            $tipo_mensagem = "danger";
         }
     }
 }
@@ -50,27 +60,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['editar'])) {
     if (!empty($_POST['pwd'])) {
         $sql .= ", pwd = '" . password_hash($_POST['pwd'], PASSWORD_DEFAULT) . "'";
     }
-    mysqli_query($conn, $sql . " WHERE id = $id");
+
+    if (mysqli_query($conn, $sql . " WHERE id = $id")) {
+        $mensagem = "Utilizador editado com sucesso!";
+        $tipo_mensagem = "success";
+    } else {
+        $mensagem = "Erro ao editar utilizador: " . mysqli_error($conn);
+        $tipo_mensagem = "danger";
+    }
 }
 
 // Alterar estado
 if (isset($_GET['alterar_estado']) && isset($_GET['id']) && $_GET['id'] != $_SESSION['id_utilizador']) {
     $id = intval($_GET['id']);
     $ativo = intval($_GET['ativo']);
-    mysqli_query($conn, "UPDATE utilizadores SET ativo = $ativo WHERE id = $id");
+
+    if (mysqli_query($conn, "UPDATE utilizadores SET ativo = $ativo WHERE id = $id")) {
+        $mensagem = "Utilizador " . ($ativo == 1 ? "ativado" : "desativado") . " com sucesso!";
+        $tipo_mensagem = "success";
+    } else {
+        $mensagem = "Erro ao alterar estado do utilizador: " . mysqli_error($conn);
+        $tipo_mensagem = "danger";
+    }
 }
 
 // Alterar perfil
 if (isset($_GET['alterar_perfil']) && isset($_GET['id']) && isset($_GET['perfil'])) {
     $id = intval($_GET['id']);
     $novo_perfil = intval($_GET['perfil']);
-
     // Se mudar para cliente (perfil 3), criar carteira
     if ($novo_perfil == 3) {
         mysqli_query($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id, 0.00)");
     }
 
-    mysqli_query($conn, "UPDATE utilizadores SET tipo_perfil = $novo_perfil WHERE id = $id");
+    if (mysqli_query($conn, "UPDATE utilizadores SET tipo_perfil = $novo_perfil WHERE id = $id")) {
+        $mensagem = "Perfil do utilizador alterado com sucesso!";
+        $tipo_mensagem = "success";
+    } else {
+        $mensagem = "Erro ao alterar perfil do utilizador: " . mysqli_error($conn);
+        $tipo_mensagem = "danger";
+    }
+}
+
+// Buscar todos os perfis
+$perfis = [];
+$result_perfis = mysqli_query($conn, "SELECT * FROM perfis ORDER BY id ASC");
+while ($row = mysqli_fetch_assoc($result_perfis)) {
+    $perfis[$row['id']] = $row['descricao'];
 }
 
 // Buscar utilizadores
@@ -82,13 +118,6 @@ if (!$mostrar_inativos) {
 }
 $sql .= " ORDER BY u.id ASC";
 $utilizadores = mysqli_query($conn, $sql);
-
-// Buscar todos os perfis
-$perfis = [];
-$result_perfis = mysqli_query($conn, "SELECT * FROM perfis ORDER BY id ASC");
-while ($row = mysqli_fetch_assoc($result_perfis)) {
-    $perfis[$row['id']] = $row['descricao'];
-}
 ?>
 
 <!DOCTYPE html>
@@ -96,7 +125,7 @@ while ($row = mysqli_fetch_assoc($result_perfis)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="gerir_utilizadores.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="gerir_utilizadores.css">
     <title>FelixBus - Gestão de Utilizadores</title>
 </head>
 <body>
