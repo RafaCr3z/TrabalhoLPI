@@ -76,7 +76,7 @@ CREATE TABLE horarios (
 -- Descrição: Regista as compras de bilhetes feitas pelos clientes
 -- --------------------------------------------------------
 CREATE TABLE bilhetes (
-    id INT AUTO_INCREMENT PRIMARY KEY, -- ID numérico sequencial
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), -- ID único gerado automaticamente
     id_cliente INT NOT NULL,
     id_rota INT NOT NULL,
     data_compra DATETIME DEFAULT CURRENT_TIMESTAMP, -- Data da compra do bilhete

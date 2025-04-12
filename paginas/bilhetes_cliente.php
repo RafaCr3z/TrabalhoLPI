@@ -202,7 +202,7 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
                         <tbody>
                             <?php while ($bilhete = mysqli_fetch_assoc($result_bilhetes)): ?>
                                 <tr>
-                                    <td><?php echo $bilhete['id']; ?></td>
+                                    <td><?php echo substr($bilhete['id'], 0, 8); ?>...</td>
                                     <td><?php echo htmlspecialchars($bilhete['origem']); ?></td>
                                     <td><?php echo htmlspecialchars($bilhete['destino']); ?></td>
                                     <td><?php echo date('d/m/Y', strtotime($bilhete['data_viagem'])); ?></td>
