@@ -198,21 +198,22 @@ button:hover {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
-    font-size: 13px; /* Reduz o tamanho da fonte */
+    font-size: 14px; /* Aumenta o tamanho da fonte */
 }
 
 .utilizadores-table th, 
 .utilizadores-table td {
-    padding: 6px 8px; /* Reduz o padding das células */
+    padding: 12px 15px; /* Aumenta o padding das células */
     text-align: left;
     border-bottom: 1px solid #ddd;
-    line-height: 1.2; /* Reduz o espaçamento entre linhas */
+    line-height: 1.5; /* Aumenta o espaçamento entre linhas */
     white-space: nowrap;
 }
 
 .utilizadores-table th {
     background-color: #f2f2f2;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 14px;
 }
 
 .utilizadores-table tr:hover {
@@ -221,9 +222,9 @@ button:hover {
 
 .perfil-badge {
     display: inline-block;
-    padding: 3px 8px; /* Ajusta o padding */
+    padding: 5px 12px;
     border-radius: 20px;
-    font-size: 11px; /* Reduz o tamanho da fonte */
+    font-size: 13px;
     font-weight: 500;
 }
 
@@ -253,13 +254,13 @@ button:hover {
 }
 
 .dropdown-btn {
-    padding: 4px 8px; /* Ajusta o padding */
+    padding: 8px 15px;
     background-color: #6c757d;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 11px; /* Reduz o tamanho da fonte */
+    font-size: 13px;
     margin: 0;
     width: auto;
 }
@@ -268,7 +269,7 @@ button:hover {
     display: none;
     position: absolute;
     background-color: #f9f9f9;
-    min-width: 100px; /* Ajusta a largura mínima */
+    min-width: 150px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
     z-index: 1;
     border-radius: 4px;
@@ -277,10 +278,10 @@ button:hover {
 
 .dropdown-content a {
     color: black;
-    padding: 6px 10px; /* Ajusta o padding */
+    padding: 8px 15px;
     text-decoration: none;
     display: block;
-    font-size: 11px; /* Reduz o tamanho da fonte */
+    font-size: 13px;
 }
 
 .dropdown-content a:hover {
@@ -300,8 +301,13 @@ button:hover {
 
 /* Ajusta a altura máxima do container da tabela */
 .table-container {
-    max-height: 60vh;
+    max-height: 75vh;
     overflow-y: auto;
+}
+
+/* Aumenta o espaçamento entre as linhas da tabela */
+.utilizadores-table tr {
+    border-bottom: 1px solid #ddd;
 }
 
 @media (max-width: 992px) {
@@ -319,4 +325,5 @@ button:hover {
         width: auto;
     }
 }
+
 
