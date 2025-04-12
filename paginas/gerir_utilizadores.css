@@ -145,79 +145,79 @@ h2 {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Ajustar o contêiner da tabela */
 .table-container {
+    overflow-x: auto; /* Permite rolagem horizontal, se necessário */
+    margin: 0 auto; /* Centraliza o contêiner */
+    max-width: 100%; /* Garante que o contêiner não ultrapasse a largura da página */
+    padding: 10px; /* Espaçamento interno */
     flex: 2;
     min-width: 850px;
     background-color: rgba(255, 255, 255, 0.9);
-    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.form-group {
-    margin-bottom: 15px;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    color: #555;
-    font-size: 14px;
-}
-
-input, select, textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-textarea {
-    height: 80px;
-    resize: vertical;
-}
-
-button {
-    width: 100%;
-    padding: 12px;
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
+/* Ajustar a tabela */
 .utilizadores-table {
-    width: 100%;
-    border-collapse: collapse;
+    width: 100%; /* Garante que a tabela ocupe todo o espaço disponível */
+    border-collapse: collapse; /* Remove espaços entre as células */
+    text-align: left; /* Alinha o texto à esquerda */
+    background-color: #fff; /* Fundo branco para contraste */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Adiciona uma sombra leve */
     margin-top: 10px;
     font-size: 14px; /* Aumenta o tamanho da fonte */
 }
 
-.utilizadores-table th, 
-.utilizadores-table td {
-    padding: 12px 15px; /* Aumenta o padding das células */
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-    line-height: 1.5; /* Aumenta o espaçamento entre linhas */
-    white-space: nowrap;
-}
-
+/* Estilo para cabeçalhos da tabela */
 .utilizadores-table th {
-    background-color: #f2f2f2;
+    background-color: #f4f4f4; /* Fundo cinza claro */
+    padding: 10px; /* Espaçamento interno */
+    border-bottom: 2px solid #ddd; /* Linha inferior */
     font-weight: 600;
     font-size: 14px;
 }
 
-.utilizadores-table tr:hover {
-    background-color: #f5f5f5;
+/* Estilo para células da tabela */
+.utilizadores-table td {
+    padding: 10px; /* Espaçamento interno */
+    border-bottom: 1px solid #ddd; /* Linha inferior */
+    word-wrap: break-word; /* Quebra de linha para textos longos */
+    line-height: 1.5; /* Aumenta o espaçamento entre linhas */
+    white-space: nowrap;
+}
+
+/* Estilo para linhas alternadas */
+.utilizadores-table tr:nth-child(even) {
+    background-color: #f9f9f9; /* Fundo cinza claro para linhas pares */
+}
+
+/* Ajustar botões dentro da tabela */
+.utilizadores-table .acoes-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.utilizadores-table .dropdown-btn {
+    background-color: #007bff; /* Azul */
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.utilizadores-table .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 150px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+.utilizadores-table .acoes-dropdown:hover .dropdown-content {
+    display: block;
 }
 
 .perfil-badge {
