@@ -44,8 +44,9 @@
                 <h3>Localização</h3>
                 <div class="info-block">
                     <h4>Sede Principal</h4>
-                    <p>Rua D. Pedro V, 123</p>
-                    <p>4710-000 Braga</p>
+                    <p>Av. do Empresário</p>
+                    <p>Campus da Talagueira, Zona do Lazer</p>
+                    <p>6000-767 Castelo Branco</p>
                     <p>Portugal</p>
                 </div>
             </div>
@@ -56,8 +57,7 @@
                 </div>
                 <h3>Contactos</h3>
                 <div class="info-block">
-                    <p><strong>Telefone Geral:</strong> +351 253 123 456</p>
-                    <p><strong>Apoio ao Cliente:</strong> +351 253 123 457</p>
+                    <p><strong>Telefone Geral:</strong> +351 272 339 300</p>
                     <p><strong>Email:</strong> info@felixbus.pt</p>
                 </div>
             </div>
@@ -76,5 +76,6 @@
     </section>
 </body>
 </html>
+
 
 
