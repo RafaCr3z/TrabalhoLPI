@@ -43,6 +43,61 @@ nav {
     color: #ff6b6b;
 }
 
+.links {
+    display: flex;
+    justify-content: space-between;
+    width: 30%;
+}
+
+.link a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 300;
+    transition: all 0.3s ease;
+}
+
+.link a:hover {
+    color: #ff6b6b;
+}
+
+.buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    width: 20%;
+    align-items: center;
+    height: 35px;
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.btn a {
+    text-decoration: none;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.btn button {
+    height: 100%;
+    padding: 0 20px;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
 .btn-admin {
     color: white;
     font-weight: 600;
@@ -64,113 +119,121 @@ section {
     margin: 0 auto;
 }
 
-/* Seção principal */
-.main-section {
-    padding-top: 60px;
-    min-height: 100vh;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 80px 50px 50px;
-    position: relative;
-    z-index: 1;
-}
-
-/* Conteúdo do hero */
-.hero-content {
-    margin-bottom: 30px;
+.admin-dashboard h1 {
+    text-align: center;
+    margin: 20px 0;
     color: white;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-.hero-content h1 {
-    font-size: 2.5rem;
-    font-weight: 600;
-    margin-bottom: 10px;
-}
-
-/* Mantendo os estilos específicos dos serviços */
-.servicos-container {
+.dashboard-cards {
     display: flex;
     flex-wrap: wrap;
+    gap: 20px;
     justify-content: center;
-    gap: 30px;
-    max-width: 1200px;
-    margin: 0 auto;
+    margin-bottom: 30px;
 }
 
-.servico-card {
+.card {
     background-color: rgba(255, 255, 255, 0.9);
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    width: 350px;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 250px;
     text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease;
 }
 
-.servico-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+.card:hover {
+    transform: translateY(-5px);
 }
 
-.servico-card h3 {
+.card h2 {
+    margin-bottom: 10px;
     color: #333;
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-    position: relative;
-    padding-bottom: 10px;
 }
 
-.servico-card h3::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 50px;
-    height: 3px;
-    background-color: #ff6b6b;
-}
-
-.servico-card p {
-    color: #555;
-    font-size: 1rem;
-    line-height: 1.6;
+.card p {
+    color: #666;
     margin-bottom: 20px;
+    height: 50px;
 }
 
-.servico-card .icon {
-    font-size: 3rem;
-    color: #ff6b6b;
-    margin-bottom: 15px;
+.card-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
 }
 
-/* Responsividade */
+.card-btn:hover {
+    background-color: #0056b3;
+}
+
+.card-btn.disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.resumo-financeiro {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 30px;
+}
+
+.resumo-financeiro h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.resumo-cards {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.resumo-card {
+    flex: 1;
+    min-width: 200px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.resumo-card h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+.valor {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007BFF;
+}
+
 @media (max-width: 768px) {
-    .servico-card {
-        width: 100%;
-        max-width: 350px;
+    .links, .buttons {
+        width: auto;
     }
-    
-    .main-section {
-        padding: 60px 20px 30px;
-    }
-    
-    .hero-content h1 {
-        font-size: 2rem;
-    }
-}
 
-@media (max-width: 576px) {
-    nav {
+    .dashboard-cards {
         flex-direction: column;
-        height: auto;
-        padding: 20px 0;
+        align-items: center;
     }
-    
-    .logo {
-        margin-bottom: 15px;
+
+    .card {
+        width: 100%;
+        max-width: 300px;
     }
 }
 
