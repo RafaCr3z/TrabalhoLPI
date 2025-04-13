@@ -26,17 +26,17 @@
         // Verificar a senha
         $row = mysqli_fetch_array($result);
 
-        // Verificar se a senha está em formato de hash ou não
-        if (substr($row['pwd'], 0, 4) === '$2y$') {
-            // Senha já está em formato de hash bcrypt
-            $senha_valida = password_verify($pass, $row['pwd']);
+        // Verificar se a senha está em formato de hash MD5 ou não
+        if (strlen($row['pwd']) === 32 && ctype_xdigit($row['pwd'])) {
+            // Senha já está em formato de hash MD5
+            $senha_valida = (md5($pass) === $row['pwd']);
         } else {
-            // Senha antiga sem hash - verificar diretamente e atualizar para hash
+            // Senha antiga sem hash - verificar diretamente e atualizar para hash MD5
             $senha_valida = ($pass === $row['pwd']);
 
-            // Se a senha antiga for válida, atualizar para o formato com hash
+            // Se a senha antiga for válida, atualizar para o formato com hash MD5
             if ($senha_valida) {
-                $hashed_pwd = password_hash($pass, PASSWORD_DEFAULT);
+                $hashed_pwd = md5($pass);
                 $id_usuario = $row['id'];
                 $sql_update = "UPDATE utilizadores SET pwd = '$hashed_pwd' WHERE id = $id_usuario";
                 mysqli_query($conn, $sql_update);
