@@ -142,9 +142,9 @@ INSERT INTO perfis (id, descricao) VALUES
 
 -- Criando utilizadores padrão
 INSERT INTO utilizadores (user, pwd, nome, email, telemovel, morada, tipo_perfil) VALUES
-('cliente', '12345', 'Cliente Exemplo', 'cliente@felixbus.com', '961111111', 'Lisboa', 3),
-('funcionario', '6969', 'Funcionário Exemplo', 'funcionario@felixbus.com', '962222222', 'Porto', 2),
-('admin', '54321', 'Administrador', 'admin@felixbus.com', '963333333', 'Coimbra', 1);
+('cliente', 'cliente', 'Cliente Exemplo', 'cliente@felixbus.com', '961111111', 'Lisboa', 3),
+('funcionario', 'funcionario', 'Funcionário Exemplo', 'funcionario@felixbus.com', '962222222', 'Porto', 2),
+('admin', 'admin', 'Administrador', 'admin@felixbus.com', '963333333', 'Coimbra', 1);
 
 -- Criando rotas
 INSERT INTO rotas (origem, destino, preco, capacidade) VALUES

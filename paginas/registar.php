@@ -14,8 +14,8 @@
         $telemovel = $_POST["telemovel"];
         $morada = $_POST["morada"];
 
-        // Gerar hash da senha com MD5
-        $hashed_pwd = md5($pwd);
+        // Gerar hash da senha
+        $hashed_pwd = password_hash($pwd, PASSWORD_DEFAULT);
 
         // Verifica se o nome de utilizador já existe
         $check_username_sql = "SELECT * FROM utilizadores WHERE user = '$user'";
