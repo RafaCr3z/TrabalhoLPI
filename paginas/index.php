@@ -94,7 +94,7 @@
         </div>
         <div class="buttons">
             <div class="btn"><a href="login.php"><button>Login</button></a></div>
-            <div class="btn"><a href="registar.php"><button>Registar</button></a></div>
+            <div class="btn"><a href="registar.php"><button class="register-btn">Registar</button></a></div>
         </div>
     </nav>
 

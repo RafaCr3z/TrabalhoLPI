@@ -98,6 +98,17 @@ nav {
     align-items: center;
 }
 
+.btn button.register-btn {
+    background: transparent;
+    border: 2px solid #ff6b6b;
+    color: #ff6b6b;
+}
+
+.btn button.register-btn:hover {
+    background: #ff6b6b;
+    color: white;
+}
+
 .container {
     max-width: 1200px;
     margin: 40px auto;
@@ -180,4 +191,5 @@ iframe {
         padding: 10px;
     }
 }
+
 
