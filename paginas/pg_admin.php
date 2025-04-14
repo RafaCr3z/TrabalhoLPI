@@ -116,6 +116,11 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
             </div>
         </div>
     </section>
+    
+    <!-- Adicionar antes do fechamento do </body> -->
+    <footer>
+        © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
+    </footer>
 </body>
 </html>
 

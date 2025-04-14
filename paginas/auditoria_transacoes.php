@@ -211,6 +211,11 @@ $totais = mysqli_fetch_assoc($result_totais);
         </div>
     </section>
 
+     <!-- Adicionar antes do fechamento do </body> -->
+     <footer>
+        © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
+    </footer>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Garantir que a tabela tenha rolagem

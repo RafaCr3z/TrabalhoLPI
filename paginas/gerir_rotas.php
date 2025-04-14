@@ -410,5 +410,11 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
             </div>
         </div>
     </section>
+
+    <!-- Adicionar antes do fechamento do </body> -->
+    <footer>
+        © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
+    </footer>
+    
 </body>
 </html>
