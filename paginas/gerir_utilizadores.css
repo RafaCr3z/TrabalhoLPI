@@ -63,17 +63,15 @@ nav {
 
 .buttons {
     display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    width: 20%;
     align-items: center;
-    height: 35px;
+    gap: 15px;
 }
 
 .btn {
     display: flex;
     align-items: center;
     height: 100%;
+    margin-top: -40px;
 }
 
 .btn a {
@@ -83,19 +81,16 @@ nav {
     align-items: center;
 }
 
+
 .btn button {
-    height: 100%;
-    padding: 0 20px;
     background: #ff6b6b;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
+    padding: 6px 15px;
     font-size: 0.9rem;
-    font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
 }
 
 .btn-admin {

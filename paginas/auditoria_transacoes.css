@@ -63,11 +63,8 @@ nav {
 
 .buttons {
     display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    width: 20%;
     align-items: center;
-    height: 35px;
+    gap: 15px;
 }
 
 .btn {
@@ -83,34 +80,21 @@ nav {
     align-items: center;
 }
 
+
 .btn button {
-    height: 100%;
-    padding: 0px 20px;
     background: #ff6b6b;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
+    padding: 6px 15px;
     font-size: 0.9rem;
-    font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
 }
 
 .btn-admin {
     color: white;
-    font-weight: 600;
     font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    height: 100%;
-    padding: 0 10px;
-    transition: all 0.3s ease;
-}
-
-.btn-admin:hover {
-    color: rgba(255, 255, 255, 0.8);
 }
 
 section {
@@ -339,3 +323,5 @@ footer img {
     height: 20px;
     width: auto;
 }
+
+
