@@ -42,19 +42,19 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
             <div class="option-card">
                 <h3>Meu Perfil</h3>
                 <p>Visualize e edite suas informações pessoais.</p>
-                <a href="perfil_cliente.php">Acessar Perfil</a>
+                <a href="perfil_cliente.php">Aceder Perfil</a>
             </div>
 
             <div class="option-card">
                 <h3>Minha Carteira</h3>
                 <p>Gerencie seu saldo e visualize o histórico de transações.</p>
-                <a href="carteira_cliente.php">Acessar Carteira</a>
+                <a href="carteira_cliente.php">Aceder Carteira</a>
             </div>
 
             <div class="option-card">
                 <h3>Meus Bilhetes</h3>
                 <p>Compre novos bilhetes e visualize os bilhetes adquiridos.</p>
-                <a href="bilhetes_cliente.php">Acessar Bilhetes</a>
+                <a href="bilhetes_cliente.php">Aceder Bilhetes</a>
             </div>
         </div>
     </section>
