@@ -2,7 +2,7 @@
     $dbhost = 'localhost';
     $dbuser = 'root';
     $dbpass = '';
-    $dbname = 'felixbus';
+    $dbname = 'FelixBus';
 
     // Criar conexão
     $conn = mysqli_connect($dbhost, $dbuser, $dbpass, $dbname);
