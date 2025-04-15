@@ -18,7 +18,7 @@
         $pesquisa_realizada = true;
 
         // Constrói a consulta SQL
-        $sql = "SELECT r.id, r.origem, r.destino, r.preco, h.horario_partida
+        $sql = "SELECT r.id, r.origem, r.destino, r.preco, h.horario_partida, h.data_viagem
                 FROM rotas r
                 JOIN horarios h ON r.id = h.id_rota
                 WHERE r.disponivel = 1";
@@ -31,7 +31,7 @@
             $sql .= " AND r.destino LIKE '%" . mysqli_real_escape_string($conn, $destino) . "%'";
         }
 
-        $sql .= " ORDER BY r.origem, r.destino, h.horario_partida";
+        $sql .= " ORDER BY r.origem ASC, r.destino ASC, h.data_viagem ASC, h.horario_partida ASC";
 
         // Executa a consulta
         $resultado = mysqli_query($conn, $sql);
@@ -139,6 +139,7 @@
                                 <tr>
                                     <th>Origem</th>
                                     <th>Destino</th>
+                                    <th>Data</th>
                                     <th>Horário</th>
                                     <th>Preço</th>
                                 </tr>
@@ -148,19 +149,11 @@
                                     <tr>
                                         <td><?php echo htmlspecialchars($rota['origem']); ?></td>
                                         <td><?php echo htmlspecialchars($rota['destino']); ?></td>
+                                        <td><?php echo date('d/m/Y', strtotime($rota['data_viagem'])); ?></td>
                                         <td><?php echo htmlspecialchars($rota['horario_partida']); ?></td>
                                         <td><?php echo '€' . number_format($rota['preco'], 2, ',', '.'); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
-                                <?php
-                                // Adicionar algumas linhas vazias para garantir que a tabela tenha rolagem
-                                $num_rows = count($resultados);
-                                if ($num_rows < 5) {
-                                    for ($i = 0; $i < (5 - $num_rows); $i++) {
-                                        echo '<tr class="spacer-row"><td colspan="4">&nbsp;</td></tr>';
-                                    }
-                                }
-                                ?>
                             </tbody>
                         </table>
                     </div>
