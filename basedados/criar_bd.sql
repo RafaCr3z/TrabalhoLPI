@@ -68,6 +68,9 @@ CREATE TABLE horarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_rota INT NOT NULL,
     horario_partida TIME NOT NULL, -- Hora específica da viagem
+    data_viagem DATE NOT NULL, -- Data da viagem
+    lugares_disponiveis INT NOT NULL, -- Número de lugares disponíveis
+    disponivel TINYINT(1) NOT NULL DEFAULT 1, -- Se o horário está disponível
     FOREIGN KEY (id_rota) REFERENCES rotas(id)
 );
 

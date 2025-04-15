@@ -67,8 +67,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar_rota'])) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar_horario'])) {
     $id_rota = intval($_POST['id_rota']);
     $horario = $_POST['horario_partida'];
-
-    $sql = "INSERT INTO horarios (id_rota, horario_partida) VALUES ($id_rota, '$horario')";
+    $data_viagem = $_POST['data_viagem'];
+    
+    // Buscar a capacidade da rota
+    $sql_capacidade = "SELECT capacidade FROM rotas WHERE id = $id_rota";
+    $result_capacidade = mysqli_query($conn, $sql_capacidade);
+    $rota = mysqli_fetch_assoc($result_capacidade);
+    
+    $sql = "INSERT INTO horarios (id_rota, horario_partida, data_viagem, lugares_disponiveis) 
+            VALUES ($id_rota, '$horario', '$data_viagem', {$rota['capacidade']})";
 
     if (mysqli_query($conn, $sql)) {
         $mensagem = "Horário adicionado com sucesso!";
@@ -208,10 +215,11 @@ if (mysqli_num_rows($column_result) == 0) {
 }
 
 // Buscar todos os horários
-$sql_horarios = "SELECT h.*, r.origem, r.destino
+$sql_horarios = "SELECT h.*, r.origem, r.destino, r.capacidade
                 FROM horarios h
                 JOIN rotas r ON h.id_rota = r.id
-                ORDER BY h.id ASC";
+                WHERE h.data_viagem >= CURDATE()
+                ORDER BY h.data_viagem, h.horario_partida";
 $result_horarios = mysqli_query($conn, $sql_horarios);
 ?>
 
@@ -418,3 +426,5 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
     
 </body>
 </html>
+
+
