@@ -43,6 +43,24 @@ nav {
     color: #ff6b6b;
 }
 
+.links {
+    display: flex;
+    justify-content: space-between;
+    width: 30%;
+}
+
+.link a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 300;
+    transition: all 0.3s ease;
+}
+
+.link a:hover {
+    color: #ff6b6b;
+}
+
 .buttons {
     display: flex;
     justify-content: flex-end;
@@ -146,7 +164,7 @@ h1 {
 }
 
 .saldo-info h3 span {
-    color: #007BFF;
+    color: black;
     font-weight: bold;
 }
 
@@ -228,64 +246,79 @@ button[type="submit"]:hover {
     background-color: #0056b3;
 }
 
-/* Lista de bilhetes */
-.bilhetes-lista {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 15px;
-}
-
-.bilhete-item {
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-    transition: transform 0.3s ease;
-}
-
-.bilhete-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.bilhete-header {
-    background-color: #007BFF;
-    color: white;
-    padding: 10px 15px;
-    text-align: center;
-}
-
-.bilhete-header h3 {
-    margin: 0;
-    font-size: 1rem;
-}
-
-.bilhete-info {
-    padding: 15px;
-}
-
-.bilhete-info p {
-    margin: 8px 0;
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 8px;
-}
-
-.bilhete-info p:last-child {
-    border-bottom: none;
-}
-
-.bilhete-info .preco {
+.required {
+    color: #ff6b6b;
     font-weight: bold;
-    color: #007BFF;
 }
 
-.bilhete-info .data-compra {
+.lugar-info {
     font-size: 0.8rem;
     color: #6c757d;
-    text-align: right;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* Tabela de bilhetes */
+.table-responsive {
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+.bilhetes-table {
+    width: 100%;
+    border-collapse: collapse;
     margin-top: 10px;
+    background-color: white;
+}
+
+.bilhetes-table th, .bilhetes-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.bilhetes-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #dee2e6;
+    position: sticky;
+    top: 0;
+}
+
+.bilhetes-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.bilhetes-table .preco {
+    font-weight: bold;
+}
+
+/* Definir larguras específicas para cada coluna */
+.bilhetes-table th:nth-child(1),
+.bilhetes-table td:nth-child(1) { /* ID */
+    width: 5%;
+}
+
+.bilhetes-table th:nth-child(2),
+.bilhetes-table td:nth-child(2) { /* Rota */
+    width: 20%;
+}
+
+.bilhetes-table th:nth-child(3),
+.bilhetes-table td:nth-child(3) { /* Cliente */
+    width: 20%;
+}
+
+.bilhetes-table th:nth-child(4),
+.bilhetes-table td:nth-child(4),
+.bilhetes-table th:nth-child(5),
+.bilhetes-table td:nth-child(5),
+.bilhetes-table th:nth-child(6),
+.bilhetes-table td:nth-child(6),
+.bilhetes-table th:nth-child(7),
+.bilhetes-table td:nth-child(7) { /* Data, Hora, Preço, Data de Compra */
+    width: 12%;
 }
 
 /* Estado vazio */
@@ -303,10 +336,15 @@ button[type="submit"]:hover {
 
 /* Responsividade */
 @media (max-width: 992px) {
+    .links {
+        width: 45%;
+        gap: 25px;
+    }
+
     .buttons {
         width: auto;
     }
-    
+
     .comprar-bilhete, .meus-bilhetes {
         min-width: 100%;
     }
@@ -318,14 +356,23 @@ button[type="submit"]:hover {
         height: auto;
         padding: 10px 0;
     }
-    
+
+    .links {
+        display: none;
+    }
+
     .buttons {
         margin: 10px 0;
         width: 90%;
     }
-    
-    .bilhetes-lista {
-        grid-template-columns: 1fr;
+
+    .bilhetes-table {
+        font-size: 14px;
+    }
+
+    .bilhetes-table th,
+    .bilhetes-table td {
+        padding: 8px 10px;
     }
 }
 

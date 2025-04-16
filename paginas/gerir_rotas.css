@@ -279,12 +279,12 @@ button:hover {
 
 .rotas-table th:nth-child(2), /* Origem */
 .rotas-table td:nth-child(2) {
-    width: 15%;
+    width: 20%;
 }
 
 .rotas-table th:nth-child(3), /* Destino */
 .rotas-table td:nth-child(3) {
-    width: 15%;
+    width: 20%;
 }
 
 .rotas-table th:nth-child(4), /* Preço */
@@ -302,14 +302,10 @@ button:hover {
     width: 10%;
 }
 
-.rotas-table th:nth-child(7), /* Status */
+.rotas-table th:nth-child(7), /* Ações */
 .rotas-table td:nth-child(7) {
-    width: 15%;
-}
-
-.rotas-table th:nth-child(8), /* Ações */
-.rotas-table td:nth-child(8) {
-    width: 15%;
+    width: 25%;
+    text-align: center;
 }
 
 /* Definir larguras para as colunas da tabela de horários */
@@ -323,20 +319,19 @@ button:hover {
     width: 45%;
 }
 
-.horarios-table th:nth-child(3), /* Horário */
+.horarios-table th:nth-child(3), /* Data */
 .horarios-table td:nth-child(3) {
     width: 15%;
 }
 
-.horarios-table th:nth-child(4), /* Status */
+.horarios-table th:nth-child(4), /* Horário */
 .horarios-table td:nth-child(4) {
-    width: 15%;
-    text-align: center;
+    width: 10%;
 }
 
 .horarios-table th:nth-child(5), /* Ações */
 .horarios-table td:nth-child(5) {
-    width: 20%;
+    width: 25%;
     text-align: center;
 }
 
@@ -403,6 +398,10 @@ button:hover {
 
 .edit {
     background-color: #007bff;
+}
+
+.delete {
+    background-color: #dc3545;
 }
 
 .action-btn:hover {

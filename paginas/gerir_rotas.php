@@ -68,13 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar_horario'])) 
     $id_rota = intval($_POST['id_rota']);
     $horario = $_POST['horario_partida'];
     $data_viagem = $_POST['data_viagem'];
-    
+
     // Buscar a capacidade da rota
     $sql_capacidade = "SELECT capacidade FROM rotas WHERE id = $id_rota";
     $result_capacidade = mysqli_query($conn, $sql_capacidade);
     $rota = mysqli_fetch_assoc($result_capacidade);
-    
-    $sql = "INSERT INTO horarios (id_rota, horario_partida, data_viagem, lugares_disponiveis) 
+
+    $sql = "INSERT INTO horarios (id_rota, horario_partida, data_viagem, lugares_disponiveis)
             VALUES ($id_rota, '$horario', '$data_viagem', {$rota['capacidade']})";
 
     if (mysqli_query($conn, $sql)) {
@@ -91,8 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['atualizar_horario'])) 
     $id_horario = intval($_POST['id_horario']);
     $id_rota = intval($_POST['id_rota']);
     $horario = $_POST['horario_partida'];
+    $data_viagem = $_POST['data_viagem'];
 
-    $sql = "UPDATE horarios SET id_rota = $id_rota, horario_partida = '$horario' WHERE id = $id_horario";
+    $sql = "UPDATE horarios SET id_rota = $id_rota, horario_partida = '$horario', data_viagem = '$data_viagem' WHERE id = $id_horario";
 
     if (mysqli_query($conn, $sql)) {
         $mensagem = "Horário com ID $id_horario foi editado com sucesso!";
@@ -134,52 +135,82 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['atualizar_rota'])) {
     }
 }
 
-// Ativar/Desativar rota
-if (isset($_GET['toggle']) && isset($_GET['id'])) {
-    $id = intval($_GET['id']);
-    $status = intval($_GET['toggle']);
+// Excluir rota
+if (isset($_GET['excluir_rota']) && !empty($_GET['excluir_rota'])) {
+    $id_rota = intval($_GET['excluir_rota']);
 
-    $sql = "UPDATE rotas SET disponivel = $status WHERE id = $id";
+    // Verificar se a rota existe
+    $sql_verificar = "SELECT id FROM rotas WHERE id = $id_rota";
+    $result_verificar = mysqli_query($conn, $sql_verificar);
 
-    if (mysqli_query($conn, $sql)) {
-        if ($status == 1) {
-            $mensagem = "Rota com ID $id foi ativada com sucesso!";
+    if (mysqli_num_rows($result_verificar) > 0) {
+        // Verificar se há horários associados a esta rota
+        $sql_horarios_rota = "SELECT COUNT(*) as total FROM horarios WHERE id_rota = $id_rota";
+        $result_horarios_rota = mysqli_query($conn, $sql_horarios_rota);
+        $row_horarios_rota = mysqli_fetch_assoc($result_horarios_rota);
+
+        if ($row_horarios_rota['total'] > 0) {
+            $mensagem = "Não é possível excluir a rota ID $id_rota pois existem horários associados a ela.";
+            $tipo_mensagem = "error";
         } else {
-            $mensagem = "Rota com ID $id foi desativada com sucesso!";
+            // Verificar se há bilhetes associados a esta rota
+            $sql_bilhetes = "SELECT COUNT(*) as total FROM bilhetes WHERE id_rota = $id_rota";
+            $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
+            $row_bilhetes = mysqli_fetch_assoc($result_bilhetes);
+
+            if ($row_bilhetes['total'] > 0) {
+                $mensagem = "Não é possível excluir a rota ID $id_rota pois existem bilhetes associados a ela.";
+                $tipo_mensagem = "error";
+            } else {
+                // Excluir a rota
+                $sql_excluir = "DELETE FROM rotas WHERE id = $id_rota";
+
+                if (mysqli_query($conn, $sql_excluir)) {
+                    $mensagem = "Rota com ID $id_rota foi excluída com sucesso!";
+                    $tipo_mensagem = "success";
+                } else {
+                    $mensagem = "Erro ao excluir rota ID $id_rota: " . mysqli_error($conn);
+                    $tipo_mensagem = "error";
+                }
+            }
         }
-        $tipo_mensagem = "success";
     } else {
-        $mensagem = "Erro ao atualizar status da rota ID $id: " . mysqli_error($conn);
+        $mensagem = "Rota ID $id_rota não encontrada.";
         $tipo_mensagem = "error";
     }
 }
 
-// Ativar/Desativar horário
-if (isset($_GET['toggle_horario']) && isset($_GET['id_horario'])) {
-    $id_horario = intval($_GET['id_horario']);
-    $status = intval($_GET['toggle_horario']);
+// Excluir horário
+if (isset($_GET['excluir_horario']) && !empty($_GET['excluir_horario'])) {
+    $id_horario = intval($_GET['excluir_horario']);
 
-    // Verificar se a coluna 'disponivel' existe na tabela 'horarios'
-    $check_column = "SHOW COLUMNS FROM horarios LIKE 'disponivel'";
-    $column_result = mysqli_query($conn, $check_column);
+    // Verificar se o horário existe
+    $sql_verificar = "SELECT id FROM horarios WHERE id = $id_horario";
+    $result_verificar = mysqli_query($conn, $sql_verificar);
 
-    if (mysqli_num_rows($column_result) == 0) {
-        // A coluna não existe, vamos criá-la
-        $add_column = "ALTER TABLE horarios ADD COLUMN disponivel TINYINT(1) NOT NULL DEFAULT 1";
-        mysqli_query($conn, $add_column);
-    }
+    if (mysqli_num_rows($result_verificar) > 0) {
+        // Verificar se há bilhetes associados a este horário
+        $sql_bilhetes = "SELECT COUNT(*) as total FROM bilhetes WHERE id_rota IN (SELECT id_rota FROM horarios WHERE id = $id_horario) AND hora_viagem = (SELECT horario_partida FROM horarios WHERE id = $id_horario)";
+        $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
+        $row_bilhetes = mysqli_fetch_assoc($result_bilhetes);
 
-    $sql = "UPDATE horarios SET disponivel = $status WHERE id = $id_horario";
-
-    if (mysqli_query($conn, $sql)) {
-        if ($status == 1) {
-            $mensagem = "Horário com ID $id_horario foi ativado com sucesso!";
+        if ($row_bilhetes['total'] > 0) {
+            $mensagem = "Não é possível excluir o horário ID $id_horario pois existem bilhetes associados a ele.";
+            $tipo_mensagem = "error";
         } else {
-            $mensagem = "Horário com ID $id_horario foi desativado com sucesso!";
+            // Excluir o horário
+            $sql_excluir = "DELETE FROM horarios WHERE id = $id_horario";
+
+            if (mysqli_query($conn, $sql_excluir)) {
+                $mensagem = "Horário com ID $id_horario foi excluído com sucesso!";
+                $tipo_mensagem = "success";
+            } else {
+                $mensagem = "Erro ao excluir horário ID $id_horario: " . mysqli_error($conn);
+                $tipo_mensagem = "error";
+            }
         }
-        $tipo_mensagem = "success";
     } else {
-        $mensagem = "Erro ao atualizar status do horário ID $id_horario: " . mysqli_error($conn);
+        $mensagem = "Horário ID $id_horario não encontrado.";
         $tipo_mensagem = "error";
     }
 }
@@ -204,22 +235,11 @@ $sql_rotas = "SELECT r.*,
               ORDER BY r.id ASC";
 $result_rotas = mysqli_query($conn, $sql_rotas);
 
-// Verificar se a coluna 'disponivel' existe na tabela 'horarios'
-$check_column = "SHOW COLUMNS FROM horarios LIKE 'disponivel'";
-$column_result = mysqli_query($conn, $check_column);
-
-if (mysqli_num_rows($column_result) == 0) {
-    // A coluna não existe, vamos criá-la
-    $add_column = "ALTER TABLE horarios ADD COLUMN disponivel TINYINT(1) NOT NULL DEFAULT 1";
-    mysqli_query($conn, $add_column);
-}
-
 // Buscar todos os horários
 $sql_horarios = "SELECT h.*, r.origem, r.destino, r.capacidade
                 FROM horarios h
                 JOIN rotas r ON h.id_rota = r.id
-                WHERE h.data_viagem >= CURDATE()
-                ORDER BY h.data_viagem, h.horario_partida";
+                ORDER BY h.id ASC";
 $result_horarios = mysqli_query($conn, $sql_horarios);
 ?>
 
@@ -317,6 +337,11 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
                     </div>
 
                     <div class="form-group">
+                        <label for="data_viagem">Data da Viagem:</label>
+                        <input type="date" id="data_viagem" name="data_viagem" value="<?php echo $horario_para_editar ? $horario_para_editar['data_viagem'] : date('Y-m-d'); ?>" required>
+                    </div>
+
+                    <div class="form-group">
                         <label for="horario_partida">Horário de Partida:</label>
                         <input type="time" id="horario_partida" name="horario_partida" value="<?php echo $horario_para_editar ? $horario_para_editar['horario_partida'] : ''; ?>" required>
                     </div>
@@ -341,7 +366,6 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
                             <th>Preço</th>
                             <th>Capacidade</th>
                             <th>Horários</th>
-                            <th>Status</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -358,18 +382,9 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
                                 <td><?php echo $rota['capacidade']; ?></td>
                                 <td><?php echo $rota['total_horarios']; ?></td>
                                 <td>
-                                    <span class="status-badge <?php echo $rota['disponivel'] ? 'active' : 'inactive'; ?>">
-                                        <?php echo $rota['disponivel'] ? 'Ativa' : 'Inativa'; ?>
-                                    </span>
-                                </td>
-                                <td>
                                     <div class="action-buttons">
                                         <a href="?editar=<?php echo $rota['id']; ?>" class="action-btn edit">Editar</a>
-                                        <?php if ($rota['disponivel']): ?>
-                                            <a href="?toggle=0&id=<?php echo $rota['id']; ?>" class="action-btn deactivate">Desativar</a>
-                                        <?php else: ?>
-                                            <a href="?toggle=1&id=<?php echo $rota['id']; ?>" class="action-btn activate">Ativar</a>
-                                        <?php endif; ?>
+                                        <a href="?excluir_rota=<?php echo $rota['id']; ?>" class="action-btn delete" onclick="return confirm('Tem certeza que deseja excluir esta rota? Esta ação não pode ser desfeita.');">Excluir</a>
                                     </div>
                                 </td>
                             </tr>
@@ -383,8 +398,8 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
                         <tr>
                             <th>ID</th>
                             <th>Rota</th>
+                            <th>Data</th>
                             <th>Horário</th>
-                            <th>Status</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -393,22 +408,12 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
                             <tr>
                                 <td><?php echo $horario['id']; ?></td>
                                 <td><?php echo htmlspecialchars($horario['origem'] . ' → ' . $horario['destino']); ?></td>
+                                <td><?php echo date('d/m/Y', strtotime($horario['data_viagem'])); ?></td>
                                 <td><?php echo $horario['horario_partida']; ?></td>
-                                <td>
-                                    <?php if (isset($horario['disponivel']) && $horario['disponivel']): ?>
-                                        <span class="status-badge active">Ativo</span>
-                                    <?php else: ?>
-                                        <span class="status-badge inactive">Inativo</span>
-                                    <?php endif; ?>
-                                </td>
                                 <td>
                                     <div class="action-buttons">
                                         <a href="?editar_horario=<?php echo $horario['id']; ?>" class="action-btn edit">Editar</a>
-                                        <?php if (isset($horario['disponivel']) && $horario['disponivel']): ?>
-                                            <a href="?toggle_horario=0&id_horario=<?php echo $horario['id']; ?>" class="action-btn deactivate">Desativar</a>
-                                        <?php else: ?>
-                                            <a href="?toggle_horario=1&id_horario=<?php echo $horario['id']; ?>" class="action-btn activate">Ativar</a>
-                                        <?php endif; ?>
+                                        <a href="?excluir_horario=<?php echo $horario['id']; ?>" class="action-btn delete" onclick="return confirm('Tem certeza que deseja excluir este horário?');">Excluir</a>
                                     </div>
                                 </td>
                             </tr>
@@ -419,11 +424,11 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
         </div>
     </section>
 
-    <!-- Adicionar antes do fechamento do </body> -->
+    <!-- FOOTER -->
     <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
-    
+
 </body>
 </html>
 
