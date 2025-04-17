@@ -144,7 +144,7 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-admin">Área de <?php echo $_SESSION["id_nivel"] == 1 ? 'Admin' : 'Funcionário'; ?></div>
+            <div class="btn-admin">Área do Administrador</div>
         </div>
     </nav>
 
