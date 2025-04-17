@@ -11,7 +11,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale = 1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="cliente_style.css">
     <title>FelixBus - Área do Cliente</title>
 </head>
@@ -27,7 +27,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-cliente">Área de Cliente</div>
+            <div class="btn-cliente">Área do Cliente</div>
         </div>
     </nav>
     <section>
@@ -42,24 +42,23 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
             <div class="option-card">
                 <h3>Meu Perfil</h3>
                 <p>Visualize e edite suas informações pessoais.</p>
-                <a href="perfil_cliente.php">Aceder Perfil</a>
+                <a href="perfil_cliente.php">Aceder</a>
             </div>
 
             <div class="option-card">
-                <h3>Minha Carteira</h3>
-                <p>Gerencie seu saldo e visualize o histórico de transações.</p>
-                <a href="carteira_cliente.php">Aceder Carteira</a>
+                <h3>A Minha Carteira</h3>
+                <p>Faça a gestão do seu saldo e visualize o histórico de transações.</p>
+                <a href="carteira_cliente.php">Aceder</a>
             </div>
 
             <div class="option-card">
-                <h3>Meus Bilhetes</h3>
+                <h3>Os Meus Bilhetes</h3>
                 <p>Compre novos bilhetes e visualize os bilhetes adquiridos.</p>
-                <a href="bilhetes_cliente.php">Aceder Bilhetes</a>
+                <a href="bilhetes_cliente.php">Aceder</a>
             </div>
         </div>
     </section>
 
-    <!-- Adicionar antes do fechamento do </body> -->
     <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>

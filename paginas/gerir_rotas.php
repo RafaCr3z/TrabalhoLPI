@@ -265,7 +265,7 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-admin">Área de Administrador</div>
+            <div class="btn-admin">Área do Administrador</div>
         </div>
     </nav>
 

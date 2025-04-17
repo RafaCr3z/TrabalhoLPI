@@ -2,7 +2,7 @@
 session_start();
 include '../basedados/basedados.h';
 
-// Verificar se o usuário é funcionário
+// Verificar se o utilizador é funcionário
 if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 2) {
     header("Location: erro.php");
     exit();
@@ -29,7 +29,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 2) {
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-admin">Área de Funcionário</div>
+            <div class="btn-admin">Área do Funcionário</div>
         </div>
     </nav>
 
@@ -40,26 +40,25 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 2) {
             <div class="dashboard-cards">
                 <div class="card">
                     <h2>Gestão de Carteiras</h2>
-                    <p>Gerencie o saldo das carteiras dos clientes.</p>
-                    <a href="gerir_carteiras.php" class="card-btn">Acessar</a>
+                    <p>Faça a gestão do saldo das carteiras dos clientes.</p>
+                    <a href="gerir_carteiras.php" class="card-btn">Aceder</a>
                 </div>
 
                 <div class="card">
                     <h2>Gestão de Bilhetes</h2>
-                    <p>Compre bilhetes para clientes e gerencie bilhetes existentes.</p>
-                    <a href="gerir_bilhetes_func.php" class="card-btn">Acessar</a>
+                    <p>Compre bilhetes para clientes e faça a gestão dos bilhetes existentes.</p>
+                    <a href="gerir_bilhetes_func.php" class="card-btn">Aceder</a>
                 </div>
 
                 <div class="card">
-                    <h2>Meu Perfil</h2>
-                    <p>Visualize e edite seus dados pessoais.</p>
-                    <a href="perfil_funcionario.php" class="card-btn">Acessar</a>
+                    <h2>O Meu Perfil</h2>
+                    <p>Visualize e edite os seus dados pessoais.</p>
+                    <a href="perfil_funcionario.php" class="card-btn">Aceder</a>
                 </div>
             </div>
         </div>
     </section>
     
-    <!-- Adicionar antes do fechamento do </body> -->
     <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>

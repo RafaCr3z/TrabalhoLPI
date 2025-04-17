@@ -175,7 +175,7 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-admin">Área de <?php echo $_SESSION["id_nivel"] == 1 ? 'Admin' : 'Funcionário'; ?></div>
+            <div class="btn-admin">Área do Administrador</div>
         </div>
     </nav>
 
@@ -267,7 +267,7 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
         </div>
     </section>
 
-     <!-- Adicionar antes do fechamento do </body> -->
+     <!-- FOOTER -->
      <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>

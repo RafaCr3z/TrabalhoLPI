@@ -121,7 +121,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-cliente">Área de Cliente</div>
+            <div class="btn-cliente">Área do Cliente</div>
         </div>
     </nav>
 

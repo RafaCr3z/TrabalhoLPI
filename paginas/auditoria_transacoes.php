@@ -82,7 +82,7 @@ $totais = mysqli_fetch_assoc($result_totais);
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-admin">Área de Administrador</div>
+            <div class="btn-admin">Área do Administrador</div>
         </div>
     </nav>
 
@@ -211,7 +211,7 @@ $totais = mysqli_fetch_assoc($result_totais);
         </div>
     </section>
 
-     <!-- Adicionar antes do fechamento do </body> -->
+     <!-- FOOTER -->
      <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
