@@ -140,8 +140,7 @@ CREATE TABLE alertas (
 INSERT INTO perfis (id, descricao) VALUES
 (1, 'admin'),
 (2, 'funcionario'),
-(3, 'cliente'),
-(4, 'visitante');
+(3, 'cliente');
 
 -- Criando utilizadores padrão
 INSERT INTO utilizadores (user, pwd, nome, email, telemovel, morada, tipo_perfil) VALUES
