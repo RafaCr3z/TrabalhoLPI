@@ -28,7 +28,7 @@ USE FelixBus;
 -- -----------------------------------------
 CREATE TABLE perfis (
     id INT PRIMARY KEY,
-    descricao VARCHAR(20) NOT NULL -- Nome do perfil (admin, funcionário, cliente, visitante)
+    descricao VARCHAR(20) NOT NULL -- Nome do perfil (admin, funcionário, cliente)
 );
 
 -- -----------------------------------------

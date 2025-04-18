@@ -314,7 +314,7 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="bilhetes_cliente.css">
-    <title>FelixBus - Meus Bilhetes</title>
+    <title>FelixBus - Os Meus Bilhetes</title>
 </head>
 <body>
     <nav>

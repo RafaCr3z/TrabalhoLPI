@@ -106,7 +106,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="editar_perfil.css">
-    <title>FelixBus - Editar Perfil (Cliente) </title>
+    <title>FelixBus - Editar o Meu Perfil</title>
 </head>
 <body>
     <nav>
@@ -194,3 +194,4 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
     
 </body>
 </html>
+

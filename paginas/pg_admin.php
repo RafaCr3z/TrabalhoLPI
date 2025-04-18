@@ -13,7 +13,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="pg_admin.css">
-    <title>FelixBus - Área do Administração</title>
+    <title>FelixBus - Área de Administração</title>
 </head>
 <body>
     <nav>
@@ -123,5 +123,6 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     </footer>
 </body>
 </html>
+
 
 
