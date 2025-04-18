@@ -38,7 +38,7 @@
                     <i class="fas fa-bus"></i>
                 </div>
                 <h3>Viagens Regulares</h3>
-                <p>Carreiras diárias que ligam as principais cidades de Portugal com conforto e pontualidade.</p>
+                <p>Viagens diárias que ligam as principais cidades de Portugal com todo o conforto e pontualidade.</p>
                 <ul>
                     <li>Horários flexíveis</li>
                     <li>Rotas estratégicas</li>
@@ -64,7 +64,7 @@
                     <i class="fas fa-ticket-alt"></i>
                 </div>
                 <h3>Bilhetes Online</h3>
-                <p>Compre os seus bilhetes de forma rápida e segura através da nossa plataforma.</p>
+                <p>Adquira os seus bilhetes de forma rápida e segura através da nossa plataforma.</p>
                 <ul>
                     <li>Reservas antecipadas</li>
                     <li>Bilhetes digitais</li>
@@ -77,9 +77,9 @@
                     <i class="fas fa-users"></i>
                 </div>
                 <h3>Viagens em Grupo</h3>
-                <p>Soluções especiais para grupos e excursões.</p>
+                <p>Soluções especializadas para grupos e excursões.</p>
                 <ul>
-                    <li>Preços especiais</li>
+                    <li>Tarifas especiais</li>
                     <li>Reserva de autocarros</li>
                     <li>Atendimento personalizado</li>
                 </ul>
@@ -91,19 +91,19 @@
             <div class="features-grid">
                 <div class="feature">
                     <h4>Conforto</h4>
-                    <p>Autocarros modernos com bancos reclináveis e ar condicionado.</p>
+                    <p>Autocarros modernos equipados com bancos reclináveis e ar condicionado.</p>
                 </div>
                 <div class="feature">
                     <h4>Segurança</h4>
-                    <p>Frota com manutenção regular e motoristas experientes.</p>
+                    <p>Frota com manutenção regular e motoristas profissionais experientes.</p>
                 </div>
                 <div class="feature">
                     <h4>Pontualidade</h4>
-                    <p>Compromisso com horários e itinerários estabelecidos.</p>
+                    <p>Compromisso rigoroso com horários e percursos estabelecidos.</p>
                 </div>
                 <div class="feature">
                     <h4>Cobertura</h4>
-                    <p>Vasta rede de rotas em todo o território português.</p>
+                    <p>Extensa rede de percursos em todo o território português.</p>
                 </div>
             </div>
         </div>
@@ -113,5 +113,6 @@
     </footer>
 </body>
 </html>
+
 
 
