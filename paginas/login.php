@@ -68,6 +68,12 @@
         }
 
         if ($senha_valida) {
+            // Verificar se a conta está ativa
+            if ($row['ativo'] == 0) {
+                echo "<script>alert('A sua conta ainda não foi ativada. Aguarde a validação por parte do administrador.'); window.location.href = 'login.php';</script>";
+                exit();
+            }
+
             // Login bem-sucedido
             $id_nivel = $row['tipo_perfil'];
             $id_utilizador = $row['id'];

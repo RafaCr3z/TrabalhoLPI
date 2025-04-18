@@ -16,6 +16,7 @@ if (mysqli_num_rows(mysqli_query($conn, "SHOW COLUMNS FROM utilizadores LIKE 'at
 $mensagem = '';
 $tipo_mensagem = '';
 $mostrar_inativos = isset($_GET['mostrar_inativos']) ? (int)$_GET['mostrar_inativos'] : 0;
+$mostrar_pendentes = isset($_GET['mostrar_pendentes']) ? (int)$_GET['mostrar_pendentes'] : 1;
 
 // Adicionar utilizador
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
@@ -281,11 +282,11 @@ $utilizadores = mysqli_query($conn, $sql);
         </div>
     </section>
 
-     <!-- Footer -->
+    <!-- Footer
      <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
-
+                        -->
     <!-- Modal de Edição -->
     <div id="modal-editar" class="modal">
         <div class="modal-content">
@@ -351,6 +352,7 @@ $utilizadores = mysqli_query($conn, $sql);
     </script>
 </body>
 </html>
+
 
 
 

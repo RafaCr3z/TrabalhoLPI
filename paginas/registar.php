@@ -14,14 +14,14 @@
         $telemovel = $_POST["telemovel"];
         $morada = $_POST["morada"];
 
-        // Gerar hash da senha
+        // Gerar hash da palavra-passe
         $hashed_pwd = password_hash($pwd, PASSWORD_DEFAULT);
 
         // Verifica se o nome de utilizador já existe
         $check_username_sql = "SELECT * FROM utilizadores WHERE user = '$user'";
         $check_username_result = mysqli_query($conn, $check_username_sql);
         if (mysqli_num_rows($check_username_result) > 0) {
-            echo "<script>alert('Nome de utilizador já existe. Tente outro.');</script>";
+            echo "<script>alert('O nome de utilizador já existe. Por favor, escolha outro.');</script>";
             mysqli_close($conn);
             exit();
         }
@@ -30,7 +30,7 @@
         $check_user_sql = "SELECT * FROM utilizadores WHERE nome = '$nome'";
         $check_user_result = mysqli_query($conn, $check_user_sql);
         if (mysqli_num_rows($check_user_result) > 0) {
-            echo "<script>alert('Usuário já existe. Tente outro.');</script>";
+            echo "<script>alert('Este nome já se encontra registado. Por favor, escolha outro.');</script>";
             mysqli_close($conn);
             exit();
         }
@@ -39,7 +39,7 @@
         $check_email_sql = "SELECT * FROM utilizadores WHERE email = '$email'";
         $check_email_result = mysqli_query($conn, $check_email_sql);
         if (mysqli_num_rows($check_email_result) > 0) {
-            echo "<script>alert('E-mail já existe. Tente outro.');</script>";
+            echo "<script>alert('Este endereço de e-mail já se encontra registado. Por favor, utilize outro.');</script>";
             mysqli_close($conn);
             exit();
         }
@@ -48,13 +48,13 @@
         $check_telemovel_sql = "SELECT * FROM utilizadores WHERE telemovel = '$telemovel'";
         $check_telemovel_result = mysqli_query($conn, $check_telemovel_sql);
         if (mysqli_num_rows($check_telemovel_result) > 0) {
-            echo "<script>alert('Telemóvel já existe. Tente outro.');</script>";
+            echo "<script>alert('Este número de telemóvel já se encontra registado. Por favor, utilize outro.');</script>";
             mysqli_close($conn);
             exit();
         }
 
-        $sql = "INSERT INTO utilizadores (user, pwd, nome, email, telemovel, morada, tipo_perfil)
-                VALUES ('$user', '$hashed_pwd', '$nome', '$email', '$telemovel', '$morada', 3)";
+        $sql = "INSERT INTO utilizadores (user, pwd, nome, email, telemovel, morada, tipo_perfil, ativo)
+                VALUES ('$user', '$hashed_pwd', '$nome', '$email', '$telemovel', '$morada', 3, 0)";
 
         if (mysqli_query($conn, $sql)) {
             // Criar carteira para o novo cliente
@@ -62,11 +62,10 @@
             $sql_carteira = "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_cliente, 0.00)";
             mysqli_query($conn, $sql_carteira);
 
-            // Redirecionar para a página inicial
-            echo "<script>alert('Usuário registrado com sucesso!'); window.location.href = 'index.php';</script>";
+            echo "<script>alert('Conta criada com sucesso! Aguarde a validação por parte do administrador para poder iniciar sessão.'); window.location.href = 'index.php';</script>";
             exit();
         } else {
-            echo "<script>alert('Erro ao registrar usuário: " . mysqli_error($conn) . "');</script>";
+            echo "<script>alert('Erro ao registar utilizador: " . mysqli_error($conn) . "');</script>";
         }
 
         mysqli_close($conn);
@@ -85,17 +84,16 @@
     <div class="register-container">
         <h2>Registar</h2>
         <form action="registar.php" method="post">
-
             <label for="user">Nome de Utilizador:</label>
             <input type="text" id="user" name="user" required>
 
             <label for="nome">Nome Completo:</label>
             <input type="text" id="nome" name="nome" required>
 
-            <label for="pwd">Senha:</label>
+            <label for="pwd">Palavra-passe:</label>
             <input type="password" id="pwd" name="pwd" required>
 
-            <label for="email">E-mail:</label>
+            <label for="email">Endereço de E-mail:</label>
             <input type="email" id="email" name="email" required email>
 
             <label for="telemovel">Telemóvel:</label>

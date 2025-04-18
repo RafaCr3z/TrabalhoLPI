@@ -314,6 +314,7 @@ button[type="submit"]:hover {
 
 .estado-ativo { background-color: #e8f5e9; color: #2e7d32; }
 .estado-inativo { background-color: #ffebee; color: #c62828; }
+.estado-pendente { background-color: #fff3e0; color: #f57c00; }
 
 /* Estilo para utilizadores inativos */
 .utilizador-inativo {
@@ -548,6 +549,26 @@ button[type="submit"]:hover {
     border-color: #007bff;
 }
 
+.filtros {
+    margin: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filtros label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.filtros input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
 /* Modal de edição */
 .modal {
     display: none;
@@ -615,6 +636,7 @@ footer img {
     height: 20px;
     width: auto;
 }
+
 
 
 
