@@ -2,7 +2,7 @@
 session_start();
 include '../basedados/basedados.h';
 
-// Verificar se o usuário é funcionário ou administrador
+// Verificar se o utilizador é funcionário ou administrador
 if (!isset($_SESSION["id_nivel"]) || ($_SESSION["id_nivel"] != 1 && $_SESSION["id_nivel"] != 2)) {
     header("Location: erro.php");
     exit();
