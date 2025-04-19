@@ -184,12 +184,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
 }
 
 // Buscar rotas disponíveis
-$sql_rotas = "SELECT DISTINCT r.id as id_rota, r.origem, r.destino, r.preco,
-             (SELECT COUNT(*) FROM horarios h WHERE h.id_rota = r.id) as total_horarios
+$sql_rotas = "SELECT DISTINCT r.id as id_rota, r.origem, r.destino, r.preco, r.capacidade,
+             (SELECT COUNT(*) FROM horarios h WHERE h.id_rota = r.id AND h.disponivel = 1) as total_horarios
              FROM rotas r
              WHERE r.disponivel = 1
              ORDER BY r.origem, r.destino";
 $result_rotas = mysqli_query($conn, $sql_rotas);
+
+// Buscar todos os horários disponíveis
+$sql_horarios = "SELECT h.id, h.id_rota, h.data_viagem, h.horario_partida, h.lugares_disponiveis,
+                h.lugares_disponiveis as capacidade_viagem, r.capacidade
+                FROM horarios h
+                JOIN rotas r ON h.id_rota = r.id
+                WHERE h.disponivel = 1
+                ORDER BY h.id_rota, h.data_viagem ASC, h.horario_partida ASC";
+$result_horarios = mysqli_query($conn, $sql_horarios);
+
+// Organizar horários por rota
+$horarios_por_rota = [];
+while ($horario = mysqli_fetch_assoc($result_horarios)) {
+    $id_rota = $horario['id_rota'];
+    if (!isset($horarios_por_rota[$id_rota])) {
+        $horarios_por_rota[$id_rota] = [];
+    }
+
+    // Formatar a data e hora para exibição
+    $data_formatada = date('d/m/Y', strtotime($horario['data_viagem']));
+    $hora_formatada = date('H:i', strtotime($horario['horario_partida']));
+
+    $horarios_por_rota[$id_rota][] = [
+        'id' => $horario['id'],
+        'data_viagem' => $data_formatada,
+        'hora_formatada' => $hora_formatada,
+        'horario_partida' => $horario['horario_partida'],
+        'lugares_disponiveis' => $horario['lugares_disponiveis'],
+        'capacidade' => $horario['capacidade_viagem'] // Usar a capacidade específica da viagem
+    ];
+}
+
+// Converter os horários para JSON para uso no JavaScript
+$horarios_json = json_encode($horarios_por_rota);
 
 
 
@@ -271,7 +305,6 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                                 <?php endwhile; ?>
                             </select>
                         </div>
-
                         <div class="form-group">
                             <label for="horario">Data e Horário:</label>
                             <select id="horario" name="horario" required>
@@ -361,6 +394,9 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
     </div>
 
     <script>
+    // Dados dos horários carregados do PHP
+    const horariosRotas = <?php echo $horarios_json; ?>;
+
     document.addEventListener('DOMContentLoaded', function() {
         const rotaSelect = document.getElementById('rota');
         const horarioSelect = document.getElementById('horario');
@@ -391,48 +427,28 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                 return;
             }
 
-            // Simular horários disponíveis
+            // Limpar o select de horários
             horarioSelect.innerHTML = '<option value="">Selecione uma data e horário</option>';
             lugarGroup.style.display = 'none';
             btnComprar.style.display = 'none';
 
-            // Dados simulados
-            horariosData = [
-                {
-                    id: 1,
-                    data_viagem: '26/06/2024',
-                    hora_formatada: '09:30',
-                    lugares_disponiveis: Array.from({length: 40}, (_, i) => i + 1),
-                    total_lugares: 50
-                },
-                {
-                    id: 2,
-                    data_viagem: '27/06/2024',
-                    hora_formatada: '15:30',
-                    lugares_disponiveis: Array.from({length: 35}, (_, i) => i + 1),
-                    total_lugares: 50
-                },
-                {
-                    id: 3,
-                    data_viagem: '28/06/2024',
-                    hora_formatada: '09:30',
-                    lugares_disponiveis: Array.from({length: 45}, (_, i) => i + 1),
-                    total_lugares: 50
-                },
-                {
-                    id: 4,
-                    data_viagem: '29/06/2024',
-                    hora_formatada: '15:30',
-                    lugares_disponiveis: Array.from({length: 30}, (_, i) => i + 1),
-                    total_lugares: 50
-                }
-            ];
+            // Obter os horários para a rota selecionada do banco de dados
+            horariosData = horariosRotas[rotaId] || [];
+
+            // Ordenar viagens por data e horário
+            if (horariosData.length > 0) {
+                horariosData.sort((a, b) => {
+                    const dataA = a.data_viagem.split('/').reverse().join('-') + ' ' + a.hora_formatada;
+                    const dataB = b.data_viagem.split('/').reverse().join('-') + ' ' + b.hora_formatada;
+                    return new Date(dataA) - new Date(dataB);
+                });
+            }
 
             // Adicionar opções ao select
             horariosData.forEach((horario, index) => {
                 const option = document.createElement('option');
                 option.value = `${horario.hora_formatada}|${horario.data_viagem}`;
-                option.textContent = `${horario.data_viagem} às ${horario.hora_formatada}`;
+                option.textContent = `${horario.data_viagem} às ${horario.hora_formatada} (Capacidade: ${horario.capacidade})`;
                 option.dataset.index = index;
                 horarioSelect.appendChild(option);
             });
@@ -456,52 +472,32 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
             // Se temos os dados do horário em cache
             if (selectedIndex !== undefined && horariosData[selectedIndex]) {
                 const horario = horariosData[selectedIndex];
-                capacidadeOnibus = horario.total_lugares;
+                capacidadeOnibus = parseInt(horario.capacidade);
+                const lugaresDisponiveisTotal = parseInt(horario.lugares_disponiveis);
 
-                // Obter lugares ocupados (todos os lugares que não estão na lista de disponíveis)
+                // Calcular lugares ocupados
                 lugaresOcupados = [];
                 for (let i = 1; i <= capacidadeOnibus; i++) {
-                    if (!horario.lugares_disponiveis.includes(i)) {
+                    // Se o número do lugar é maior que o total de lugares disponíveis,
+                    // significa que está ocupado
+                    if (i > lugaresDisponiveisTotal) {
                         lugaresOcupados.push(i);
                     }
                 }
 
-                renderizarLugares(horario.lugares_disponiveis);
-                atualizarQuantidadeMaxima(horario.lugares_disponiveis.length);
-            } else {
-                // Simular lugares disponíveis
-                const [hora, data] = horarioValue.split('|');
-                const rotaId = rotaSelect.value;
+                // Criar array de lugares disponíveis
+                const lugaresDisponiveis = [];
+                for (let i = 1; i <= lugaresDisponiveisTotal; i++) {
+                    lugaresDisponiveis.push(i);
+                }
 
-                lugaresSelector.innerHTML = '<div class="loading">Carregando lugares...</div>';
+                renderizarLugares(lugaresDisponiveis);
+                atualizarQuantidadeMaxima(lugaresDisponiveisTotal);
+            } else {
+                // Caso não encontre o horário no cache (não deve acontecer)
+                lugaresSelector.innerHTML = '<div class="error">Erro ao carregar lugares. Por favor, selecione o horário novamente.</div>';
                 lugarGroup.style.display = 'block';
                 btnComprar.style.display = 'none';
-
-                // Simular dados de lugares disponíveis
-                capacidadeOnibus = 50;
-
-                // Simular lugares ocupados aleatoriamente
-                lugaresOcupados = [];
-                const numOcupados = Math.floor(Math.random() * 10); // Entre 0 e 9 lugares ocupados
-
-                for (let i = 0; i < numOcupados; i++) {
-                    const lugar = Math.floor(Math.random() * capacidadeOnibus) + 1;
-                    if (!lugaresOcupados.includes(lugar)) {
-                        lugaresOcupados.push(lugar);
-                    }
-                }
-
-                // Calcular lugares disponíveis
-                const lugaresDisponiveis = [];
-                for (let i = 1; i <= capacidadeOnibus; i++) {
-                    if (!lugaresOcupados.includes(i)) {
-                        lugaresDisponiveis.push(i);
-                    }
-                }
-
-                // Renderizar lugares
-                renderizarLugares(lugaresDisponiveis);
-                atualizarQuantidadeMaxima(lugaresDisponiveis.length);
             }
         });
 
@@ -595,7 +591,13 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
         function atualizarQuantidadeMaxima(totalLugaresDisponiveis) {
             quantidadeInput.max = totalLugaresDisponiveis;
             quantidadeInput.value = Math.min(quantidadeInput.value, totalLugaresDisponiveis);
-            quantidadeDisponivel.textContent = `Lugares disponíveis: ${totalLugaresDisponiveis}`;
+
+            // Obter a capacidade máxima da viagem selecionada
+            const selectedIndex = horarioSelect.options[horarioSelect.selectedIndex].dataset.index;
+            const capacidadeMaxima = horariosData[selectedIndex].capacidade;
+
+            // Exibir informações sobre lugares disponíveis e capacidade máxima
+            quantidadeDisponivel.textContent = `Lugares disponíveis: ${totalLugaresDisponiveis} de ${capacidadeMaxima}`;
 
             if (totalLugaresDisponiveis === 0) {
                 btnComprar.style.display = 'none';
@@ -627,7 +629,11 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                     quantidadeDisponivel.style.color = 'red';
                     return false;
                 } else {
-                    quantidadeDisponivel.textContent = `Lugares disponíveis: ${totalLugaresDisponiveis}`;
+                    // Obter a capacidade máxima da viagem selecionada
+                    const capacidadeMaxima = horario.capacidade;
+
+                    // Exibir informações sobre lugares disponíveis e capacidade máxima
+                    quantidadeDisponivel.textContent = `Lugares disponíveis: ${totalLugaresDisponiveis} de ${capacidadeMaxima}`;
                     quantidadeDisponivel.style.color = 'green';
                     return true;
                 }

@@ -377,6 +377,8 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
                         </select>
                     </div>
 
+                    <!-- Removido o elemento de exibição de datas e horários -->
+
                     <div class="form-group" id="horarioContainer" style="display: none;">
                         <label for="horario">Data e Horário:</label>
                         <select id="horario" name="horario" required>
@@ -492,6 +494,7 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
 </html>
 
 <script>
+// Dados dos horários já estão carregados do PHP no HTML
 document.addEventListener('DOMContentLoaded', function() {
     const rotaSelect = document.getElementById('rota');
     const horarioContainer = document.getElementById('horarioContainer');
@@ -520,17 +523,49 @@ document.addEventListener('DOMContentLoaded', function() {
         const todasOpcoes = horarioSelect.querySelectorAll('option');
         let temHorarios = false;
 
+        // Coletar viagens disponíveis para esta rota
+        const viagensDisponiveis = [];
+
         todasOpcoes.forEach(opcao => {
             if (opcao.dataset.rota) {
                 // Se a opção tem um data-rota, verificar se corresponde à rota selecionada
                 if (opcao.dataset.rota === rotaId) {
                     opcao.style.display = '';
                     temHorarios = true;
+
+                    // Adicionar às viagens disponíveis
+                    viagensDisponiveis.push({
+                        data: opcao.dataset.data,
+                        hora: opcao.dataset.hora,
+                        lugares: opcao.dataset.lugares,
+                        capacidade: opcao.dataset.capacidade
+                    });
                 } else {
                     opcao.style.display = 'none';
                 }
             }
         });
+
+        // Remover duplicatas (pode acontecer em alguns casos)
+        if (viagensDisponiveis.length > 0) {
+            const viagensUnicas = [];
+            const viagensMap = new Map();
+
+            viagensDisponiveis.forEach(viagem => {
+                const chave = `${viagem.data}-${viagem.hora}`;
+                if (!viagensMap.has(chave)) {
+                    viagensMap.set(chave, true);
+                    viagensUnicas.push(viagem);
+                }
+            });
+
+            // Ordenar viagens por data e horário
+            viagensUnicas.sort((a, b) => {
+                const dataA = a.data.split('/').reverse().join('-') + ' ' + a.hora;
+                const dataB = b.data.split('/').reverse().join('-') + ' ' + b.hora;
+                return new Date(dataA) - new Date(dataB);
+            });
+        }
 
         // Atualizar a opção padrão
         const opcaoPadrao = horarioSelect.querySelector('option[value=""]');
@@ -563,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let lugaresOcupados = [];
     const lugaresInfo = document.getElementById('lugaresInfo');
 
-    // Função para simular lugares ocupados 
+    // Função para simular lugares ocupados
     function buscarLugaresOcupados() {
         // Simular lugares ocupados aleatoriamente
         const ocupados = [];
@@ -675,7 +710,8 @@ document.addEventListener('DOMContentLoaded', function() {
             capacidadeOnibus = parseInt(selectedOption.dataset.capacidade);
 
             // Atualizar o máximo de bilhetes disponíveis
-            maxQuantidade.textContent = lugares;
+            const capacidadeMaxima = parseInt(selectedOption.dataset.capacidade);
+            maxQuantidade.textContent = `${lugares} de ${capacidadeMaxima}`;
             quantidadeInput.max = lugares;
             quantidadeInput.value = Math.min(1, lugares);
 
