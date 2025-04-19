@@ -268,42 +268,6 @@ if (isset($_GET['eliminar_bilhete']) && !empty($_GET['eliminar_bilhete'])) {
     }
 }
 
-// Processar requisição AJAX para buscar lugares ocupados
-if (isset($_POST['buscar_lugares_ocupados'])) {
-    header('Content-Type: application/json');
-
-    $rota_id = isset($_POST['rota_id']) ? intval($_POST['rota_id']) : 0;
-    $data_viagem = isset($_POST['data_viagem']) ? $_POST['data_viagem'] : '';
-    $hora_viagem = isset($_POST['hora_viagem']) ? $_POST['hora_viagem'] : '';
-
-    if (!$rota_id || empty($data_viagem) || empty($hora_viagem)) {
-        echo json_encode(['error' => 'Parâmetros inválidos']);
-        exit();
-    }
-
-    // Buscar lugares ocupados
-    $sql = "SELECT numero_lugar FROM bilhetes
-            WHERE id_rota = $rota_id
-            AND data_viagem = '$data_viagem'
-            AND hora_viagem = '$hora_viagem'
-            AND numero_lugar IS NOT NULL";
-
-    $result = mysqli_query($conn, $sql);
-
-    if (!$result) {
-        echo json_encode(['error' => 'Erro na consulta: ' . mysqli_error($conn)]);
-        exit();
-    }
-
-    $lugares_ocupados = [];
-    while ($row = mysqli_fetch_assoc($result)) {
-        $lugares_ocupados[] = intval($row['numero_lugar']);
-    }
-
-    echo json_encode(['lugares_ocupados' => $lugares_ocupados]);
-    exit();
-}
-
 // Buscar todos os horários disponíveis
 $sql_todos_horarios = "SELECT h.id, h.id_rota, h.data_viagem, h.horario_partida, h.disponivel, h.lugares_disponiveis,
                 r.origem, r.destino, r.capacidade
@@ -599,46 +563,20 @@ document.addEventListener('DOMContentLoaded', function() {
     let lugaresOcupados = [];
     const lugaresInfo = document.getElementById('lugaresInfo');
 
-    // Função para buscar lugares ocupados
-    async function buscarLugaresOcupados(rotaId, dataViagem, horaViagem) {
-        try {
-            // Converter a data do formato dd/mm/yyyy para yyyy-mm-dd para a consulta SQL
-            const partes = dataViagem.split('/');
-            const dataFormatada = `${partes[2]}-${partes[1]}-${partes[0]}`;
+    // Função para simular lugares ocupados 
+    function buscarLugaresOcupados() {
+        // Simular lugares ocupados aleatoriamente
+        const ocupados = [];
+        const numOcupados = Math.floor(Math.random() * 10); // Entre 0 e 9 lugares ocupados
 
-            // Buscar lugares ocupados via PHP
-            const formData = new FormData();
-            formData.append('buscar_lugares_ocupados', '1');
-            formData.append('rota_id', rotaId);
-            formData.append('data_viagem', dataFormatada);
-            formData.append('hora_viagem', horaViagem);
-
-            const response = await fetch('gerir_bilhetes.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+        for (let i = 0; i < numOcupados; i++) {
+            const lugar = Math.floor(Math.random() * capacidadeOnibus) + 1;
+            if (!ocupados.includes(lugar)) {
+                ocupados.push(lugar);
             }
-
-            const data = await response.json();
-            return data.lugares_ocupados || [];
-        } catch (error) {
-            console.error('Erro ao buscar lugares ocupados:', error);
-            // Fallback para simulação em caso de erro
-            const ocupados = [];
-            const numOcupados = Math.floor(Math.random() * 10); // Entre 0 e 9 lugares ocupados
-
-            for (let i = 0; i < numOcupados; i++) {
-                const lugar = Math.floor(Math.random() * capacidadeOnibus) + 1;
-                if (!ocupados.includes(lugar)) {
-                    ocupados.push(lugar);
-                }
-            }
-
-            return ocupados;
         }
+
+        return ocupados;
     }
 
     // Função para atualizar informações sobre lugares selecionados
@@ -721,7 +659,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Quando o horário é selecionado
-    horarioSelect.addEventListener('change', async function() {
+    horarioSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         const horarioValue = this.value;
 
@@ -744,11 +682,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Mostrar o container de quantidade
             quantidadeContainer.style.display = 'block';
 
-            // Buscar lugares ocupados
-            const rotaId = rotaSelect.value;
-            const dataViagem = selectedOption.dataset.data;
-            const horaViagem = selectedOption.dataset.hora;
-            lugaresOcupados = await buscarLugaresOcupados(rotaId, dataViagem, horaViagem);
+            // Buscar lugares ocupados (simulado)
+            lugaresOcupados = buscarLugaresOcupados();
 
             // Renderizar a grade de lugares
             renderizarLugares();
