@@ -258,6 +258,24 @@ button[type="submit"]:hover {
     font-style: italic;
 }
 
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.9em;
+}
+
+#quantidade {
+    width: 100px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#quantidadeDisponivel {
+    color: green;
+    font-weight: bold;
+}
+
 /* Tabela de bilhetes */
 .table-responsive {
     overflow-x: auto;
@@ -398,3 +416,4 @@ footer img {
     height: 20px;
     width: auto;
 }
+

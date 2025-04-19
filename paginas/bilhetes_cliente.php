@@ -175,95 +175,86 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
     $id_rota = intval($_POST['rota']);
     list($hora_viagem, $data_viagem) = explode('|', $_POST['horario']);
     $numero_lugar = isset($_POST['lugar']) ? intval($_POST['lugar']) : null;
+    $quantidade = isset($_POST['quantidade']) ? intval($_POST['quantidade']) : 1;
 
-    // Converter a data do formato dd/mm/yyyy para yyyy-mm-dd (formato do MySQL)
+    // Validar quantidade mínima
+    if ($quantidade < 1) {
+        $msg = urlencode("A quantidade de bilhetes deve ser pelo menos 1.");
+        header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
+        exit();
+    }
+
+    // Converter a data do formato dd/mm/yyyy para yyyy-mm-dd
     $data_formatada = date('Y-m-d', strtotime(str_replace('/', '-', $data_viagem)));
 
-    // Verificar se a rota existe e obter o preço
-    $sql_rota = "SELECT r.preco, r.origem, r.destino, r.capacidade
-                FROM rotas r
-                WHERE r.id = ? AND r.disponivel = 1";
+    // Verificar se a rota existe e obter informações
+    $sql_rota = "SELECT r.preco, r.origem, r.destino, r.capacidade,
+                 (SELECT COUNT(*) FROM bilhetes 
+                  WHERE id_rota = r.id 
+                  AND data_viagem = ? 
+                  AND hora_viagem = ?) as bilhetes_vendidos
+                 FROM rotas r
+                 WHERE r.id = ? AND r.disponivel = 1";
 
     $stmt = mysqli_prepare($conn, $sql_rota);
-    mysqli_stmt_bind_param($stmt, "i", $id_rota);
+    mysqli_stmt_bind_param($stmt, "ssi", $data_formatada, $hora_viagem, $id_rota);
     mysqli_stmt_execute($stmt);
     $result_rota = mysqli_stmt_get_result($stmt);
 
-    if (mysqli_num_rows($result_rota) > 0) {
-        $rota = mysqli_fetch_assoc($result_rota);
-        $preco = $rota['preco'];
-        $origem = $rota['origem'];
-        $destino = $rota['destino'];
-        $capacidade = $rota['capacidade'];
+    if ($row_rota = mysqli_fetch_assoc($result_rota)) {
+        $preco = $row_rota['preco'];
+        $origem = $row_rota['origem'];
+        $destino = $row_rota['destino'];
+        $capacidade = $row_rota['capacidade'];
+        $bilhetes_vendidos = $row_rota['bilhetes_vendidos'];
+        $lugares_disponiveis = $capacidade - $bilhetes_vendidos;
 
-        // Verificar se o lugar está disponível
-        if ($numero_lugar !== null) {
-            $sql_verificar_lugar = "SELECT id FROM bilhetes
-                                  WHERE id_rota = ?
-                                  AND data_viagem = ?
-                                  AND hora_viagem = ?
-                                  AND numero_lugar = ?";
-            $stmt = mysqli_prepare($conn, $sql_verificar_lugar);
-            mysqli_stmt_bind_param($stmt, "issi", $id_rota, $data_formatada, $hora_viagem, $numero_lugar);
-            mysqli_stmt_execute($stmt);
-            $result_lugar = mysqli_stmt_get_result($stmt);
-
-            if (mysqli_num_rows($result_lugar) > 0) {
-                $msg = urlencode("O lugar selecionado já está ocupado. Por favor, escolha outro lugar.");
-                header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
-                exit();
-            }
-
-            // Verificar se o número do lugar é válido
-            if ($numero_lugar < 1 || $numero_lugar > $capacidade) {
-                $msg = urlencode("Número de lugar inválido.");
-                header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
-                exit();
-            }
+        // Verificar se há lugares suficientes
+        if ($quantidade > $lugares_disponiveis) {
+            $msg = urlencode("Não há lugares suficientes. Lugares disponíveis: $lugares_disponiveis");
+            header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
+            exit();
         }
 
-        if ($row_saldo['saldo'] >= $preco) {
+        // Verificar se o cliente tem saldo suficiente para todos os bilhetes
+        $preco_total = $preco * $quantidade;
+        
+        if ($row_saldo['saldo'] >= $preco_total) {
             mysqli_begin_transaction($conn);
 
             try {
                 // 1. Reduzir saldo do cliente
                 $sql_reduzir = "UPDATE carteiras SET saldo = saldo - ? WHERE id_cliente = ?";
                 $stmt = mysqli_prepare($conn, $sql_reduzir);
-                mysqli_stmt_bind_param($stmt, "di", $preco, $id_cliente);
+                mysqli_stmt_bind_param($stmt, "di", $preco_total, $id_cliente);
                 mysqli_stmt_execute($stmt);
 
                 // 2. Aumentar saldo da FelixBus
                 $sql_aumentar = "UPDATE carteira_felixbus SET saldo = saldo + ? WHERE id = ?";
                 $stmt = mysqli_prepare($conn, $sql_aumentar);
-                mysqli_stmt_bind_param($stmt, "di", $preco, $id_carteira_felixbus);
+                mysqli_stmt_bind_param($stmt, "di", $preco_total, $id_carteira_felixbus);
                 mysqli_stmt_execute($stmt);
 
-                // 3. Registrar a transação
-                $descricao = "Compra de bilhete: $origem para $destino" . ($numero_lugar ? " (Lugar: $numero_lugar)" : "");
+                // 3. Registar a transação
+                $descricao = "Compra de $quantidade bilhete(s): $origem para $destino";
                 $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
                                 VALUES (?, ?, ?, 'compra', ?)";
                 $stmt = mysqli_prepare($conn, $sql_transacao);
-                mysqli_stmt_bind_param($stmt, "iids", $id_cliente, $id_carteira_felixbus, $preco, $descricao);
+                mysqli_stmt_bind_param($stmt, "iids", $id_cliente, $id_carteira_felixbus, $preco_total, $descricao);
                 mysqli_stmt_execute($stmt);
 
-                // 4. Criar o bilhete
-                if ($numero_lugar !== null) {
-                    $sql_bilhete = "INSERT INTO bilhetes (id_cliente, id_rota, data_viagem, hora_viagem, numero_lugar)
-                                   VALUES (?, ?, ?, ?, ?)";
-                    $stmt = mysqli_prepare($conn, $sql_bilhete);
-                    mysqli_stmt_bind_param($stmt, "iissi", $id_cliente, $id_rota, $data_formatada, $hora_viagem, $numero_lugar);
-                } else {
+                // 4. Criar os bilhetes
+                for ($i = 0; $i < $quantidade; $i++) {
                     $sql_bilhete = "INSERT INTO bilhetes (id_cliente, id_rota, data_viagem, hora_viagem)
                                    VALUES (?, ?, ?, ?)";
                     $stmt = mysqli_prepare($conn, $sql_bilhete);
                     mysqli_stmt_bind_param($stmt, "iiss", $id_cliente, $id_rota, $data_formatada, $hora_viagem);
+                    mysqli_stmt_execute($stmt);
                 }
-                mysqli_stmt_execute($stmt);
 
                 mysqli_commit($conn);
 
-                // Redirecionar para evitar reenvio do formulário ao atualizar a página
-                $msg = urlencode("Bilhete comprado com sucesso!" . ($numero_lugar ? " Lugar reservado: $numero_lugar" : ""));
+                $msg = urlencode("$quantidade bilhete(s) comprado(s) com sucesso!");
                 header("Location: bilhetes_cliente.php?msg=$msg&tipo=success");
                 exit();
 
@@ -274,14 +265,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
                 exit();
             }
         } else {
-            $msg = urlencode("Saldo insuficiente para comprar este bilhete.");
+            $msg = urlencode("Saldo insuficiente para comprar $quantidade bilhete(s). Total: €" . number_format($preco_total, 2, ',', '.'));
             header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
             exit();
         }
-    } else {
-        $msg = urlencode("Rota não encontrada.");
-        header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
-        exit();
     }
 }
 
@@ -296,12 +283,24 @@ $result_rotas = mysqli_query($conn, $sql_rotas);
 
 
 // Buscar bilhetes do cliente
-$sql_bilhetes = "SELECT b.id, r.origem, r.destino, b.data_viagem, b.hora_viagem, r.preco, b.data_compra, u.nome as nome_cliente, b.numero_lugar
+$sql_bilhetes = "SELECT 
+                    r.origem, 
+                    r.destino, 
+                    b.data_viagem, 
+                    b.hora_viagem, 
+                    r.preco, 
+                    MIN(b.data_compra) as data_compra, 
+                    u.nome as nome_cliente,
+                    COUNT(*) as quantidade,
+                    GROUP_CONCAT(b.id) as ids,
+                    GROUP_CONCAT(b.numero_lugar) as lugares
                 FROM bilhetes b
                 JOIN rotas r ON b.id_rota = r.id
                 JOIN utilizadores u ON b.id_cliente = u.id
                 WHERE b.id_cliente = ?
+                GROUP BY r.origem, r.destino, b.data_viagem, b.hora_viagem, r.preco, u.nome
                 ORDER BY b.data_viagem DESC, b.hora_viagem ASC";
+
 $stmt = mysqli_prepare($conn, $sql_bilhetes);
 mysqli_stmt_bind_param($stmt, "i", $id_cliente);
 mysqli_stmt_execute($stmt);
@@ -369,6 +368,12 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                             </select>
                         </div>
 
+                        <div class="form-group">
+                            <label for="quantidade">Quantidade de Bilhetes:</label>
+                            <input type="number" id="quantidade" name="quantidade" min="1" value="1" required>
+                            <small id="quantidadeDisponivel"></small>
+                        </div>
+
                         <div class="form-group" id="lugarGroup" style="display: none;">
                             <label for="lugar">Escolha o Lugar:</label>
                             <select id="lugar" name="lugar" required>
@@ -398,21 +403,30 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                                         <th>Cliente</th>
                                         <th>Data</th>
                                         <th>Hora</th>
-                                        <th>Lugar</th>
-                                        <th>Preço</th>
+                                        <th>Quantidade</th>
+                                        <th>Lugares</th>
+                                        <th>Preço Unit.</th>
+                                        <th>Preço Total</th>
                                         <th>Data de Compra</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php while ($bilhete = mysqli_fetch_assoc($result_bilhetes)): ?>
                                         <tr>
-                                            <td><?php echo $bilhete['id']; ?></td>
+                                            <td><?php echo $bilhete['ids']; ?></td>
                                             <td><?php echo htmlspecialchars($bilhete['origem'] . ' → ' . $bilhete['destino']); ?></td>
                                             <td><?php echo htmlspecialchars($bilhete['nome_cliente']); ?></td>
                                             <td><?php echo date('d/m/Y', strtotime($bilhete['data_viagem'])); ?></td>
                                             <td><?php echo $bilhete['hora_viagem']; ?></td>
-                                            <td><?php echo $bilhete['numero_lugar'] ? $bilhete['numero_lugar'] : 'Não definido'; ?></td>
+                                            <td><?php echo $bilhete['quantidade']; ?></td>
+                                            <td><?php 
+                                                $lugares = $bilhete['lugares'] ? 
+                                                    implode(', ', array_filter(explode(',', $bilhete['lugares']))) : 
+                                                    'Não definido';
+                                                echo $lugares;
+                                            ?></td>
                                             <td class="preco">€<?php echo number_format($bilhete['preco'], 2, ',', '.'); ?></td>
+                                            <td class="preco">€<?php echo number_format($bilhete['preco'] * $bilhete['quantidade'], 2, ',', '.'); ?></td>
                                             <td><?php echo date('d/m/Y', strtotime($bilhete['data_compra'])); ?></td>
                                         </tr>
                                     <?php endwhile; ?>
@@ -436,7 +450,9 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
         const lugarSelect = document.getElementById('lugar');
         const lugarGroup = document.getElementById('lugarGroup');
         const btnComprar = document.getElementById('btnComprar');
-
+        const quantidadeInput = document.getElementById('quantidade');
+        const quantidadeDisponivel = document.getElementById('quantidadeDisponivel');
+        
         // Armazenar os dados dos horários para uso posterior
         let horariosData = [];
 
@@ -584,6 +600,69 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
 
             lugarGroup.style.display = 'block';
         }
+        
+        // Atualizar quantidade máxima quando horário é selecionado
+        horarioSelect.addEventListener('change', function() {
+            const selectedIndex = this.options[this.selectedIndex].dataset.index;
+            
+            if (selectedIndex !== undefined && horariosData[selectedIndex]) {
+                const horario = horariosData[selectedIndex];
+                // Usar o length para obter o total de lugares disponíveis
+                const totalLugaresDisponiveis = horario.lugares_disponiveis.length;
+                
+                quantidadeInput.max = totalLugaresDisponiveis;
+                quantidadeInput.value = Math.min(quantidadeInput.value, totalLugaresDisponiveis);
+                quantidadeDisponivel.textContent = `Lugares disponíveis: ${totalLugaresDisponiveis}`;
+                
+                if (totalLugaresDisponiveis === 0) {
+                    btnComprar.style.display = 'none';
+                    quantidadeDisponivel.style.color = 'red';
+                } else {
+                    btnComprar.style.display = 'block';
+                    quantidadeDisponivel.style.color = 'green';
+                }
+
+                validarQuantidade();
+            }
+        });
+        
+        // Função para validar a quantidade
+        function validarQuantidade() {
+            const selectedIndex = horarioSelect.options[horarioSelect.selectedIndex].dataset.index;
+            if (selectedIndex !== undefined && horariosData[selectedIndex]) {
+                const horario = horariosData[selectedIndex];
+                const totalLugaresDisponiveis = horario.lugares_disponiveis.length;
+                const quantidade = parseInt(quantidadeInput.value);
+                
+                if (quantidade > totalLugaresDisponiveis) {
+                    quantidadeInput.value = totalLugaresDisponiveis;
+                    quantidadeDisponivel.textContent = `Quantidade ajustada para o máximo disponível: ${totalLugaresDisponiveis}`;
+                    quantidadeDisponivel.style.color = 'orange';
+                    return false;
+                } else if (quantidade < 1) {
+                    quantidadeInput.value = 1;
+                    quantidadeDisponivel.style.color = 'red';
+                    return false;
+                } else {
+                    quantidadeDisponivel.textContent = `Lugares disponíveis: ${totalLugaresDisponiveis}`;
+                    quantidadeDisponivel.style.color = 'green';
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // Validar quantidade ao alterar
+        quantidadeInput.addEventListener('input', validarQuantidade);
+        
+        // Validar formulário antes de submeter
+        const formCompra = document.getElementById('comprarBilheteForm');
+        formCompra.addEventListener('submit', function(e) {
+            if (!validarQuantidade()) {
+                e.preventDefault();
+                alert('Por favor, selecione uma quantidade válida de bilhetes.');
+            }
+        });
     });
     </script>
 
