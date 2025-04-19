@@ -44,132 +44,6 @@ if (mysqli_num_rows($column_result) == 0) {
     mysqli_query($conn, $add_column);
 }
 
-// Código para buscar horários disponíveis
-if (isset($_GET['get_horarios']) && isset($_GET['rota_id'])) {
-    $rota_id = intval($_GET['rota_id']);
-
-    // Verificar se a rota existe
-    $check_rota = "SELECT id, origem, destino, capacidade FROM rotas WHERE id = $rota_id AND disponivel = 1";
-    $rota_result = mysqli_query($conn, $check_rota);
-    $rota_info = mysqli_fetch_assoc($rota_result);
-
-    if (!$rota_info) {
-        header('Content-Type: application/json');
-        echo json_encode(['error' => 'Rota não disponível']);
-        exit();
-    }
-
-    // Query para buscar horários da rota
-    $query = "SELECT h.id, h.data_viagem, h.horario_partida, h.disponivel, h.lugares_disponiveis
-             FROM horarios h
-             WHERE h.id_rota = $rota_id
-             ORDER BY h.data_viagem ASC, h.horario_partida ASC";
-    $result = mysqli_query($conn, $query);
-
-    $horarios = [];
-
-    // Usar uma data de referência fixa para 2024
-    $data_referencia = '2024-04-16';
-
-    while ($row = mysqli_fetch_assoc($result)) {
-        // Só adiciona aos horários disponíveis se atender todos os critérios
-        if ($row['disponivel'] == 1 &&
-            $row['lugares_disponiveis'] > 0 &&
-            strtotime($row['data_viagem']) >= strtotime($data_referencia)) {
-
-            // Buscar lugares já ocupados para este horário
-            $data_formatada = date('Y-m-d', strtotime($row['data_viagem']));
-            $hora_formatada = date('H:i:s', strtotime($row['horario_partida']));
-
-            $sql_lugares_ocupados = "SELECT numero_lugar FROM bilhetes
-                                    WHERE id_rota = $rota_id
-                                    AND data_viagem = '$data_formatada'
-                                    AND hora_viagem = '$hora_formatada'
-                                    AND numero_lugar IS NOT NULL";
-            $result_lugares = mysqli_query($conn, $sql_lugares_ocupados);
-
-            $lugares_ocupados = [];
-            while ($lugar = mysqli_fetch_assoc($result_lugares)) {
-                $lugares_ocupados[] = $lugar['numero_lugar'];
-            }
-
-            // Calcular lugares disponíveis
-            $lugares_disponiveis = [];
-            for ($i = 1; $i <= $rota_info['capacidade']; $i++) {
-                if (!in_array($i, $lugares_ocupados)) {
-                    $lugares_disponiveis[] = $i;
-                }
-            }
-
-            $horarios[] = [
-                'id' => $row['id'],
-                'data_viagem' => date('d/m/Y', strtotime($row['data_viagem'])),
-                'hora_formatada' => date('H:i', strtotime($row['horario_partida'])),
-                'origem' => $rota_info['origem'],
-                'destino' => $rota_info['destino'],
-                'lugares_disponiveis' => $lugares_disponiveis,
-                'total_lugares' => $rota_info['capacidade']
-            ];
-        }
-    }
-
-    // Garantir que a resposta seja JSON
-    header('Content-Type: application/json');
-    header('Cache-Control: no-cache, no-store, must-revalidate');
-
-    echo json_encode(['horarios' => $horarios]);
-    exit();
-}
-
-// Código para buscar lugares disponíveis para um horário específico
-if (isset($_GET['get_lugares']) && isset($_GET['rota_id']) && isset($_GET['data']) && isset($_GET['hora'])) {
-    $rota_id = intval($_GET['rota_id']);
-    $data = $_GET['data'];
-    $hora = $_GET['hora'];
-
-    // Converter a data do formato dd/mm/yyyy para yyyy-mm-dd (formato do MySQL)
-    $data_formatada = date('Y-m-d', strtotime(str_replace('/', '-', $data)));
-
-    // Verificar se a rota existe
-    $check_rota = "SELECT id, capacidade FROM rotas WHERE id = $rota_id AND disponivel = 1";
-    $rota_result = mysqli_query($conn, $check_rota);
-    $rota_info = mysqli_fetch_assoc($rota_result);
-
-    if (!$rota_info) {
-        header('Content-Type: application/json');
-        echo json_encode(['error' => 'Rota não disponível']);
-        exit();
-    }
-
-    // Buscar lugares já ocupados
-    $sql_lugares_ocupados = "SELECT numero_lugar FROM bilhetes
-                            WHERE id_rota = $rota_id
-                            AND data_viagem = '$data_formatada'
-                            AND hora_viagem = '$hora'
-                            AND numero_lugar IS NOT NULL";
-    $result_lugares = mysqli_query($conn, $sql_lugares_ocupados);
-
-    $lugares_ocupados = [];
-    while ($lugar = mysqli_fetch_assoc($result_lugares)) {
-        $lugares_ocupados[] = $lugar['numero_lugar'];
-    }
-
-    // Calcular lugares disponíveis
-    $lugares_disponiveis = [];
-    for ($i = 1; $i <= $rota_info['capacidade']; $i++) {
-        if (!in_array($i, $lugares_ocupados)) {
-            $lugares_disponiveis[] = $i;
-        }
-    }
-
-    // Garantir que a resposta seja JSON
-    header('Content-Type: application/json');
-    header('Cache-Control: no-cache, no-store, must-revalidate');
-
-    echo json_encode(['lugares_disponiveis' => $lugares_disponiveis, 'total_lugares' => $rota_info['capacidade']]);
-    exit();
-}
-
 // Processar compra de bilhete
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
     $id_rota = intval($_POST['rota']);
@@ -517,57 +391,50 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                 return;
             }
 
-            horarioSelect.innerHTML = '<option value="">Carregando horários...</option>';
+            // Simular horários disponíveis
+            horarioSelect.innerHTML = '<option value="">Selecione uma data e horário</option>';
             lugarGroup.style.display = 'none';
             btnComprar.style.display = 'none';
 
-            // Construir URL para buscar horários
-            const url = new URL(window.location.href);
-            url.search = '';
-            url.searchParams.append('get_horarios', '1');
-            url.searchParams.append('rota_id', rotaId);
-            url.searchParams.append('_', new Date().getTime());
-
-            fetch(url.toString(), {
-                method: 'GET',
-                headers: {'Accept': 'application/json'}
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro HTTP: ${response.status}`);
+            // Dados simulados
+            horariosData = [
+                {
+                    id: 1,
+                    data_viagem: '26/06/2024',
+                    hora_formatada: '09:30',
+                    lugares_disponiveis: Array.from({length: 40}, (_, i) => i + 1),
+                    total_lugares: 50
+                },
+                {
+                    id: 2,
+                    data_viagem: '27/06/2024',
+                    hora_formatada: '15:30',
+                    lugares_disponiveis: Array.from({length: 35}, (_, i) => i + 1),
+                    total_lugares: 50
+                },
+                {
+                    id: 3,
+                    data_viagem: '28/06/2024',
+                    hora_formatada: '09:30',
+                    lugares_disponiveis: Array.from({length: 45}, (_, i) => i + 1),
+                    total_lugares: 50
+                },
+                {
+                    id: 4,
+                    data_viagem: '29/06/2024',
+                    hora_formatada: '15:30',
+                    lugares_disponiveis: Array.from({length: 30}, (_, i) => i + 1),
+                    total_lugares: 50
                 }
-                return response.json();
-            })
-            .then(data => {
-                horarioSelect.innerHTML = '<option value="">Selecione uma data e horário</option>';
-                horariosData = data.horarios || [];
+            ];
 
-                if (!horariosData.length) {
-                    horarioSelect.innerHTML = '<option value="" disabled>Nenhum horário disponível</option>';
-                    lugarGroup.style.display = 'none';
-                    btnComprar.style.display = 'none';
-                    return;
-                }
-
-                // Ordenar horários por data e hora
-                horariosData.sort((a, b) => {
-                    const dataA = a.data_viagem.split('/').reverse().join('-') + ' ' + a.hora_formatada;
-                    const dataB = b.data_viagem.split('/').reverse().join('-') + ' ' + b.hora_formatada;
-                    return new Date(dataA) - new Date(dataB);
-                });
-
-                horariosData.forEach(horario => {
-                    const option = document.createElement('option');
-                    option.value = `${horario.hora_formatada}|${horario.data_viagem}`;
-                    option.textContent = `${horario.data_viagem} às ${horario.hora_formatada}`;
-                    option.dataset.index = horariosData.indexOf(horario);
-                    horarioSelect.appendChild(option);
-                });
-            })
-            .catch(error => {
-                horarioSelect.innerHTML = `<option value="">Erro ao carregar horários</option>`;
-                lugarGroup.style.display = 'none';
-                btnComprar.style.display = 'none';
+            // Adicionar opções ao select
+            horariosData.forEach((horario, index) => {
+                const option = document.createElement('option');
+                option.value = `${horario.hora_formatada}|${horario.data_viagem}`;
+                option.textContent = `${horario.data_viagem} às ${horario.hora_formatada}`;
+                option.dataset.index = index;
+                horarioSelect.appendChild(option);
             });
         });
 
@@ -602,7 +469,7 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                 renderizarLugares(horario.lugares_disponiveis);
                 atualizarQuantidadeMaxima(horario.lugares_disponiveis.length);
             } else {
-                // Caso contrário, buscar os lugares disponíveis do servidor
+                // Simular lugares disponíveis
                 const [hora, data] = horarioValue.split('|');
                 const rotaId = rotaSelect.value;
 
@@ -610,47 +477,31 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                 lugarGroup.style.display = 'block';
                 btnComprar.style.display = 'none';
 
-                const url = new URL(window.location.href);
-                url.search = '';
-                url.searchParams.append('get_lugares', '1');
-                url.searchParams.append('rota_id', rotaId);
-                url.searchParams.append('data', data);
-                url.searchParams.append('hora', hora);
-                url.searchParams.append('_', new Date().getTime());
+                // Simular dados de lugares disponíveis
+                capacidadeOnibus = 50;
 
-                fetch(url.toString(), {
-                    method: 'GET',
-                    headers: {'Accept': 'application/json'}
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Erro HTTP: ${response.status}`);
+                // Simular lugares ocupados aleatoriamente
+                lugaresOcupados = [];
+                const numOcupados = Math.floor(Math.random() * 10); // Entre 0 e 9 lugares ocupados
+
+                for (let i = 0; i < numOcupados; i++) {
+                    const lugar = Math.floor(Math.random() * capacidadeOnibus) + 1;
+                    if (!lugaresOcupados.includes(lugar)) {
+                        lugaresOcupados.push(lugar);
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.lugares_disponiveis && data.lugares_disponiveis.length > 0) {
-                        capacidadeOnibus = data.total_lugares;
+                }
 
-                        // Obter lugares ocupados (todos os lugares que não estão na lista de disponíveis)
-                        lugaresOcupados = [];
-                        for (let i = 1; i <= capacidadeOnibus; i++) {
-                            if (!data.lugares_disponiveis.includes(i)) {
-                                lugaresOcupados.push(i);
-                            }
-                        }
-
-                        renderizarLugares(data.lugares_disponiveis);
-                        atualizarQuantidadeMaxima(data.lugares_disponiveis.length);
-                    } else {
-                        lugaresSelector.innerHTML = '<div class="empty-state">Nenhum lugar disponível</div>';
-                        btnComprar.style.display = 'none';
+                // Calcular lugares disponíveis
+                const lugaresDisponiveis = [];
+                for (let i = 1; i <= capacidadeOnibus; i++) {
+                    if (!lugaresOcupados.includes(i)) {
+                        lugaresDisponiveis.push(i);
                     }
-                })
-                .catch(error => {
-                    lugaresSelector.innerHTML = `<div class="error">Erro ao carregar lugares</div>`;
-                    btnComprar.style.display = 'none';
-                });
+                }
+
+                // Renderizar lugares
+                renderizarLugares(lugaresDisponiveis);
+                atualizarQuantidadeMaxima(lugaresDisponiveis.length);
             }
         });
 
