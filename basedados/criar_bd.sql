@@ -252,3 +252,6 @@ INSERT INTO alertas (mensagem, data_inicio, data_fim) VALUES
 ('Manutenção programada: alguns horários serão cancelados.', '2024-10-10 08:00', '2024-10-20 18:00');
 
 COMMIT;
+
+ALTER TABLE utilizadores
+ADD COLUMN ativo TINYINT(1) NOT NULL DEFAULT 0;
