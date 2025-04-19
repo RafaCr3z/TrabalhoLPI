@@ -135,6 +135,7 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
             <?php else: ?>
                 <div class="link"> <a href="pg_funcionario.php">Página Inicial</a></div>
             <?php endif; ?>
+            <div class="link"> <a href="gerir_carteiras.php">Gestão de Carteiras</a></div>
             <div class="link"> <a href="gerir_bilhetes_func.php">Gestão de Bilhetes</a></div>
             <?php if ($_SESSION["id_nivel"] == 1): ?>
                 <div class="link"> <a href="perfil_admin.php">Meu Perfil</a></div>
@@ -144,7 +145,11 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-admin">Área do Administrador</div>
+            <?php if ($_SESSION["id_nivel"] == 1): ?>
+                <div class="btn-admin">Área do Administrador</div>
+            <?php else: ?>
+                <div class="btn-admin">Área do Funcionário</div>
+            <?php endif; ?>
         </div>
     </nav>
 
@@ -240,6 +245,6 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
      <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
-    
+
 </body>
 </html>

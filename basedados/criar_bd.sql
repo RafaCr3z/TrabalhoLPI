@@ -79,12 +79,13 @@ CREATE TABLE horarios (
 -- Descrição: Regista as compras de bilhetes feitas pelos clientes
 -- --------------------------------------------------------
 CREATE TABLE bilhetes (
-    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()), -- ID único gerado automaticamente
+    id INT AUTO_INCREMENT PRIMARY KEY, -- ID sequencial automático
     id_cliente INT NOT NULL,
     id_rota INT NOT NULL,
     data_compra DATETIME DEFAULT CURRENT_TIMESTAMP, -- Data da compra do bilhete
     data_viagem DATE NOT NULL, -- Data da viagem
     hora_viagem TIME NOT NULL, -- Hora da viagem
+    numero_lugar INT, -- Número do lugar no ônibus
     FOREIGN KEY (id_cliente) REFERENCES utilizadores(id) ON DELETE CASCADE,
     FOREIGN KEY (id_rota) REFERENCES rotas(id)
 );
@@ -143,28 +144,28 @@ INSERT INTO perfis (id, descricao) VALUES
 (3, 'cliente');
 
 -- Criando utilizadores padrão
-INSERT INTO utilizadores (user, pwd, nome, email, telemovel, morada, tipo_perfil) VALUES
-('cliente', 'cliente', 'Cliente', 'cliente@felixbus.com', '961111111', 'Lisboa', 3),
-('funcionario', 'funcionario', 'Funcionário', 'funcionario@felixbus.com', '962222222', 'Porto', 2),
-('admin', 'admin', 'Administrador', 'admin@felixbus.com', '963333333', 'Coimbra', 1);
+INSERT INTO utilizadores (id, user, pwd, nome, email, telemovel, morada, tipo_perfil) VALUES
+(1,'admin', 'admin', 'Administrador', 'admin@felixbus.com', '963333333', 'Coimbra', 1),
+(2,'funcionario', 'funcionario', 'Funcionário', 'funcionario@felixbus.com', '962222222', 'Porto', 2),
+(3,'cliente', 'cliente', 'Cliente', 'cliente@felixbus.com', '961111111', 'Lisboa', 3);
 
 -- Criando rotas
-INSERT INTO rotas (origem, destino, preco, capacidade) VALUES
-('Lisboa', 'Porto', 25.00, 50),
-('Porto', 'Coimbra', 15.00, 40),
-('Coimbra', 'Faro', 35.00, 30),
-('Lisboa', 'Faro', 30.00, 45),
-('Porto', 'Braga', 10.00, 35),
-('Braga', 'Guimarães', 8.00, 30),
-('Faro', 'Portimão', 12.00, 35),
-('Lisboa', 'Coimbra', 20.00, 45),
-('Porto', 'Lisboa', 25.00, 50),
-('Coimbra', 'Porto', 15.00, 40),
-('Faro', 'Lisboa', 30.00, 45),
-('Braga', 'Porto', 10.00, 35),
-('Guimarães', 'Braga', 8.00, 30),
-('Portimão', 'Faro', 12.00, 35),
-('Coimbra', 'Lisboa', 20.00, 45);
+INSERT INTO rotas (id, origem, destino, preco, capacidade) VALUES
+(1,'Lisboa', 'Porto', 25.00, 50),
+(2,'Porto', 'Coimbra', 15.00, 40),
+(3,'Coimbra', 'Faro', 35.00, 30),
+(4,'Lisboa', 'Faro', 30.00, 45),
+(5,'Porto', 'Braga', 10.00, 35),
+(6,'Braga', 'Guimarães', 8.00, 30),
+(7,'Faro', 'Portimão', 12.00, 35),
+(8,'Lisboa', 'Coimbra', 20.00, 45),
+(9,'Porto', 'Lisboa', 25.00, 50),
+(10,'Coimbra', 'Porto', 15.00, 40),
+(11,'Faro', 'Lisboa', 30.00, 45),
+(12,'Braga', 'Porto', 10.00, 35),
+(13,'Guimarães', 'Braga', 8.00, 30),
+(14,'Portimão', 'Faro', 12.00, 35),
+(15,'Coimbra', 'Lisboa', 20.00, 45);
 
 -- Criando horários das viagens com datas diferentes
 INSERT INTO horarios (id_rota, horario_partida, data_viagem, lugares_disponiveis) VALUES
@@ -242,16 +243,16 @@ INSERT INTO carteira_felixbus (saldo) VALUES (0.00);
 
 -- Criando carteira de um cliente
 INSERT INTO carteiras (id_cliente, saldo) VALUES
-((SELECT id FROM utilizadores WHERE user = 'cliente'), 100.00);
+((SELECT id FROM utilizadores WHERE user = 'cliente'), 0.00);
 
 --Criando alertas
-INSERT INTO alertas (mensagem, data_inicio, data_fim) VALUES
-('Promoção: 20% de desconto em todas as viagens!', '2024-07-01 05:00', '2024-07-31 23:55'),
-('Aviso: Alteração nos horários de Lisboa para Porto.', '2024-08-05 10:00', '2024-08-15 21:59'),
-('Novos destinos disponíveis a partir de setembro!', '2024-09-01 00:00', '2024-09-30 23:59'),
-('Manutenção programada: alguns horários serão cancelados.', '2024-10-10 08:00', '2024-10-20 18:00');
+INSERT INTO alertas (id, mensagem, data_inicio, data_fim) VALUES
+(1,'Promoção: 20% de desconto em todas as viagens!', '2024-07-01 05:00', '2024-07-31 23:55'),
+(2,'Aviso: Alteração nos horários de Lisboa para Porto.', '2024-08-05 10:00', '2024-08-15 21:59'),
+(3,'Novos destinos disponíveis a partir de setembro!', '2024-09-01 00:00', '2024-09-30 23:59'),
+(4,'Manutenção programada: alguns horários serão cancelados.', '2024-10-10 08:00', '2024-10-20 18:00');
 
 COMMIT;
 
 ALTER TABLE utilizadores
-ADD COLUMN ativo TINYINT(1) NOT NULL DEFAULT 0;
+ADD COLUMN ativo TINYINT(1) NOT NULL DEFAULT 1;

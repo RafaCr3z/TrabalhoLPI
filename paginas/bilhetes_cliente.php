@@ -174,8 +174,8 @@ if (isset($_GET['get_lugares']) && isset($_GET['rota_id']) && isset($_GET['data'
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
     $id_rota = intval($_POST['rota']);
     list($hora_viagem, $data_viagem) = explode('|', $_POST['horario']);
-    $numero_lugar = isset($_POST['lugar']) ? intval($_POST['lugar']) : null;
     $quantidade = isset($_POST['quantidade']) ? intval($_POST['quantidade']) : 1;
+    $lugares = isset($_POST['lugares']) ? $_POST['lugares'] : '';
 
     // Validar quantidade mínima
     if ($quantidade < 1) {
@@ -184,20 +184,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
         exit();
     }
 
+    // Validar seleção de lugares
+    if (empty($lugares)) {
+        $msg = urlencode("Por favor, selecione os lugares para os bilhetes.");
+        header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
+        exit();
+    }
+
+    // Converter a string de lugares em um array
+    $lugares_array = explode(',', $lugares);
+
+    // Verificar se a quantidade de lugares selecionados corresponde à quantidade de bilhetes
+    if (count($lugares_array) != $quantidade) {
+        $msg = urlencode("A quantidade de lugares selecionados não corresponde à quantidade de bilhetes.");
+        header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
+        exit();
+    }
+
     // Converter a data do formato dd/mm/yyyy para yyyy-mm-dd
     $data_formatada = date('Y-m-d', strtotime(str_replace('/', '-', $data_viagem)));
 
     // Verificar se a rota existe e obter informações
-    $sql_rota = "SELECT r.preco, r.origem, r.destino, r.capacidade,
-                 (SELECT COUNT(*) FROM bilhetes 
-                  WHERE id_rota = r.id 
-                  AND data_viagem = ? 
-                  AND hora_viagem = ?) as bilhetes_vendidos
+    $sql_rota = "SELECT r.preco, r.origem, r.destino, r.capacidade
                  FROM rotas r
                  WHERE r.id = ? AND r.disponivel = 1";
 
     $stmt = mysqli_prepare($conn, $sql_rota);
-    mysqli_stmt_bind_param($stmt, "ssi", $data_formatada, $hora_viagem, $id_rota);
+    mysqli_stmt_bind_param($stmt, "i", $id_rota);
     mysqli_stmt_execute($stmt);
     $result_rota = mysqli_stmt_get_result($stmt);
 
@@ -206,19 +219,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
         $origem = $row_rota['origem'];
         $destino = $row_rota['destino'];
         $capacidade = $row_rota['capacidade'];
-        $bilhetes_vendidos = $row_rota['bilhetes_vendidos'];
-        $lugares_disponiveis = $capacidade - $bilhetes_vendidos;
 
-        // Verificar se há lugares suficientes
-        if ($quantidade > $lugares_disponiveis) {
-            $msg = urlencode("Não há lugares suficientes. Lugares disponíveis: $lugares_disponiveis");
+        // Verificar se os lugares já estão ocupados
+        $lugares_str = implode(',', $lugares_array);
+        $sql_check_lugares = "SELECT numero_lugar FROM bilhetes
+                             WHERE id_rota = ?
+                             AND data_viagem = ?
+                             AND hora_viagem = ?
+                             AND numero_lugar IN ($lugares_str)";
+        $stmt = mysqli_prepare($conn, $sql_check_lugares);
+        mysqli_stmt_bind_param($stmt, "iss", $id_rota, $data_formatada, $hora_viagem);
+        mysqli_stmt_execute($stmt);
+        $result_check_lugares = mysqli_stmt_get_result($stmt);
+
+        if (mysqli_num_rows($result_check_lugares) > 0) {
+            $lugares_ocupados = [];
+            while ($row = mysqli_fetch_assoc($result_check_lugares)) {
+                $lugares_ocupados[] = $row['numero_lugar'];
+            }
+            $msg = urlencode("Os seguintes lugares já estão ocupados: " . implode(', ', $lugares_ocupados));
             header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
             exit();
         }
 
         // Verificar se o cliente tem saldo suficiente para todos os bilhetes
         $preco_total = $preco * $quantidade;
-        
+
         if ($row_saldo['saldo'] >= $preco_total) {
             mysqli_begin_transaction($conn);
 
@@ -236,25 +262,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
                 mysqli_stmt_execute($stmt);
 
                 // 3. Registar a transação
-                $descricao = "Compra de $quantidade bilhete(s): $origem para $destino";
+                $descricao = "Compra de $quantidade bilhete(s): $origem para $destino (Lugares: $lugares)";
                 $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
                                 VALUES (?, ?, ?, 'compra', ?)";
                 $stmt = mysqli_prepare($conn, $sql_transacao);
                 mysqli_stmt_bind_param($stmt, "iids", $id_cliente, $id_carteira_felixbus, $preco_total, $descricao);
                 mysqli_stmt_execute($stmt);
 
-                // 4. Criar os bilhetes
-                for ($i = 0; $i < $quantidade; $i++) {
-                    $sql_bilhete = "INSERT INTO bilhetes (id_cliente, id_rota, data_viagem, hora_viagem)
-                                   VALUES (?, ?, ?, ?)";
+                // 4. Criar os bilhetes com os lugares selecionados
+                foreach ($lugares_array as $lugar) {
+                    $sql_bilhete = "INSERT INTO bilhetes (id_cliente, id_rota, data_viagem, hora_viagem, numero_lugar)
+                                   VALUES (?, ?, ?, ?, ?)";
                     $stmt = mysqli_prepare($conn, $sql_bilhete);
-                    mysqli_stmt_bind_param($stmt, "iiss", $id_cliente, $id_rota, $data_formatada, $hora_viagem);
+                    mysqli_stmt_bind_param($stmt, "iissi", $id_cliente, $id_rota, $data_formatada, $hora_viagem, $lugar);
                     mysqli_stmt_execute($stmt);
                 }
 
+                // 5. Atualizar lugares disponíveis na tabela horarios
+                $sql_update_lugares = "UPDATE horarios SET lugares_disponiveis = lugares_disponiveis - ?
+                                     WHERE id_rota = ? AND data_viagem = ? AND horario_partida = ?";
+                $stmt = mysqli_prepare($conn, $sql_update_lugares);
+                mysqli_stmt_bind_param($stmt, "iiss", $quantidade, $id_rota, $data_formatada, $hora_viagem);
+                mysqli_stmt_execute($stmt);
+
                 mysqli_commit($conn);
 
-                $msg = urlencode("$quantidade bilhete(s) comprado(s) com sucesso!");
+                $msg = urlencode("$quantidade bilhete(s) comprado(s) com sucesso para os lugares: $lugares!");
                 header("Location: bilhetes_cliente.php?msg=$msg&tipo=success");
                 exit();
 
@@ -269,6 +302,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
             header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
             exit();
         }
+    } else {
+        $msg = urlencode("Rota não encontrada ou não disponível.");
+        header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
+        exit();
     }
 }
 
@@ -283,13 +320,13 @@ $result_rotas = mysqli_query($conn, $sql_rotas);
 
 
 // Buscar bilhetes do cliente
-$sql_bilhetes = "SELECT 
-                    r.origem, 
-                    r.destino, 
-                    b.data_viagem, 
-                    b.hora_viagem, 
-                    r.preco, 
-                    MIN(b.data_compra) as data_compra, 
+$sql_bilhetes = "SELECT
+                    r.origem,
+                    r.destino,
+                    b.data_viagem,
+                    b.hora_viagem,
+                    r.preco,
+                    MIN(b.data_compra) as data_compra,
                     u.nome as nome_cliente,
                     COUNT(*) as quantidade,
                     GROUP_CONCAT(b.id) as ids,
@@ -375,10 +412,12 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                         </div>
 
                         <div class="form-group" id="lugarGroup" style="display: none;">
-                            <label for="lugar">Escolha o Lugar:</label>
-                            <select id="lugar" name="lugar" required>
-                                <option value="">Selecione um horário primeiro</option>
-                            </select>
+                            <label>Escolha os Lugares:</label>
+                            <div id="lugaresSelector" class="lugares-grid">
+                                <!-- Os lugares serão adicionados dinamicamente aqui -->
+                            </div>
+                            <input type="hidden" id="lugaresEscolhidos" name="lugares" value="">
+                            <small id="lugaresInfo" class="lugar-info">Selecione os lugares no diagrama acima.</small>
                         </div>
 
                         <button type="submit" name="comprar" id="btnComprar" style="display: none;">
@@ -411,17 +450,21 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while ($bilhete = mysqli_fetch_assoc($result_bilhetes)): ?>
+                                    <?php
+                                    $contador_bilhetes = 1;
+                                    while ($bilhete = mysqli_fetch_assoc($result_bilhetes)): ?>
                                         <tr>
-                                            <td><?php echo $bilhete['ids']; ?></td>
+                                            <td>
+                                                <?php echo $contador_bilhetes++; ?>
+                                            </td>
                                             <td><?php echo htmlspecialchars($bilhete['origem'] . ' → ' . $bilhete['destino']); ?></td>
                                             <td><?php echo htmlspecialchars($bilhete['nome_cliente']); ?></td>
                                             <td><?php echo date('d/m/Y', strtotime($bilhete['data_viagem'])); ?></td>
                                             <td><?php echo $bilhete['hora_viagem']; ?></td>
                                             <td><?php echo $bilhete['quantidade']; ?></td>
-                                            <td><?php 
-                                                $lugares = $bilhete['lugares'] ? 
-                                                    implode(', ', array_filter(explode(',', $bilhete['lugares']))) : 
+                                            <td><?php
+                                                $lugares = $bilhete['lugares'] ?
+                                                    implode(', ', array_filter(explode(',', $bilhete['lugares']))) :
                                                     'Não definido';
                                                 echo $lugares;
                                             ?></td>
@@ -447,14 +490,22 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
     document.addEventListener('DOMContentLoaded', function() {
         const rotaSelect = document.getElementById('rota');
         const horarioSelect = document.getElementById('horario');
-        const lugarSelect = document.getElementById('lugar');
+        const lugaresSelector = document.getElementById('lugaresSelector');
+        const lugaresEscolhidos = document.getElementById('lugaresEscolhidos');
         const lugarGroup = document.getElementById('lugarGroup');
+        const lugaresInfo = document.getElementById('lugaresInfo');
         const btnComprar = document.getElementById('btnComprar');
         const quantidadeInput = document.getElementById('quantidade');
         const quantidadeDisponivel = document.getElementById('quantidadeDisponivel');
-        
+
         // Armazenar os dados dos horários para uso posterior
         let horariosData = [];
+        // Array para armazenar os lugares selecionados
+        let lugaresSelecionados = [];
+        // Array para armazenar os lugares ocupados
+        let lugaresOcupados = [];
+        // Capacidade total do ônibus
+        let capacidadeOnibus = 0;
 
         rotaSelect.addEventListener('change', function() {
             const rotaId = this.value;
@@ -525,6 +576,10 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
             const selectedIndex = this.options[this.selectedIndex].dataset.index;
             const horarioValue = this.value;
 
+            // Resetar lugares selecionados
+            lugaresSelecionados = [];
+            lugaresEscolhidos.value = '';
+
             if (!horarioValue) {
                 lugarGroup.style.display = 'none';
                 btnComprar.style.display = 'none';
@@ -534,14 +589,24 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
             // Se temos os dados do horário em cache
             if (selectedIndex !== undefined && horariosData[selectedIndex]) {
                 const horario = horariosData[selectedIndex];
-                carregarLugares(horario.lugares_disponiveis);
-                btnComprar.style.display = 'block';
+                capacidadeOnibus = horario.total_lugares;
+
+                // Obter lugares ocupados (todos os lugares que não estão na lista de disponíveis)
+                lugaresOcupados = [];
+                for (let i = 1; i <= capacidadeOnibus; i++) {
+                    if (!horario.lugares_disponiveis.includes(i)) {
+                        lugaresOcupados.push(i);
+                    }
+                }
+
+                renderizarLugares(horario.lugares_disponiveis);
+                atualizarQuantidadeMaxima(horario.lugares_disponiveis.length);
             } else {
                 // Caso contrário, buscar os lugares disponíveis do servidor
                 const [hora, data] = horarioValue.split('|');
                 const rotaId = rotaSelect.value;
 
-                lugarSelect.innerHTML = '<option value="">Carregando lugares...</option>';
+                lugaresSelector.innerHTML = '<div class="loading">Carregando lugares...</div>';
                 lugarGroup.style.display = 'block';
                 btnComprar.style.display = 'none';
 
@@ -565,67 +630,134 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                 })
                 .then(data => {
                     if (data.lugares_disponiveis && data.lugares_disponiveis.length > 0) {
-                        carregarLugares(data.lugares_disponiveis);
-                        btnComprar.style.display = 'block';
+                        capacidadeOnibus = data.total_lugares;
+
+                        // Obter lugares ocupados (todos os lugares que não estão na lista de disponíveis)
+                        lugaresOcupados = [];
+                        for (let i = 1; i <= capacidadeOnibus; i++) {
+                            if (!data.lugares_disponiveis.includes(i)) {
+                                lugaresOcupados.push(i);
+                            }
+                        }
+
+                        renderizarLugares(data.lugares_disponiveis);
+                        atualizarQuantidadeMaxima(data.lugares_disponiveis.length);
                     } else {
-                        lugarSelect.innerHTML = '<option value="" disabled>Nenhum lugar disponível</option>';
+                        lugaresSelector.innerHTML = '<div class="empty-state">Nenhum lugar disponível</div>';
                         btnComprar.style.display = 'none';
                     }
                 })
                 .catch(error => {
-                    lugarSelect.innerHTML = `<option value="">Erro ao carregar lugares</option>`;
+                    lugaresSelector.innerHTML = `<div class="error">Erro ao carregar lugares</div>`;
                     btnComprar.style.display = 'none';
                 });
             }
         });
 
-        // Função para carregar os lugares disponíveis no select
-        function carregarLugares(lugares) {
-            lugarSelect.innerHTML = '<option value="">Selecione um lugar</option>';
+        // Função para renderizar a grade de lugares
+        function renderizarLugares(lugaresDisponiveis) {
+            lugaresSelector.innerHTML = '';
 
-            if (!lugares || lugares.length === 0) {
-                lugarSelect.innerHTML = '<option value="" disabled>Nenhum lugar disponível</option>';
+            if (!lugaresDisponiveis || lugaresDisponiveis.length === 0) {
+                lugaresSelector.innerHTML = '<div class="empty-state">Nenhum lugar disponível</div>';
                 return;
             }
 
-            // Ordenar lugares numericamente
-            lugares.sort((a, b) => a - b);
+            // Criar a grade de lugares
+            for (let i = 1; i <= capacidadeOnibus; i++) {
+                const lugarElement = document.createElement('div');
+                lugarElement.classList.add('lugar');
+                lugarElement.textContent = i;
 
-            lugares.forEach(lugar => {
-                const option = document.createElement('option');
-                option.value = lugar;
-                option.textContent = `Lugar ${lugar}`;
-                lugarSelect.appendChild(option);
-            });
-
-            lugarGroup.style.display = 'block';
-        }
-        
-        // Atualizar quantidade máxima quando horário é selecionado
-        horarioSelect.addEventListener('change', function() {
-            const selectedIndex = this.options[this.selectedIndex].dataset.index;
-            
-            if (selectedIndex !== undefined && horariosData[selectedIndex]) {
-                const horario = horariosData[selectedIndex];
-                // Usar o length para obter o total de lugares disponíveis
-                const totalLugaresDisponiveis = horario.lugares_disponiveis.length;
-                
-                quantidadeInput.max = totalLugaresDisponiveis;
-                quantidadeInput.value = Math.min(quantidadeInput.value, totalLugaresDisponiveis);
-                quantidadeDisponivel.textContent = `Lugares disponíveis: ${totalLugaresDisponiveis}`;
-                
-                if (totalLugaresDisponiveis === 0) {
-                    btnComprar.style.display = 'none';
-                    quantidadeDisponivel.style.color = 'red';
+                if (lugaresOcupados.includes(i)) {
+                    lugarElement.classList.add('ocupado');
+                    lugarElement.title = 'Lugar ocupado';
+                } else if (lugaresSelecionados.includes(i)) {
+                    lugarElement.classList.add('selecionado');
+                    lugarElement.title = 'Lugar selecionado';
                 } else {
-                    btnComprar.style.display = 'block';
-                    quantidadeDisponivel.style.color = 'green';
+                    lugarElement.classList.add('disponivel');
+                    lugarElement.title = 'Lugar disponível';
+
+                    lugarElement.addEventListener('click', function() {
+                        const quantidadeDesejada = parseInt(quantidadeInput.value);
+                        const index = lugaresSelecionados.indexOf(i);
+
+                        // Se o lugar já está selecionado, permite desmarcar
+                        if (index !== -1) {
+                            lugaresSelecionados.splice(index, 1);
+                            lugarElement.classList.remove('selecionado');
+                            lugarElement.classList.add('disponivel');
+                        }
+                        // Se não está selecionado, verifica se pode selecionar mais lugares
+                        else {
+                            if (lugaresSelecionados.length >= quantidadeDesejada) {
+                                // Não permitir selecionar mais lugares do que a quantidade de bilhetes
+                                return;
+                            }
+
+                            lugaresSelecionados.push(i);
+                            lugarElement.classList.add('selecionado');
+                            lugarElement.classList.remove('disponivel');
+                        }
+
+                        // Atualizar o campo hidden com os lugares selecionados
+                        lugaresEscolhidos.value = lugaresSelecionados.join(',');
+
+                        // Atualizar informações sobre lugares selecionados
+                        atualizarInfoLugares();
+
+                        // Mostrar ou esconder o botão de compra
+                        // Só mostra o botão se o número de lugares selecionados for EXATAMENTE igual à quantidade de bilhetes
+                        btnComprar.style.display = lugaresSelecionados.length === quantidadeDesejada ? 'block' : 'none';
+                    });
                 }
 
-                validarQuantidade();
+                lugaresSelector.appendChild(lugarElement);
             }
-        });
-        
+
+            lugarGroup.style.display = 'block';
+            atualizarInfoLugares();
+        }
+
+        // Função para atualizar informações sobre lugares selecionados
+        function atualizarInfoLugares() {
+            const quantidadeDesejada = parseInt(quantidadeInput.value);
+
+            if (lugaresSelecionados.length === 0) {
+                lugaresInfo.textContent = `Selecione ${quantidadeDesejada} lugar(es) no diagrama acima.`;
+                lugaresInfo.style.color = '#6c757d';
+            } else if (lugaresSelecionados.length < quantidadeDesejada) {
+                const faltam = quantidadeDesejada - lugaresSelecionados.length;
+                lugaresInfo.textContent = `Lugares selecionados: ${lugaresSelecionados.join(', ')}. Faltam selecionar ${faltam} lugar(es).`;
+                lugaresInfo.style.color = 'orange';
+            } else if (lugaresSelecionados.length === quantidadeDesejada) {
+                lugaresInfo.textContent = `Lugares selecionados: ${lugaresSelecionados.join(', ')}`;
+                lugaresInfo.style.color = 'green';
+            } else {
+                lugaresInfo.textContent = `Você selecionou ${lugaresSelecionados.length} lugares, mas só precisa de ${quantidadeDesejada}.`;
+                lugaresInfo.style.color = 'red';
+            }
+        }
+
+        // Função para atualizar quantidade máxima
+        function atualizarQuantidadeMaxima(totalLugaresDisponiveis) {
+            quantidadeInput.max = totalLugaresDisponiveis;
+            quantidadeInput.value = Math.min(quantidadeInput.value, totalLugaresDisponiveis);
+            quantidadeDisponivel.textContent = `Lugares disponíveis: ${totalLugaresDisponiveis}`;
+
+            if (totalLugaresDisponiveis === 0) {
+                btnComprar.style.display = 'none';
+                quantidadeDisponivel.style.color = 'red';
+            } else {
+                quantidadeDisponivel.style.color = 'green';
+                // Não mostrar o botão até que os lugares sejam selecionados
+                btnComprar.style.display = 'none';
+            }
+
+            validarQuantidade();
+        }
+
         // Função para validar a quantidade
         function validarQuantidade() {
             const selectedIndex = horarioSelect.options[horarioSelect.selectedIndex].dataset.index;
@@ -633,7 +765,7 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                 const horario = horariosData[selectedIndex];
                 const totalLugaresDisponiveis = horario.lugares_disponiveis.length;
                 const quantidade = parseInt(quantidadeInput.value);
-                
+
                 if (quantidade > totalLugaresDisponiveis) {
                     quantidadeInput.value = totalLugaresDisponiveis;
                     quantidadeDisponivel.textContent = `Quantidade ajustada para o máximo disponível: ${totalLugaresDisponiveis}`;
@@ -651,16 +783,58 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
             }
             return false;
         }
-        
-        // Validar quantidade ao alterar
-        quantidadeInput.addEventListener('input', validarQuantidade);
-        
+
+        // Quando a quantidade é alterada, atualizar a seleção de lugares
+        quantidadeInput.addEventListener('input', function() {
+            validarQuantidade();
+
+            // Se já há lugares selecionados e a quantidade mudou
+            if (lugaresSelecionados.length > 0) {
+                const novaQuantidade = parseInt(this.value);
+
+                if (lugaresSelecionados.length !== novaQuantidade) {
+                    // Resetar lugares selecionados
+                    lugaresSelecionados = [];
+                    lugaresEscolhidos.value = '';
+
+                    // Renderizar novamente a grade de lugares
+                    const selectedIndex = horarioSelect.options[horarioSelect.selectedIndex].dataset.index;
+                    if (selectedIndex !== undefined && horariosData[selectedIndex]) {
+                        renderizarLugares(horariosData[selectedIndex].lugares_disponiveis);
+                    }
+
+                    // Esconder o botão de compra até que os lugares sejam selecionados
+                    btnComprar.style.display = 'none';
+                }
+            }
+
+            // Atualizar informações sobre lugares selecionados
+            atualizarInfoLugares();
+        });
+
         // Validar formulário antes de submeter
         const formCompra = document.getElementById('comprarBilheteForm');
         formCompra.addEventListener('submit', function(e) {
+            const quantidade = parseInt(quantidadeInput.value);
+
             if (!validarQuantidade()) {
                 e.preventDefault();
                 alert('Por favor, selecione uma quantidade válida de bilhetes.');
+                return;
+            }
+
+            // Verificar se o número de lugares selecionados corresponde à quantidade de bilhetes
+            if (lugaresSelecionados.length !== quantidade) {
+                e.preventDefault();
+                alert(`Por favor, selecione exatamente ${quantidade} lugar(es).`);
+                return;
+            }
+
+            // Verificar se os lugares foram selecionados
+            if (lugaresSelecionados.length === 0) {
+                e.preventDefault();
+                alert('Por favor, selecione os lugares para os bilhetes.');
+                return;
             }
         });
     });
