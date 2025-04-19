@@ -9,7 +9,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
 }
 
 // Inicializar variáveis de filtro
-$filtro_cliente = isset($_GET['cliente']) ? $_GET['cliente'] : '';
+$filtro_cliente_id = isset($_GET['cliente_id']) ? intval($_GET['cliente_id']) : 0;
 $filtro_tipo = isset($_GET['tipo']) ? $_GET['tipo'] : '';
 $filtro_data_inicio = isset($_GET['data_inicio']) ? $_GET['data_inicio'] : '';
 $filtro_data_fim = isset($_GET['data_fim']) ? $_GET['data_fim'] : '';
@@ -20,9 +20,8 @@ $sql = "SELECT t.*, u.nome as nome_cliente, u.email as email_cliente
         JOIN utilizadores u ON t.id_cliente = u.id
         WHERE 1=1";
 
-if (!empty($filtro_cliente)) {
-    $sql .= " AND (u.nome LIKE '%" . mysqli_real_escape_string($conn, $filtro_cliente) . "%'
-              OR u.email LIKE '%" . mysqli_real_escape_string($conn, $filtro_cliente) . "%')";
+if ($filtro_cliente_id > 0) {
+    $sql .= " AND t.id_cliente = " . $filtro_cliente_id;
 }
 
 if (!empty($filtro_tipo)) {
@@ -50,6 +49,14 @@ while ($row = mysqli_fetch_assoc($result_tipos)) {
     $tipos[] = $row['tipo'];
 }
 
+// Obter lista de clientes para o dropdown
+$sql_clientes = "SELECT DISTINCT u.id, u.nome, u.email
+                FROM utilizadores u
+                JOIN transacoes t ON u.id = t.id_cliente
+                WHERE u.tipo_perfil = 3
+                ORDER BY u.nome";
+$result_clientes = mysqli_query($conn, $sql_clientes);
+
 // Calcular totais
 $sql_totais = "SELECT
                 SUM(CASE WHEN tipo = 'deposito' THEN valor ELSE 0 END) as total_depositos,
@@ -73,12 +80,8 @@ $totais = mysqli_fetch_assoc($result_totais);
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
         </div>
-        <div class="links">
-            <div class="link"> <a href="pg_admin.php">Página Inicial</a></div>
-            <div class="link"> <a href="gerir_alertas.php">Alertas</a></div>
-            <div class="link"> <a href="gerir_rotas.php">Rotas</a></div>
-            <div class="link"> <a href="gerir_utilizadores.php">Utilizadores</a></div>
-            <div class="link"> <a href="perfil_admin.php">Meu Perfil</a></div>
+        <div class="links" style="display: flex; justify-content: center; width: 50%;">
+            <div class="link"> <a href="pg_admin.php" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
@@ -118,8 +121,15 @@ $totais = mysqli_fetch_assoc($result_totais);
             <form method="get" action="auditoria_transacoes.php">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="cliente">Cliente (Nome/Email):</label>
-                        <input type="text" id="cliente" name="cliente" value="<?php echo htmlspecialchars($filtro_cliente); ?>">
+                        <label for="cliente_id">Cliente:</label>
+                        <select id="cliente_id" name="cliente_id">
+                            <option value="0">Todos os Clientes</option>
+                            <?php while ($cliente = mysqli_fetch_assoc($result_clientes)): ?>
+                                <option value="<?php echo $cliente['id']; ?>" <?php echo $filtro_cliente_id == $cliente['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($cliente['nome']) . ' (' . htmlspecialchars($cliente['email']) . ')'; ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
                     </div>
 
                     <div class="form-group">

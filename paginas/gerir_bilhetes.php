@@ -351,7 +351,7 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="gerir_bilhetes_func.css">
+    <link rel="stylesheet" href="gerir_bilhetes.css">
     <title>FelixBus - Gestão de Bilhetes</title>
 </head>
 <body>
@@ -359,18 +359,11 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
         </div>
-        <div class="links">
+        <div class="links" style="display: flex; justify-content: center; width: 50%;">
             <?php if ($_SESSION["id_nivel"] == 1): ?>
-                <div class="link"> <a href="pg_admin.php">Página Inicial</a></div>
+                <div class="link"> <a href="pg_admin.php" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
             <?php else: ?>
-                <div class="link"> <a href="pg_funcionario.php">Página Inicial</a></div>
-            <?php endif; ?>
-            <div class="link"> <a href="gerir_carteiras.php">Gestão de Carteiras</a></div>
-            <div class="link"> <a href="gerir_bilhetes_func.php">Gestão de Bilhetes</a></div>
-            <?php if ($_SESSION["id_nivel"] == 1): ?>
-                <div class="link"> <a href="perfil_admin.php">Meu Perfil</a></div>
-            <?php else: ?>
-                <div class="link"> <a href="perfil_funcionario.php">Meu Perfil</a></div>
+                <div class="link"> <a href="pg_funcionario.php" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
             <?php endif; ?>
         </div>
         <div class="buttons">
@@ -395,7 +388,7 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
         <div class="container">
             <div class="form-container">
                 <h2>Comprar Bilhete para Cliente</h2>
-                <form method="post" action="gerir_bilhetes_func.php" id="comprarBilheteForm" onsubmit="return validarFormulario()">
+                <form method="post" action="gerir_bilhetes.php" id="comprarBilheteForm" onsubmit="return validarFormulario()">
                     <div class="form-group">
                         <label for="id_cliente">Cliente:</label>
                         <select id="id_cliente" name="id_cliente" required>
@@ -460,12 +453,7 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
                         <small id="lugaresInfo" class="lugar-info">Selecione os lugares no diagrama acima.</small>
                     </div>
 
-                    <div id="dataHoraInfo" class="alert alert-info" style="display: none; margin-top: 15px;">
-                        <strong>Viagem selecionada:</strong><br>
-                        <strong>Data:</strong> <span id="dataViagem"></span><br>
-                        <strong>Horário:</strong> <span id="horaViagem"></span><br>
-                        <strong>Lugares disponíveis:</strong> <span id="lugaresDisponiveis"></span> de <span id="capacidadeTotal"></span>
-                    </div>
+
 
                     <button type="submit" name="comprar" id="btnComprar" style="display: none;">Comprar Bilhete</button>
                 </form>
@@ -516,7 +504,7 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
                                                 $id_sequencial = "ID " . $contador;
                                                 $contador++;
                                             ?>
-                                                <a href="gerir_bilhetes_func.php?eliminar_bilhete=<?php echo $id; ?>" class="btn-eliminar" onclick="return confirm('Tem certeza que deseja eliminar o bilhete <?php echo $id_sequencial; ?>?');">Eliminar <?php echo $id_sequencial; ?></a>
+                                                <a href="gerir_bilhetes.php?eliminar_bilhete=<?php echo $id; ?>" class="btn-eliminar" onclick="return confirm('Tem certeza que deseja eliminar o bilhete <?php echo $id_sequencial; ?>?');">Eliminar <?php echo $id_sequencial; ?></a>
                                             <?php endforeach; ?>
                                         </td>
                                     </tr>
@@ -545,9 +533,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const horarioContainer = document.getElementById('horarioContainer');
     const horarioSelect = document.getElementById('horario');
     const btnComprar = document.getElementById('btnComprar');
-    const dataHoraInfo = document.getElementById('dataHoraInfo');
-    const dataViagem = document.getElementById('dataViagem');
-    const horaViagem = document.getElementById('horaViagem');
 
     console.log('Script iniciado');
 
@@ -556,9 +541,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const rotaId = rotaSelect.value;
         console.log('Rota selecionada:', rotaId);
 
-        // Esconder o botão de compra e as informações
+        // Esconder o botão de compra
         btnComprar.style.display = 'none';
-        dataHoraInfo.style.display = 'none';
 
         if (!rotaId) {
             horarioContainer.style.display = 'none';
@@ -592,6 +576,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Resetar a seleção
         horarioSelect.value = '';
+
+        // Esconder outros containers
+        quantidadeContainer.style.display = 'none';
+        lugaresContainer.style.display = 'none';
     }
 
     // Quando a rota é selecionada
@@ -601,8 +589,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantidadeContainer = document.getElementById('quantidadeContainer');
     const quantidadeInput = document.getElementById('quantidade');
     const maxQuantidade = document.getElementById('maxQuantidade');
-    const lugaresDisponiveis = document.getElementById('lugaresDisponiveis');
-    const capacidadeTotal = document.getElementById('capacidadeTotal');
     const lugaresContainer = document.getElementById('lugaresContainer');
     const lugaresSelector = document.getElementById('lugaresSelector');
     const lugaresEscolhidos = document.getElementById('lugaresEscolhidos');
@@ -627,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('data_viagem', dataFormatada);
             formData.append('hora_viagem', horaViagem);
 
-            const response = await fetch('gerir_bilhetes_func.php', {
+            const response = await fetch('gerir_bilhetes.php', {
                 method: 'POST',
                 body: formData
             });
@@ -776,16 +762,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Esconder o botão de compra até que os lugares sejam selecionados
             btnComprar.style.display = 'none';
 
-            // Mostrar as informações de data e hora
-            dataHoraInfo.style.display = 'block';
-            dataViagem.textContent = selectedOption.dataset.data;
-            horaViagem.textContent = selectedOption.dataset.hora;
-            lugaresDisponiveis.textContent = lugares;
-            capacidadeTotal.textContent = capacidadeOnibus;
+
         } else {
             // Esconder o botão de compra e as informações
             btnComprar.style.display = 'none';
-            dataHoraInfo.style.display = 'none';
             quantidadeContainer.style.display = 'none';
             lugaresContainer.style.display = 'none';
         }

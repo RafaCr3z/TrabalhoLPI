@@ -14,88 +14,109 @@ $result_felixbus = mysqli_query($conn, $sql_felixbus);
 $row_felixbus = mysqli_fetch_assoc($result_felixbus);
 $id_carteira_felixbus = $row_felixbus['id'];
 
-// Variáveis para mensagens de alerta
+// Inicializar variáveis para mensagens de alerta
 $mensagem = '';
 $tipo_mensagem = '';
 
+// Verificar se há mensagens da sessão
+if (!empty($_SESSION['mensagem'])) {
+    $mensagem = $_SESSION['mensagem'];
+    $tipo_mensagem = $_SESSION['tipo_mensagem'];
+
+    // Limpar as mensagens da sessão após usá-las
+    $_SESSION['mensagem'] = '';
+    $_SESSION['tipo_mensagem'] = '';
+}
+
 // Processar operação na carteira
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) {
-    $id_cliente = $_POST['id_cliente'];
-    $valor = $_POST['valor'];
-    $operacao = $_POST['operacao'];
+    // Verificar se o token é válido
+    if (isset($_SESSION['token']) && isset($_POST['token']) && $_SESSION['token'] === $_POST['token']) {
+        // Processar a operação apenas se o token for válido
+        $id_cliente = $_POST['id_cliente'];
+        $valor = $_POST['valor'];
+        $operacao = $_POST['operacao'];
 
-    if ($valor <= 0) {
-        $mensagem = "Valor inválido. Por favor, insira um valor maior que zero.";
-        $tipo_mensagem = "danger";
-    } else {
-        // Verificar se o cliente existe e é realmente um cliente
-        $sql_check_cliente = "SELECT u.id, u.nome, u.tipo_perfil FROM utilizadores u WHERE u.id = $id_cliente AND u.tipo_perfil = 3";
-        $result_check_cliente = mysqli_query($conn, $sql_check_cliente);
-
-        if (mysqli_num_rows($result_check_cliente) == 0) {
-            $mensagem = "Cliente não encontrado ou ID inválido.";
-            $tipo_mensagem = "danger";
+        if ($valor <= 0) {
+            $_SESSION['mensagem'] = "Valor inválido. Por favor, insira um valor maior que zero.";
+            $_SESSION['tipo_mensagem'] = "danger";
         } else {
-            $cliente = mysqli_fetch_assoc($result_check_cliente);
+            // Verificar se o cliente existe e é realmente um cliente
+            $sql_check_cliente = "SELECT u.id, u.nome, u.tipo_perfil FROM utilizadores u WHERE u.id = $id_cliente AND u.tipo_perfil = 3";
+            $result_check_cliente = mysqli_query($conn, $sql_check_cliente);
 
-            // Verificar se o cliente tem carteira
-            $sql_check_carteira = "SELECT saldo FROM carteiras WHERE id_cliente = $id_cliente";
-            $result_check_carteira = mysqli_query($conn, $sql_check_carteira);
-
-            if (mysqli_num_rows($result_check_carteira) == 0) {
-                // Criar carteira para o cliente se não existir
-                $sql_criar_carteira = "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_cliente, 0.00)";
-                mysqli_query($conn, $sql_criar_carteira);
-                $saldo_atual = 0.00;
+            if (mysqli_num_rows($result_check_cliente) == 0) {
+                $_SESSION['mensagem'] = "Cliente não encontrado ou ID inválido.";
+                $_SESSION['tipo_mensagem'] = "danger";
             } else {
-                $row_carteira = mysqli_fetch_assoc($result_check_carteira);
-                $saldo_atual = $row_carteira['saldo'];
-            }
+                $cliente = mysqli_fetch_assoc($result_check_cliente);
 
-            // Iniciar transação para garantir integridade dos dados
-            mysqli_begin_transaction($conn);
+                // Verificar se o cliente tem carteira
+                $sql_check_carteira = "SELECT saldo FROM carteiras WHERE id_cliente = $id_cliente";
+                $result_check_carteira = mysqli_query($conn, $sql_check_carteira);
 
-            try {
-                if ($operacao == "adicionar") {
-                    $sql_atualiza = "UPDATE carteiras SET saldo = saldo + $valor WHERE id_cliente = $id_cliente";
-                    $tipo_transacao = "deposito";
-                    $descricao = "Depósito de €$valor na carteira do cliente {$cliente['nome']} (ID: $id_cliente) por {$_SESSION['nome']}";
-                } else if ($operacao == "retirar") {
-                    if ($saldo_atual < $valor) {
-                        throw new Exception("Saldo insuficiente para realizar esta operação.");
+                if (mysqli_num_rows($result_check_carteira) == 0) {
+                    // Criar carteira para o cliente se não existir
+                    $sql_criar_carteira = "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_cliente, 0.00)";
+                    mysqli_query($conn, $sql_criar_carteira);
+                    $saldo_atual = 0.00;
+                } else {
+                    $row_carteira = mysqli_fetch_assoc($result_check_carteira);
+                    $saldo_atual = $row_carteira['saldo'];
+                }
+
+                // Iniciar transação para garantir integridade dos dados
+                mysqli_begin_transaction($conn);
+
+                try {
+                    if ($operacao == "adicionar") {
+                        $sql_atualiza = "UPDATE carteiras SET saldo = saldo + $valor WHERE id_cliente = $id_cliente";
+                        $tipo_transacao = "deposito";
+                        $descricao = "Depósito de €$valor na carteira do cliente {$cliente['nome']} (ID: $id_cliente) por {$_SESSION['nome']}";
+                    } else if ($operacao == "retirar") {
+                        if ($saldo_atual < $valor) {
+                            throw new Exception("Saldo insuficiente para realizar esta operação.");
+                        }
+                        $sql_atualiza = "UPDATE carteiras SET saldo = saldo - $valor WHERE id_cliente = $id_cliente";
+                        $tipo_transacao = "retirada";
+                        $descricao = "Retirada de €$valor da carteira do cliente {$cliente['nome']} (ID: $id_cliente) por {$_SESSION['nome']}";
                     }
-                    $sql_atualiza = "UPDATE carteiras SET saldo = saldo - $valor WHERE id_cliente = $id_cliente";
-                    $tipo_transacao = "retirada";
-                    $descricao = "Retirada de €$valor da carteira do cliente {$cliente['nome']} (ID: $id_cliente) por {$_SESSION['nome']}";
+
+                    if (!mysqli_query($conn, $sql_atualiza)) {
+                        throw new Exception("Erro ao atualizar saldo: " . mysqli_error($conn));
+                    }
+
+                    // Registrar a transação
+                    $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
+                                      VALUES ($id_cliente, $id_carteira_felixbus, $valor, '$tipo_transacao', '$descricao')";
+                    if (!mysqli_query($conn, $sql_transacao)) {
+                        throw new Exception("Erro ao registrar transação: " . mysqli_error($conn));
+                    }
+
+                    // Commit da transação
+                    mysqli_commit($conn);
+
+                    $_SESSION['mensagem'] = "Operação realizada com sucesso! " . ucfirst($tipo_transacao) . " de €$valor " .
+                               ($operacao == "adicionar" ? "adicionado à" : "retirado da") .
+                               " carteira do cliente {$cliente['nome']}.";
+                    $_SESSION['tipo_mensagem'] = "success";
+
+                } catch (Exception $e) {
+                    // Rollback em caso de erro
+                    mysqli_rollback($conn);
+                    $_SESSION['mensagem'] = $e->getMessage();
+                    $_SESSION['tipo_mensagem'] = "danger";
                 }
-
-                if (!mysqli_query($conn, $sql_atualiza)) {
-                    throw new Exception("Erro ao atualizar saldo: " . mysqli_error($conn));
-                }
-
-                // Registrar a transação
-                $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
-                                  VALUES ($id_cliente, $id_carteira_felixbus, $valor, '$tipo_transacao', '$descricao')";
-                if (!mysqli_query($conn, $sql_transacao)) {
-                    throw new Exception("Erro ao registrar transação: " . mysqli_error($conn));
-                }
-
-                // Commit da transação
-                mysqli_commit($conn);
-
-                $mensagem = "Operação realizada com sucesso! " . ucfirst($tipo_transacao) . " de €$valor " .
-                           ($operacao == "adicionar" ? "adicionado à" : "retirado da") .
-                           " carteira do cliente {$cliente['nome']}.";
-                $tipo_mensagem = "success";
-
-            } catch (Exception $e) {
-                // Rollback em caso de erro
-                mysqli_rollback($conn);
-                $mensagem = $e->getMessage();
-                $tipo_mensagem = "danger";
             }
         }
     }
+
+    // Gerar um novo token para a próxima operação
+    $_SESSION['token'] = md5(uniqid(mt_rand(), true));
+
+    // Redirecionar para evitar reenvio do formulário
+    header("Location: gerir_carteiras.php");
+    exit();
 }
 
 // Buscar clientes para o dropdown
@@ -129,18 +150,11 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
         </div>
-        <div class="links">
+        <div class="links" style="display: flex; justify-content: center; width: 50%;">
             <?php if ($_SESSION["id_nivel"] == 1): ?>
-                <div class="link"> <a href="pg_admin.php">Página Inicial</a></div>
+                <div class="link"> <a href="pg_admin.php" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
             <?php else: ?>
-                <div class="link"> <a href="pg_funcionario.php">Página Inicial</a></div>
-            <?php endif; ?>
-            <div class="link"> <a href="gerir_carteiras.php">Gestão de Carteiras</a></div>
-            <div class="link"> <a href="gerir_bilhetes_func.php">Gestão de Bilhetes</a></div>
-            <?php if ($_SESSION["id_nivel"] == 1): ?>
-                <div class="link"> <a href="perfil_admin.php">Meu Perfil</a></div>
-            <?php else: ?>
-                <div class="link"> <a href="perfil_funcionario.php">Meu Perfil</a></div>
+                <div class="link"> <a href="pg_funcionario.php" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
             <?php endif; ?>
         </div>
         <div class="buttons">
@@ -166,6 +180,13 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
             <div class="form-container">
                 <h2>Operações na Carteira</h2>
                 <form method="post" action="gerir_carteiras.php">
+                    <?php
+                    // Gerar um novo token se não existir
+                    if (!isset($_SESSION['token'])) {
+                        $_SESSION['token'] = md5(uniqid(mt_rand(), true));
+                    }
+                    ?>
+                    <input type="hidden" name="token" value="<?php echo $_SESSION['token']; ?>">
                     <div class="form-group">
                         <label for="id_cliente">Cliente:</label>
                         <select id="id_cliente" name="id_cliente" required>
@@ -198,7 +219,7 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
             <div class="historico-container">
                 <h2>Histórico de Operações</h2>
                 <?php if (mysqli_num_rows($result_transacoes) > 0): ?>
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                         <table class="historico-table">
                             <thead>
                                 <tr>
@@ -241,10 +262,9 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
         </div>
     </section>
 
-     <!-- Adicionar antes do fechamento do </body> -->
-     <footer>
+    <!-- FOOTER -->
+    <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
-
 </body>
 </html>

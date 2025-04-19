@@ -106,6 +106,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="perfil_admin.css">
+    <link rel="stylesheet" href="common.css">
     <title>FelixBus - Meu Perfil</title>
 </head>
 <body>
@@ -113,12 +114,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
         </div>
-        <div class="links">
-            <div class="link"> <a href="pg_admin.php">Página Inicial</a></div>
-            <div class="link"> <a href="gerir_alertas.php">Alertas</a></div>
-            <div class="link"> <a href="gerir_rotas.php">Rotas</a></div>
-            <div class="link"> <a href="gerir_utilizadores.php">Utilizadores</a></div>
-            <div class="link"> <a href="auditoria_transacoes.php">Auditoria</a></div>
+        <div class="links" style="display: flex; justify-content: center; width: 50%;">
+            <div class="link"> <a href="pg_admin.php" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>

@@ -24,7 +24,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 2) {
         </div>
         <div class="links">
             <div class="link"> <a href="gerir_carteiras.php">Gestão de Carteiras</a></div>
-            <div class="link"> <a href="gerir_bilhetes_func.php">Gestão de Bilhetes</a></div>
+            <div class="link"> <a href="gerir_bilhetes.php">Gestão de Bilhetes</a></div>
             <div class="link"> <a href="perfil_funcionario.php">Meu Perfil</a></div>
         </div>
         <div class="buttons">
@@ -47,7 +47,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 2) {
                 <div class="card">
                     <h2>Gestão de Bilhetes</h2>
                     <p>Compre bilhetes para clientes e faça a gestão dos bilhetes existentes.</p>
-                    <a href="gerir_bilhetes_func.php" class="card-btn">Aceder</a>
+                    <a href="gerir_bilhetes.php" class="card-btn">Aceder</a>
                 </div>
 
                 <div class="card">
