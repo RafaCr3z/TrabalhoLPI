@@ -32,13 +32,27 @@ if (!$row_saldo) {
 $mensagem = '';
 $tipo_mensagem = '';
 
+// Verificar se há mensagens na sessão
+if (isset($_SESSION['mensagem'])) {
+    $mensagem = $_SESSION['mensagem'];
+    $tipo_mensagem = $_SESSION['tipo_mensagem'];
+
+    // Limpar as mensagens da sessão após exibi-las
+    unset($_SESSION['mensagem']);
+    unset($_SESSION['tipo_mensagem']);
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $valor = $_POST["valor"];
     $operacao = $_POST["operacao"];
 
     if ($valor <= 0) {
-        $mensagem = "Valor inválido. Por favor, insira um valor maior que zero.";
-        $tipo_mensagem = "danger";
+        $_SESSION['mensagem'] = "Valor inválido. Por favor, insira um valor maior que zero.";
+        $_SESSION['tipo_mensagem'] = "danger";
+
+        // Redirecionar para evitar reenvio do formulário ao atualizar a página
+        header("Location: carteira_cliente.php");
+        exit();
     } else {
         // Iniciar transação para garantir integridade dos dados
         mysqli_begin_transaction($conn);
@@ -53,10 +67,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $tipo_transacao = "retirada";
                 $descricao = "Retirada de €$valor da carteira";
             } else {
-                $mensagem = "Saldo insuficiente para realizar esta operação.";
-                $tipo_mensagem = "danger";
-                // Pular o resto do processamento
-                $sql_atualiza = null;
+                $_SESSION['mensagem'] = "Saldo insuficiente para realizar esta operação.";
+                $_SESSION['tipo_mensagem'] = "danger";
+
+                // Redirecionar para evitar reenvio do formulário ao atualizar a página
+                header("Location: carteira_cliente.php");
+                exit();
             }
 
             // Atualizar saldo (apenas se tiver uma operação válida)
@@ -71,20 +87,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $result_saldo = mysqli_query($conn, $sql_saldo);
                     $row_saldo = mysqli_fetch_assoc($result_saldo);
                     // Operação realizada com sucesso
-                    $mensagem = "Operação realizada com sucesso!";
-                    $tipo_mensagem = "success";
+                    $_SESSION['mensagem'] = "Operação realizada com sucesso!";
+                    $_SESSION['tipo_mensagem'] = "success";
+
+                    // Redirecionar para evitar reenvio do formulário ao atualizar a página
+                    header("Location: carteira_cliente.php");
+                    exit();
                 } else {
                     throw new Exception("Erro ao registrar transação: " . mysqli_error($conn));
                 }
             } else {
                 mysqli_rollback($conn);
-                $mensagem = "Erro ao atualizar saldo: " . mysqli_error($conn);
-                $tipo_mensagem = "danger";
+                $_SESSION['mensagem'] = "Erro ao atualizar saldo: " . mysqli_error($conn);
+                $_SESSION['tipo_mensagem'] = "danger";
+
+                // Redirecionar para evitar reenvio do formulário ao atualizar a página
+                header("Location: carteira_cliente.php");
+                exit();
             }
         } catch (Exception $e) {
             mysqli_rollback($conn);
-            $mensagem = $e->getMessage();
-            $tipo_mensagem = "danger";
+            $_SESSION['mensagem'] = $e->getMessage();
+            $_SESSION['tipo_mensagem'] = "danger";
+
+            // Redirecionar para evitar reenvio do formulário ao atualizar a página
+            header("Location: carteira_cliente.php");
+            exit();
         }
     }
 }
@@ -149,19 +177,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <div class="historico-container">
             <h2>Histórico de Transações</h2>
-            <table class="historico-table">
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Tipo</th>
-                        <th>Valor</th>
-                        <th>Descrição</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <div class="historico-table-container">
+                <table class="historico-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Valor</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                     <?php
-                    // Buscar histórico de transações
-                    $sql_historico = "SELECT * FROM transacoes WHERE id_cliente = $id_cliente ORDER BY data_transacao DESC LIMIT 10";
+                    // Buscar histórico de transações (aumentado o limite para mostrar mais itens na rolagem)
+                    $sql_historico = "SELECT * FROM transacoes WHERE id_cliente = $id_cliente ORDER BY data_transacao DESC LIMIT 50";
                     $result_historico = mysqli_query($conn, $sql_historico);
 
                     if (mysqli_num_rows($result_historico) > 0) {
@@ -187,7 +216,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     }
                     ?>
                 </tbody>
-            </table>
+                </table>
+            </div>
         </div>
     </section>
 
@@ -195,6 +225,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
      <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
-    
+
 </body>
 </html>

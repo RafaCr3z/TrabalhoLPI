@@ -472,8 +472,17 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
             // Se temos os dados do horário em cache
             if (selectedIndex !== undefined && horariosData[selectedIndex]) {
                 const horario = horariosData[selectedIndex];
-                capacidadeOnibus = parseInt(horario.capacidade);
+
+                // Obter o número de lugares disponíveis
                 const lugaresDisponiveisTotal = parseInt(horario.lugares_disponiveis);
+
+                // Obter a capacidade do ônibus da viagem selecionada
+                capacidadeOnibus = parseInt(horario.capacidade);
+
+                // Atualizar o máximo de bilhetes disponíveis
+                quantidadeInput.max = lugaresDisponiveisTotal;
+                quantidadeInput.value = Math.min(quantidadeInput.value, lugaresDisponiveisTotal);
+                quantidadeDisponivel.textContent = `Lugares disponíveis: ${lugaresDisponiveisTotal} de ${capacidadeOnibus}`;
 
                 // Calcular lugares ocupados
                 lugaresOcupados = [];
@@ -492,7 +501,7 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                 }
 
                 renderizarLugares(lugaresDisponiveis);
-                atualizarQuantidadeMaxima(lugaresDisponiveisTotal);
+                atualizarCorDisponibilidade(lugaresDisponiveisTotal);
             } else {
                 // Caso não encontre o horário no cache (não deve acontecer)
                 lugaresSelector.innerHTML = '<div class="error">Erro ao carregar lugares. Por favor, selecione o horário novamente.</div>';
@@ -509,6 +518,9 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                 lugaresSelector.innerHTML = '<div class="empty-state">Nenhum lugar disponível</div>';
                 return;
             }
+
+            // Mostrar o container de lugares
+            lugarGroup.style.display = 'block';
 
             // Criar a grade de lugares
             for (let i = 1; i <= capacidadeOnibus; i++) {
@@ -587,18 +599,8 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
             }
         }
 
-        // Função para atualizar quantidade máxima
-        function atualizarQuantidadeMaxima(totalLugaresDisponiveis) {
-            quantidadeInput.max = totalLugaresDisponiveis;
-            quantidadeInput.value = Math.min(quantidadeInput.value, totalLugaresDisponiveis);
-
-            // Obter a capacidade máxima da viagem selecionada
-            const selectedIndex = horarioSelect.options[horarioSelect.selectedIndex].dataset.index;
-            const capacidadeMaxima = horariosData[selectedIndex].capacidade;
-
-            // Exibir informações sobre lugares disponíveis e capacidade máxima
-            quantidadeDisponivel.textContent = `Lugares disponíveis: ${totalLugaresDisponiveis} de ${capacidadeMaxima}`;
-
+        // Atualizar a cor do texto de acordo com a disponibilidade
+        function atualizarCorDisponibilidade(totalLugaresDisponiveis) {
             if (totalLugaresDisponiveis === 0) {
                 btnComprar.style.display = 'none';
                 quantidadeDisponivel.style.color = 'red';
@@ -613,32 +615,18 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
 
         // Função para validar a quantidade
         function validarQuantidade() {
-            const selectedIndex = horarioSelect.options[horarioSelect.selectedIndex].dataset.index;
-            if (selectedIndex !== undefined && horariosData[selectedIndex]) {
-                const horario = horariosData[selectedIndex];
-                const totalLugaresDisponiveis = horario.lugares_disponiveis.length;
-                const quantidade = parseInt(quantidadeInput.value);
+            const max = parseInt(quantidadeInput.max);
+            const value = parseInt(quantidadeInput.value);
 
-                if (quantidade > totalLugaresDisponiveis) {
-                    quantidadeInput.value = totalLugaresDisponiveis;
-                    quantidadeDisponivel.textContent = `Quantidade ajustada para o máximo disponível: ${totalLugaresDisponiveis}`;
-                    quantidadeDisponivel.style.color = 'orange';
-                    return false;
-                } else if (quantidade < 1) {
-                    quantidadeInput.value = 1;
-                    quantidadeDisponivel.style.color = 'red';
-                    return false;
-                } else {
-                    // Obter a capacidade máxima da viagem selecionada
-                    const capacidadeMaxima = horario.capacidade;
-
-                    // Exibir informações sobre lugares disponíveis e capacidade máxima
-                    quantidadeDisponivel.textContent = `Lugares disponíveis: ${totalLugaresDisponiveis} de ${capacidadeMaxima}`;
-                    quantidadeDisponivel.style.color = 'green';
-                    return true;
-                }
+            if (value > max) {
+                quantidadeInput.value = max;
+                return false;
+            } else if (value < 1) {
+                quantidadeInput.value = 1;
+                return false;
             }
-            return false;
+
+            return true;
         }
 
         // Quando a quantidade é alterada, atualizar a seleção de lugares
