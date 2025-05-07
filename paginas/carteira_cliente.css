@@ -10,33 +10,25 @@
 body {
     width: 100%;
     min-height: 100vh;
-    background-image: url(fundo.png);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
+    background-color: #f5f5f5;
+    color: #333;
 }
 
 /* Navbar */
 nav {
     width: 100%;
-    height: 10vh;
+    height: 60px;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
+    background: #333;
     color: white;
-    background: rgba(0, 0, 0, 0.7);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-}
-
-.logo {
-    cursor: pointer;
-    text-decoration: none !important;
+    padding: 0 20px;
 }
 
 .logo h1 {
     color: white;
-    font-size: 1.8rem;
-    letter-spacing: 1px;
+    font-size: 1.5rem;
 }
 
 .logo span {
@@ -45,16 +37,16 @@ nav {
 
 .links {
     display: flex;
-    justify-content: space-between;
     width: 30%;
+    justify-content: center;
 }
 
 .link a {
     color: white;
     text-decoration: none;
+    margin: 0 15px;
     font-size: 1.1rem;
     font-weight: 300;
-    transition: all 0.3s ease;
 }
 
 .link a:hover {
@@ -63,50 +55,22 @@ nav {
 
 .buttons {
     display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    width: 20%;
     align-items: center;
-    height: 35px;
-}
-
-.btn {
-    display: flex;
-    align-items: center;
-    height: 100%;
-}
-
-.btn a {
-    text-decoration: none;
-    height: 100%;
-    display: flex;
-    align-items: center;
+    gap: 10px;
 }
 
 .btn button {
-    height: 100%;
-    padding: 0 20px;
+    padding: 8px 15px;
     background: #ff6b6b;
     color: white;
     border: none;
-    border-radius: 5px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
 }
 
 .btn-cliente {
     color: white;
-    font-weight: 600;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    height: 100%;
-    padding: 0 10px;
-    transition: all 0.3s ease;
+    font-weight: 500;
 }
 
 section {
@@ -118,19 +82,13 @@ section {
 h1 {
     text-align: center;
     margin: 20px 0;
-    color: white;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-h2 {
-    margin: 20px 0 15px;
     color: #333;
-    text-align: center;
 }
 
+/* Mensagens de alerta */
 .alert {
-    padding: 15px;
-    margin-bottom: 20px;
+    padding: 10px;
+    margin-bottom: 15px;
     border-radius: 4px;
     text-align: center;
 }
@@ -147,151 +105,185 @@ h2 {
     border: 1px solid #f5c6cb;
 }
 
-/* Estilos específicos para a carteira */
-.carteira-container {
-    background-color: rgba(255, 255, 255, 0.9);
+/* Informações de saldo */
+.saldo-info {
+    background-color: white;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-width: 800px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin: 0 auto 20px;
+    text-align: center;
+    max-width: 400px;
+}
+
+.saldo-info h3 {
+    color: #333;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+.saldo-info span {
+    font-weight: bold;
+    color: #28a745;
+    font-size: 2rem;
+    display: block;
+    margin-top: 5px;
+}
+
+/* Layout de conteúdo */
+.content-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.carteira-container, .historico-container {
+    background-color: white;
+    padding: 0;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.carteira-container {
+    flex: 1;
+    min-width: 300px;
+}
+
+.historico-container {
+    flex: 2;
+    min-width: 600px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.card-header {
+    background-color: #007BFF;
+    color: white;
+    padding: 15px;
     text-align: center;
 }
 
-p {
-    margin: 10px 0;
-    font-size: 16px;
-    color: #333;
+.card-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
 }
 
-form {
-    display: flex;
-    flex-direction: column;
-    max-width: 400px;
-    margin: 0 auto;
+.card-body {
+    padding: 15px;
+}
+
+/* Formulário */
+.form-group {
+    margin-bottom: 12px;
 }
 
 label {
     display: block;
     margin-bottom: 5px;
     color: #555;
-    font-size: 14px;
-    text-align: left;
 }
 
-input, select {
+select, input {
     width: 100%;
-    padding: 10px;
+    padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 14px;
-    margin-bottom: 15px;
 }
 
-button {
-    padding: 10px 20px;
+button[type="submit"] {
+    width: 100%;
+    padding: 10px;
     background-color: #007BFF;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
-.historico-container {
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-width: 800px;
-    margin: 20px auto 0;
-    margin-bottom: 60px; /* Espaço para o footer */
-}
-
-.scroll-hint {
-    text-align: center;
-    font-size: 14px;
-    color: #666;
-    margin: 5px 0 10px;
-    font-style: italic;
-}
-
-.historico-table-container {
-    max-height: 300px; /* Altura máxima para a tabela */
-    overflow-y: auto; /* Adiciona rolagem vertical */
     margin-top: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    scrollbar-width: thin; /* Para Firefox */
-    scrollbar-color: #007BFF #f0f0f0; /* Para Firefox */
 }
 
-/* Estilização da barra de rolagem para Chrome, Edge e Safari */
-.historico-table-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-.historico-table-container::-webkit-scrollbar-track {
-    background: #f0f0f0;
-    border-radius: 4px;
-}
-
-.historico-table-container::-webkit-scrollbar-thumb {
-    background-color: #007BFF;
-    border-radius: 4px;
-}
-
-.historico-table-container::-webkit-scrollbar-thumb:hover {
+button[type="submit"]:hover {
     background-color: #0056b3;
+}
+
+/* Tabela de histórico */
+.historico-table-container {
+    overflow-x: auto;
 }
 
 .historico-table {
     width: 100%;
     border-collapse: collapse;
-}
-
-.historico-table th,
-.historico-table td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
+    margin-top: 10px;
 }
 
 .historico-table thead {
     position: sticky;
     top: 0;
+    background-color: #f2f2f2;
     z-index: 1;
+}
+
+.historico-table th, .historico-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
 }
 
 .historico-table th {
     background-color: #f2f2f2;
-    font-weight: 500;
-    color: #555;
 }
 
 .deposito {
     color: #28a745;
-    font-weight: 500;
 }
 
-.retirada, .compra {
+.retirada {
     color: #dc3545;
-    font-weight: 500;
 }
 
+/* Estado vazio */
+.empty-state {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+}
+
+/* Footer */
+footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    padding: 8px;
+    text-align: center;
+    color: white;
+    background: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    z-index: 100;
+}
+
+footer span {
+    font-weight: bold;
+}
+
+footer img {
+    height: 16px;
+    width: auto;
+}
+
+/* Responsividade */
 @media (max-width: 992px) {
-    .links, .buttons {
-        width: auto;
+    .content-wrapper {
+        flex-direction: column;
     }
 
-    .carteira-container,
-    .historico-container {
-        width: 95%;
+    .carteira-container, .historico-container {
+        max-width: 100%;
+        min-width: 100%;
     }
 }
 
@@ -302,39 +294,13 @@ button:hover {
         padding: 10px 0;
     }
 
-    .links, .buttons {
-        margin: 10px 0;
-        width: 90%;
-    }
-
     .links {
-        justify-content: space-around;
+        width: 100%;
+        margin: 10px 0;
     }
 
-    .historico-table {
-        font-size: 14px;
+    .buttons {
+        width: 90%;
+        margin-bottom: 10px;
     }
-}
-
-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    padding: 10px;
-    text-align: center;
-    color: white;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-}
-
-footer span {
-    font-weight: bold;
-}
-
-footer img {
-    height: 20px;
-    width: auto;
 }

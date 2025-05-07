@@ -3,7 +3,6 @@ session_start();
 include '../basedados/basedados.h';
 
 // Verifica se o utilizador está autenticado e se é um cliente (nível 3)
-// Se não for, redireciona para a página de erro
 if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
     header("Location: erro.php");
     exit();
@@ -30,7 +29,6 @@ if (isset($_GET['msg']) && isset($_GET['tipo'])) {
 }
 
 // Verifica se a coluna 'disponivel' existe na tabela 'horarios'
-// Se não existir, adiciona-a (para compatibilidade com versões anteriores)
 $check_column = "SHOW COLUMNS FROM horarios LIKE 'disponivel'";
 $column_result = mysqli_query($conn, $check_column);
 
@@ -39,7 +37,6 @@ if (mysqli_num_rows($column_result) == 0) {
 }
 
 // Verifica se a coluna 'numero_lugar' existe na tabela 'bilhetes'
-// Se não existir, adiciona-a (para compatibilidade com versões anteriores)
 $check_column = "SHOW COLUMNS FROM bilhetes LIKE 'numero_lugar'";
 $column_result = mysqli_query($conn, $check_column);
 
@@ -236,7 +233,6 @@ while ($horario = mysqli_fetch_assoc($result_horarios)) {
 
 // Converter os horários para JSON para uso no JavaScript
 $horarios_json = json_encode($horarios_por_rota);
-
 
 
 // Buscar bilhetes do cliente
