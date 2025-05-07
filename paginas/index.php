@@ -171,7 +171,7 @@
         <?php else: ?>
             <?php foreach ($mensagens as $mensagem): ?>
                 <div class="alerta-item">
-                    <?php echo htmlspecialchars($mensagem['conteudo']); ?>
+                    <?php echo $mensagem['conteudo']; ?>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>

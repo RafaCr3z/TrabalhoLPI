@@ -11,10 +11,9 @@ if (!isset($_SESSION["id_nivel"]) || ($_SESSION["id_nivel"] != 1 && $_SESSION["i
 // Obter ID da carteira FelixBus
 $sql_felixbus = "SELECT id FROM carteira_felixbus LIMIT 1";
 $result_felixbus = mysqli_query($conn, $sql_felixbus);
-$row_felixbus = mysqli_fetch_assoc($result_felixbus);
-$id_carteira_felixbus = $row_felixbus['id'];
+$id_carteira_felixbus = mysqli_fetch_assoc($result_felixbus)['id'];
 
-// Inicializar variáveis para mensagens de alerta
+// Inicializar variáveis para mensagens
 $mensagem = '';
 $tipo_mensagem = '';
 
@@ -22,17 +21,13 @@ $tipo_mensagem = '';
 if (!empty($_SESSION['mensagem'])) {
     $mensagem = $_SESSION['mensagem'];
     $tipo_mensagem = $_SESSION['tipo_mensagem'];
-
-    // Limpar as mensagens da sessão após usá-las
     $_SESSION['mensagem'] = '';
     $_SESSION['tipo_mensagem'] = '';
 }
 
 // Processar operação na carteira
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) {
-    // Verificar se o token é válido
     if (isset($_SESSION['token']) && isset($_POST['token']) && $_SESSION['token'] === $_POST['token']) {
-        // Processar a operação apenas se o token for válido
         $id_cliente = $_POST['id_cliente'];
         $valor = $_POST['valor'];
         $operacao = $_POST['operacao'];
@@ -41,31 +36,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
             $_SESSION['mensagem'] = "Valor inválido. Por favor, insira um valor maior que zero.";
             $_SESSION['tipo_mensagem'] = "danger";
         } else {
-            // Verificar se o cliente existe e é realmente um cliente
+            // Verificar se o cliente existe
             $sql_check_cliente = "SELECT u.id, u.nome, u.tipo_perfil FROM utilizadores u WHERE u.id = $id_cliente AND u.tipo_perfil = 3";
             $result_check_cliente = mysqli_query($conn, $sql_check_cliente);
 
-            if (mysqli_num_rows($result_check_cliente) == 0) {
-                $_SESSION['mensagem'] = "Cliente não encontrado ou ID inválido.";
-                $_SESSION['tipo_mensagem'] = "danger";
-            } else {
+            if (mysqli_num_rows($result_check_cliente) > 0) {
                 $cliente = mysqli_fetch_assoc($result_check_cliente);
-
-                // Verificar se o cliente tem carteira
+                
+                // Verificar carteira
                 $sql_check_carteira = "SELECT saldo FROM carteiras WHERE id_cliente = $id_cliente";
                 $result_check_carteira = mysqli_query($conn, $sql_check_carteira);
-
+                
                 if (mysqli_num_rows($result_check_carteira) == 0) {
-                    // Criar carteira para o cliente se não existir
-                    $sql_criar_carteira = "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_cliente, 0.00)";
-                    mysqli_query($conn, $sql_criar_carteira);
+                    mysqli_query($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_cliente, 0.00)");
                     $saldo_atual = 0.00;
                 } else {
-                    $row_carteira = mysqli_fetch_assoc($result_check_carteira);
-                    $saldo_atual = $row_carteira['saldo'];
+                    $saldo_atual = mysqli_fetch_assoc($result_check_carteira)['saldo'];
                 }
 
-                // Iniciar transação para garantir integridade dos dados
                 mysqli_begin_transaction($conn);
 
                 try {
@@ -93,28 +81,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
                         throw new Exception("Erro ao registrar transação: " . mysqli_error($conn));
                     }
 
-                    // Commit da transação
                     mysqli_commit($conn);
-
-                    $_SESSION['mensagem'] = "Operação realizada com sucesso! " . ucfirst($tipo_transacao) . " de €$valor " .
-                               ($operacao == "adicionar" ? "adicionado à" : "retirado da") .
-                               " carteira do cliente {$cliente['nome']}.";
+                    $_SESSION['mensagem'] = "Operação realizada com sucesso!";
                     $_SESSION['tipo_mensagem'] = "success";
 
                 } catch (Exception $e) {
-                    // Rollback em caso de erro
                     mysqli_rollback($conn);
                     $_SESSION['mensagem'] = $e->getMessage();
                     $_SESSION['tipo_mensagem'] = "danger";
                 }
+            } else {
+                $_SESSION['mensagem'] = "Cliente não encontrado ou ID inválido.";
+                $_SESSION['tipo_mensagem'] = "danger";
             }
         }
     }
 
-    // Gerar um novo token para a próxima operação
-    $_SESSION['token'] = md5(uniqid(mt_rand(), true));
-
-    // Redirecionar para evitar reenvio do formulário
+    $_SESSION['token'] = uniqid(mt_rand(), true);
     header("Location: gerir_carteiras.php");
     exit();
 }
@@ -135,6 +118,11 @@ $sql_transacoes = "SELECT t.*, u.nome as nome_cliente, u.email as email_cliente
                   ORDER BY t.data_transacao DESC
                   LIMIT 50";
 $result_transacoes = mysqli_query($conn, $sql_transacoes);
+
+// Gerar token se não existir
+if (!isset($_SESSION['token'])) {
+    $_SESSION['token'] = uniqid(mt_rand(), true);
+}
 ?>
 
 <!DOCTYPE html>
@@ -180,12 +168,6 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
             <div class="form-container">
                 <h2>Operações na Carteira</h2>
                 <form method="post" action="gerir_carteiras.php">
-                    <?php
-                    // Gerar um novo token se não existir
-                    if (!isset($_SESSION['token'])) {
-                        $_SESSION['token'] = md5(uniqid(mt_rand(), true));
-                    }
-                    ?>
                     <input type="hidden" name="token" value="<?php echo $_SESSION['token']; ?>">
                     <div class="form-group">
                         <label for="id_cliente">Cliente:</label>
@@ -193,7 +175,7 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
                             <option value="">Selecione um cliente</option>
                             <?php while ($cliente = mysqli_fetch_assoc($result_clientes)): ?>
                                 <option value="<?php echo $cliente['id']; ?>">
-                                    <?php echo htmlspecialchars($cliente['nome']) . ' (' . htmlspecialchars($cliente['email']) . ') - Saldo: €' . number_format($cliente['saldo'] ?? 0, 2, ',', '.'); ?>
+                                    <?php echo $cliente['nome'] . ' (' . $cliente['email'] . ') - Saldo: €' . number_format($cliente['saldo'] ?? 0, 2, ',', '.'); ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
@@ -233,23 +215,16 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
                             <tbody>
                                 <?php while ($transacao = mysqli_fetch_assoc($result_transacoes)): ?>
                                     <?php
-                                    $classe_valor = '';
-                                    if ($transacao['tipo'] == 'deposito') {
-                                        $classe_valor = 'deposito';
-                                        $valor_formatado = '+€' . number_format($transacao['valor'], 2, ',', '.');
-                                        $operacao = 'Depósito';
-                                    } else {
-                                        $classe_valor = 'retirada';
-                                        $valor_formatado = '-€' . number_format($transacao['valor'], 2, ',', '.');
-                                        $operacao = 'Retirada';
-                                    }
+                                    $classe_valor = $transacao['tipo'] == 'deposito' ? 'deposito' : 'retirada';
+                                    $valor_formatado = ($transacao['tipo'] == 'deposito' ? '+' : '-') . '€' . number_format($transacao['valor'], 2, ',', '.');
+                                    $operacao = $transacao['tipo'] == 'deposito' ? 'Depósito' : 'Retirada';
                                     ?>
                                     <tr>
                                         <td><?php echo date('d/m/Y H:i', strtotime($transacao['data_transacao'])); ?></td>
-                                        <td><?php echo htmlspecialchars($transacao['nome_cliente']); ?></td>
+                                        <td><?php echo $transacao['nome_cliente']; ?></td>
                                         <td><?php echo $operacao; ?></td>
                                         <td class="<?php echo $classe_valor; ?>"><?php echo $valor_formatado; ?></td>
-                                        <td><?php echo htmlspecialchars($transacao['descricao']); ?></td>
+                                        <td><?php echo $transacao['descricao']; ?></td>
                                     </tr>
                                 <?php endwhile; ?>
                             </tbody>
@@ -262,7 +237,6 @@ $result_transacoes = mysqli_query($conn, $sql_transacoes);
         </div>
     </section>
 
-    <!-- FOOTER -->
     <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
