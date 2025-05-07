@@ -2,7 +2,7 @@
 session_start();
 include '../basedados/basedados.h';
 
-// Verificar se o usuário é administrador
+// Verificar se o utilizador é administrador
 if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     header("Location: erro.php");
     exit();
@@ -14,18 +14,15 @@ $tipo_mensagem = '';
 $rota_para_editar = null;
 $horario_para_editar = null;
 
-// Iniciar ou retomar a sessão para armazenar mensagens
+// Processar mensagens da sessão
 if (!isset($_SESSION['mensagem_rota'])) {
     $_SESSION['mensagem_rota'] = '';
     $_SESSION['tipo_mensagem_rota'] = '';
 }
 
-// Verificar se há mensagens da sessão
 if (!empty($_SESSION['mensagem_rota'])) {
     $mensagem = $_SESSION['mensagem_rota'];
     $tipo_mensagem = $_SESSION['tipo_mensagem_rota'];
-
-    // Limpar as mensagens da sessão após usá-las
     $_SESSION['mensagem_rota'] = '';
     $_SESSION['tipo_mensagem_rota'] = '';
 }
@@ -33,9 +30,7 @@ if (!empty($_SESSION['mensagem_rota'])) {
 // Carregar rota para edição
 if (isset($_GET['editar']) && !empty($_GET['editar'])) {
     $id_editar = intval($_GET['editar']);
-    $sql_editar = "SELECT * FROM rotas WHERE id = $id_editar";
-    $result_editar = mysqli_query($conn, $sql_editar);
-
+    $result_editar = mysqli_query($conn, "SELECT * FROM rotas WHERE id = $id_editar");
     if (mysqli_num_rows($result_editar) > 0) {
         $rota_para_editar = mysqli_fetch_assoc($result_editar);
     }
@@ -44,11 +39,9 @@ if (isset($_GET['editar']) && !empty($_GET['editar'])) {
 // Carregar horário para edição
 if (isset($_GET['editar_horario']) && !empty($_GET['editar_horario'])) {
     $id_horario_editar = intval($_GET['editar_horario']);
-    $sql_horario_editar = "SELECT h.*, r.origem, r.destino FROM horarios h
+    $result_horario_editar = mysqli_query($conn, "SELECT h.*, r.origem, r.destino FROM horarios h
                           JOIN rotas r ON h.id_rota = r.id
-                          WHERE h.id = $id_horario_editar";
-    $result_horario_editar = mysqli_query($conn, $sql_horario_editar);
-
+                          WHERE h.id = $id_horario_editar");
     if (mysqli_num_rows($result_horario_editar) > 0) {
         $horario_para_editar = mysqli_fetch_assoc($result_horario_editar);
     }
@@ -56,7 +49,6 @@ if (isset($_GET['editar_horario']) && !empty($_GET['editar_horario'])) {
 
 // Adicionar nova rota
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar_rota'])) {
-    // Verificar se o token é válido
     if (isset($_SESSION['token_rota']) && isset($_POST['token_rota']) && $_SESSION['token_rota'] === $_POST['token_rota']) {
         $origem = mysqli_real_escape_string($conn, $_POST['origem']);
         $destino = mysqli_real_escape_string($conn, $_POST['destino']);
@@ -64,12 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar_rota'])) {
         $capacidade = intval($_POST['capacidade']);
 
         if ($preco <= 0 || $capacidade <= 0) {
-            $_SESSION['mensagem_rota'] = "Preço e capacidade devem ser valores positivos.";
+            $_SESSION['mensagem_rota'] = "O preço e a capacidade devem ser valores positivos.";
             $_SESSION['tipo_mensagem_rota'] = "error";
         } else {
             $sql = "INSERT INTO rotas (origem, destino, preco, capacidade, disponivel)
                     VALUES ('$origem', '$destino', $preco, $capacidade, 1)";
-
             if (mysqli_query($conn, $sql)) {
                 $id_rota = mysqli_insert_id($conn);
                 $_SESSION['mensagem_rota'] = "Rota com ID $id_rota adicionada com sucesso!";
@@ -80,26 +71,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar_rota'])) {
             }
         }
     }
-
-    // Gerar um novo token para a próxima operação
-    $_SESSION['token_rota'] = md5(uniqid(mt_rand(), true));
-
-    // Redirecionar para evitar reenvio do formulário
+    $_SESSION['token_rota'] = uniqid();
     header("Location: gerir_rotas.php");
     exit();
 }
 
 // Adicionar horário
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar_horario'])) {
-    // Verificar se o token é válido
     if (isset($_SESSION['token_rota']) && isset($_POST['token_rota']) && $_SESSION['token_rota'] === $_POST['token_rota']) {
         $id_rota = intval($_POST['id_rota']);
         $horario = $_POST['horario_partida'];
         $data_viagem = $_POST['data_viagem'];
 
-        // Buscar a capacidade da rota
-        $sql_capacidade = "SELECT capacidade FROM rotas WHERE id = $id_rota";
-        $result_capacidade = mysqli_query($conn, $sql_capacidade);
+        $result_capacidade = mysqli_query($conn, "SELECT capacidade FROM rotas WHERE id = $id_rota");
         $rota = mysqli_fetch_assoc($result_capacidade);
 
         $sql = "INSERT INTO horarios (id_rota, horario_partida, data_viagem, lugares_disponiveis, disponivel)
@@ -114,11 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar_horario'])) 
             $_SESSION['tipo_mensagem_rota'] = "error";
         }
     }
-
-    // Gerar um novo token para a próxima operação
-    $_SESSION['token_rota'] = md5(uniqid(mt_rand(), true));
-
-    // Redirecionar para evitar reenvio do formulário
+    $_SESSION['token_rota'] = uniqid();
     header("Location: gerir_rotas.php");
     exit();
 }
@@ -133,9 +113,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['atualizar_horario'])) 
     $sql = "UPDATE horarios SET id_rota = $id_rota, horario_partida = '$horario', data_viagem = '$data_viagem' WHERE id = $id_horario";
 
     if (mysqli_query($conn, $sql)) {
-        $mensagem = "Horário com ID $id_horario foi editado com sucesso!";
-        $tipo_mensagem = "success";
-        // Redirecionar para limpar o formulário de edição
         header("Location: gerir_rotas.php?msg=horario_updated&id=$id_horario");
         exit();
     } else {
@@ -153,16 +130,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['atualizar_rota'])) {
     $capacidade = intval($_POST['capacidade']);
 
     if ($preco <= 0 || $capacidade <= 0) {
-        $mensagem = "Preço e capacidade devem ser valores positivos.";
+        $mensagem = "O preço e a capacidade devem ser valores positivos.";
         $tipo_mensagem = "error";
     } else {
         $sql = "UPDATE rotas SET origem = '$origem', destino = '$destino', preco = $preco, capacidade = $capacidade
                WHERE id = $id_rota";
 
         if (mysqli_query($conn, $sql)) {
-            $mensagem = "Rota com ID $id_rota foi editada com sucesso!";
-            $tipo_mensagem = "success";
-            // Redirecionar para limpar o formulário de edição
             header("Location: gerir_rotas.php?msg=updated&id=$id_rota");
             exit();
         } else {
@@ -175,38 +149,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['atualizar_rota'])) {
 // Excluir rota
 if (isset($_GET['excluir_rota']) && !empty($_GET['excluir_rota'])) {
     $id_rota = intval($_GET['excluir_rota']);
-
-    // Verificar se a rota existe
-    $sql_verificar = "SELECT id FROM rotas WHERE id = $id_rota";
-    $result_verificar = mysqli_query($conn, $sql_verificar);
+    $result_verificar = mysqli_query($conn, "SELECT id FROM rotas WHERE id = $id_rota");
 
     if (mysqli_num_rows($result_verificar) > 0) {
-        // Verificar se há horários associados a esta rota
-        $sql_horarios_rota = "SELECT COUNT(*) as total FROM horarios WHERE id_rota = $id_rota";
-        $result_horarios_rota = mysqli_query($conn, $sql_horarios_rota);
+        $result_horarios_rota = mysqli_query($conn, "SELECT COUNT(*) as total FROM horarios WHERE id_rota = $id_rota");
         $row_horarios_rota = mysqli_fetch_assoc($result_horarios_rota);
 
         if ($row_horarios_rota['total'] > 0) {
-            $mensagem = "Não é possível excluir a rota ID $id_rota pois existem horários associados a ela.";
+            $mensagem = "Não é possível eliminar a rota ID $id_rota pois existem horários associados a ela.";
             $tipo_mensagem = "error";
         } else {
-            // Verificar se há bilhetes associados a esta rota
-            $sql_bilhetes = "SELECT COUNT(*) as total FROM bilhetes WHERE id_rota = $id_rota";
-            $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
+            $result_bilhetes = mysqli_query($conn, "SELECT COUNT(*) as total FROM bilhetes WHERE id_rota = $id_rota");
             $row_bilhetes = mysqli_fetch_assoc($result_bilhetes);
 
             if ($row_bilhetes['total'] > 0) {
-                $mensagem = "Não é possível excluir a rota ID $id_rota pois existem bilhetes associados a ela.";
+                $mensagem = "Não é possível eliminar a rota ID $id_rota pois existem bilhetes associados a ela.";
                 $tipo_mensagem = "error";
             } else {
-                // Desativar a rota em vez de excluir
-                $sql_desativar = "UPDATE rotas SET disponivel = 0 WHERE id = $id_rota";
-
-                if (mysqli_query($conn, $sql_desativar)) {
-                    $mensagem = "Rota com ID $id_rota foi desativada com sucesso!";
+                if (mysqli_query($conn, "UPDATE rotas SET disponivel = 0 WHERE id = $id_rota")) {
+                    $mensagem = "Rota com ID $id_rota foi excluida com sucesso!";
                     $tipo_mensagem = "success";
                 } else {
-                    $mensagem = "Erro ao desativar rota ID $id_rota: " . mysqli_error($conn);
+                    $mensagem = "Erro ao excluir rota ID $id_rota: " . mysqli_error($conn);
                     $tipo_mensagem = "error";
                 }
             }
@@ -220,29 +184,22 @@ if (isset($_GET['excluir_rota']) && !empty($_GET['excluir_rota'])) {
 // Excluir horário
 if (isset($_GET['excluir_horario']) && !empty($_GET['excluir_horario'])) {
     $id_horario = intval($_GET['excluir_horario']);
-
-    // Verificar se o horário existe
-    $sql_verificar = "SELECT id FROM horarios WHERE id = $id_horario";
-    $result_verificar = mysqli_query($conn, $sql_verificar);
+    $result_verificar = mysqli_query($conn, "SELECT id FROM horarios WHERE id = $id_horario");
 
     if (mysqli_num_rows($result_verificar) > 0) {
-        // Verificar se há bilhetes associados a este horário
         $sql_bilhetes = "SELECT COUNT(*) as total FROM bilhetes WHERE id_rota IN (SELECT id_rota FROM horarios WHERE id = $id_horario) AND hora_viagem = (SELECT horario_partida FROM horarios WHERE id = $id_horario)";
         $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
         $row_bilhetes = mysqli_fetch_assoc($result_bilhetes);
 
         if ($row_bilhetes['total'] > 0) {
-            $mensagem = "Não é possível excluir o horário ID $id_horario pois existem bilhetes associados a ele.";
+            $mensagem = "Não é possível eliminar o horário ID $id_horario pois existem bilhetes associados a ele.";
             $tipo_mensagem = "error";
         } else {
-            // Desativar o horário em vez de excluir
-            $sql_desativar = "UPDATE horarios SET disponivel = 0 WHERE id = $id_horario";
-
-            if (mysqli_query($conn, $sql_desativar)) {
-                $mensagem = "Horário com ID $id_horario foi desativado com sucesso!";
+            if (mysqli_query($conn, "UPDATE horarios SET disponivel = 0 WHERE id = $id_horario")) {
+                $mensagem = "Horário com ID $id_horario foi excluido com sucesso!";
                 $tipo_mensagem = "success";
             } else {
-                $mensagem = "Erro ao desativar horário ID $id_horario: " . mysqli_error($conn);
+                $mensagem = "Erro ao excluir horário ID $id_horario: " . mysqli_error($conn);
                 $tipo_mensagem = "error";
             }
         }
@@ -255,7 +212,6 @@ if (isset($_GET['excluir_horario']) && !empty($_GET['excluir_horario'])) {
 // Definir mensagem se vier de um redirecionamento
 if (isset($_GET['msg'])) {
     $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
     if ($_GET['msg'] == 'updated') {
         $mensagem = "Rota com ID $id foi editada com sucesso!";
         $tipo_mensagem = "success";
@@ -265,21 +221,17 @@ if (isset($_GET['msg'])) {
     }
 }
 
-// Buscar todas as rotas
-$sql_rotas = "SELECT r.*,
-              (SELECT COUNT(*) FROM horarios WHERE id_rota = r.id) as total_horarios
-              FROM rotas r
-              WHERE r.disponivel = 1
-              ORDER BY r.id ASC";
-$result_rotas = mysqli_query($conn, $sql_rotas);
+// Buscar dados
+$result_rotas = mysqli_query($conn, "SELECT r.*, (SELECT COUNT(*) FROM horarios WHERE id_rota = r.id) as total_horarios
+              FROM rotas r WHERE r.disponivel = 1 ORDER BY r.id ASC");
 
-// Buscar todos os horários
-$sql_horarios = "SELECT h.*, r.origem, r.destino, r.capacidade
-                FROM horarios h
-                JOIN rotas r ON h.id_rota = r.id
+$result_horarios = mysqli_query($conn, "SELECT h.*, r.origem, r.destino, r.capacidade
+                FROM horarios h JOIN rotas r ON h.id_rota = r.id
                 WHERE r.disponivel = 1 AND h.disponivel = 1
-                ORDER BY h.data_viagem DESC, h.horario_partida ASC";
-$result_horarios = mysqli_query($conn, $sql_horarios);
+                ORDER BY h.data_viagem DESC, h.horario_partida ASC");
+
+// Gerar token se não existir
+if(!isset($_SESSION['token_rota'])) $_SESSION['token_rota'] = uniqid();
 ?>
 
 <!DOCTYPE html>
@@ -292,6 +244,7 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
     <title>FelixBus - Gestão de Rotas</title>
 </head>
 <body>
+    <!-- NAVBAR -->
     <nav>
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
@@ -305,6 +258,7 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
         </div>
     </nav>
 
+    <!-- SECTION -->
     <section>
         <h1>Gestão de Rotas e Horários</h1>
 
@@ -318,12 +272,6 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
             <div class="form-container">
                 <h2><?php echo $rota_para_editar ? 'Editar Rota' : 'Adicionar Nova Rota'; ?></h2>
                 <form method="post" action="gerir_rotas.php">
-                    <?php
-                    // Gerar um novo token se não existir
-                    if (!isset($_SESSION['token_rota'])) {
-                        $_SESSION['token_rota'] = md5(uniqid(mt_rand(), true));
-                    }
-                    ?>
                     <input type="hidden" name="token_rota" value="<?php echo $_SESSION['token_rota']; ?>">
                     <?php if ($rota_para_editar): ?>
                         <input type="hidden" name="id_rota" value="<?php echo $rota_para_editar['id']; ?>">
@@ -331,12 +279,12 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
 
                     <div class="form-group">
                         <label for="origem">Origem:</label>
-                        <input type="text" id="origem" name="origem" value="<?php echo $rota_para_editar ? htmlspecialchars($rota_para_editar['origem']) : ''; ?>" required>
+                        <input type="text" id="origem" name="origem" value="<?php echo $rota_para_editar ? $rota_para_editar['origem'] : ''; ?>" required>
                     </div>
 
                     <div class="form-group">
                         <label for="destino">Destino:</label>
-                        <input type="text" id="destino" name="destino" value="<?php echo $rota_para_editar ? htmlspecialchars($rota_para_editar['destino']) : ''; ?>" required>
+                        <input type="text" id="destino" name="destino" value="<?php echo $rota_para_editar ? $rota_para_editar['destino'] : ''; ?>" required>
                     </div>
 
                     <div class="form-group">
@@ -374,7 +322,7 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
                                 $selected = ($horario_para_editar && $horario_para_editar['id_rota'] == $rota['id']) ? 'selected' : '';
                             ?>
                                 <option value="<?php echo $rota['id']; ?>" <?php echo $selected; ?>>
-                                    <?php echo htmlspecialchars($rota['origem'] . ' → ' . $rota['destino']); ?>
+                                    <?php echo $rota['origem'] . ' → ' . $rota['destino']; ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
@@ -420,15 +368,15 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
                         ?>
                             <tr>
                                 <td><?php echo $rota['id']; ?></td>
-                                <td><?php echo htmlspecialchars($rota['origem']); ?></td>
-                                <td><?php echo htmlspecialchars($rota['destino']); ?></td>
+                                <td><?php echo $rota['origem']; ?></td>
+                                <td><?php echo $rota['destino']; ?></td>
                                 <td>€<?php echo number_format($rota['preco'], 2, ',', '.'); ?></td>
                                 <td><?php echo $rota['capacidade']; ?></td>
                                 <td><?php echo $rota['total_horarios']; ?></td>
                                 <td>
                                     <div class="action-buttons">
                                         <a href="?editar=<?php echo $rota['id']; ?>" class="action-btn edit">Editar</a>
-                                        <a href="?excluir_rota=<?php echo $rota['id']; ?>" class="action-btn delete" onclick="return confirm('Tem certeza que deseja desativar esta rota?');">Desativar</a>
+                                        <a href="?excluir_rota=<?php echo $rota['id']; ?>" class="action-btn delete" onclick="return confirm('Tem certeza que deseja excluir esta rota?');">Excluir</a>
                                     </div>
                                 </td>
                             </tr>
@@ -451,13 +399,13 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
                         <?php while ($horario = mysqli_fetch_assoc($result_horarios)): ?>
                             <tr>
                                 <td><?php echo $horario['id']; ?></td>
-                                <td><?php echo htmlspecialchars($horario['origem'] . ' → ' . $horario['destino']); ?></td>
+                                <td><?php echo $horario['origem'] . ' → ' . $horario['destino']; ?></td>
                                 <td><?php echo date('d/m/Y', strtotime($horario['data_viagem'])); ?></td>
                                 <td><?php echo $horario['horario_partida']; ?></td>
                                 <td>
                                     <div class="action-buttons">
                                         <a href="?editar_horario=<?php echo $horario['id']; ?>" class="action-btn edit">Editar</a>
-                                        <a href="?excluir_horario=<?php echo $horario['id']; ?>" class="action-btn delete" onclick="return confirm('Tem certeza que deseja desativar este horário?');">Desativar</a>
+                                        <a href="?excluir_horario=<?php echo $horario['id']; ?>" class="action-btn delete" onclick="return confirm('Tem certeza que deseja excluir este horário?');">Excluir</a>
                                     </div>
                                 </td>
                             </tr>
@@ -475,5 +423,13 @@ $result_horarios = mysqli_query($conn, $sql_horarios);
 
 </body>
 </html>
+
+
+
+
+
+
+
+
 
 
