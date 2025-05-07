@@ -2,13 +2,13 @@
 session_start();
 include '../basedados/basedados.h';
 
-// Verifica se o usuário é administrador
+// Verifica se o utilizador é administrador
 if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     header("Location: erro.php");
     exit();
 }
 
-// Conexão com o banco de dados
+// Ligação à base de dados
 $conn = mysqli_connect("localhost", "root", "", "FelixBus");
 
 // Inicializar variáveis
@@ -16,7 +16,7 @@ $mensagem_feedback = '';
 $tipo_mensagem = '';
 $alerta_para_editar = null;
 
-// Carregar alerta para edição
+// Carregar alerta para edição se o parâmetro 'editar' estiver presente no URL
 if (isset($_GET['editar']) && !empty($_GET['editar'])) {
     $id_editar = intval($_GET['editar']);
     $sql_editar = "SELECT * FROM alertas WHERE id = $id_editar";
@@ -27,7 +27,7 @@ if (isset($_GET['editar']) && !empty($_GET['editar'])) {
     }
 }
 
-// Adicionar alerta
+// Processar formulário para adicionar novo alerta
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
     $mensagem = mysqli_real_escape_string($conn, $_POST['mensagem']);
     $data_inicio = $_POST['data_inicio'];
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
     }
 }
 
-// Atualizar alerta existente
+// Processar formulário para atualizar alerta existente
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['atualizar'])) {
     $id_alerta = intval($_POST['id_alerta']);
     $mensagem = mysqli_real_escape_string($conn, $_POST['mensagem']);
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['atualizar'])) {
     }
 }
 
-// Excluir alerta
+// Processar pedido para excluir alerta
 if (isset($_GET['excluir'])) {
     $id = intval($_GET['excluir']);
     $sql = "DELETE FROM alertas WHERE id = $id";
@@ -77,7 +77,7 @@ if (isset($_GET['excluir'])) {
     }
 }
 
-// Definir mensagem se vier de um redirecionamento
+// Definir mensagem se vier de um redirecionamento após atualização
 if (isset($_GET['msg'])) {
     $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -87,7 +87,7 @@ if (isset($_GET['msg'])) {
     }
 }
 
-// Buscar alertas existentes
+// Buscar todos os alertas existentes para exibir na tabela
 $sql = "SELECT * FROM alertas ORDER BY id ASC";
 $result = mysqli_query($conn, $sql);
 
@@ -103,48 +103,55 @@ if (!$result) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="gerir_alertas.css">
-    <link rel="stylesheet" href="common.css">
     <title>FelixBus - Gestão de Alertas</title>
 </head>
 <body>
+    <!-- Barra de navegação -->
     <nav>
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
         </div>
-        <div class="links" style="display: flex; justify-content: center; width: 50%;">
-            <div class="link"> <a href="pg_admin.php" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
+        <div class="links">
+            <div class="link"><a href="pg_admin.php">Voltar para Página Inicial</a></div>
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
-            <div class="btn-admin" style="color: white !important; font-weight: 600;">Área do Administrador</div>
+            <div class="btn-admin">Área do Administrador</div>
         </div>
     </nav>
 
+    <!-- Conteúdo principal -->
     <div class="container">
+        <!-- Formulário para adicionar ou editar alertas -->
         <div class="form-container">
             <h2><?php echo $alerta_para_editar ? 'Editar Alerta' : 'Adicionar Novo Alerta'; ?></h2>
             <form method="post" action="gerir_alertas.php">
                 <?php if ($alerta_para_editar): ?>
+                    <!-- Campo oculto com ID do alerta a ser editado -->
                     <input type="hidden" name="id_alerta" value="<?php echo $alerta_para_editar['id']; ?>">
                 <?php endif; ?>
 
+                <!-- Campo para a mensagem do alerta -->
                 <div class="form-group">
                     <label for="mensagem">Mensagem:</label>
                     <textarea id="mensagem" name="mensagem" required><?php echo $alerta_para_editar ? $alerta_para_editar['mensagem'] : ''; ?></textarea>
                 </div>
 
+                <!-- Campo para a data de início -->
                 <div class="form-group">
                     <label for="data_inicio">Data de Início:</label>
                     <input type="datetime-local" id="data_inicio" name="data_inicio" value="<?php echo $alerta_para_editar ? date('Y-m-d\TH:i', strtotime($alerta_para_editar['data_inicio'])) : ''; ?>" required>
                 </div>
 
+                <!-- Campo para a data de fim -->
                 <div class="form-group">
                     <label for="data_fim">Data de Fim:</label>
                     <input type="datetime-local" id="data_fim" name="data_fim" value="<?php echo $alerta_para_editar ? date('Y-m-d\TH:i', strtotime($alerta_para_editar['data_fim'])) : ''; ?>" required>
                 </div>
 
+                <!-- Botões de ação do formulário -->
                 <?php if ($alerta_para_editar): ?>
-                    <button type="submit" name="atualizar" class="update-btn">Atualizar Alerta</button>
+                    <button type="submit" name="atualizar">Atualizar Alerta</button>
                     <a href="gerir_alertas.php" class="cancel-btn">Cancelar</a>
                 <?php else: ?>
                     <button type="submit" name="adicionar">Adicionar Alerta</button>
@@ -152,7 +159,9 @@ if (!$result) {
             </form>
         </div>
 
+        <!-- Tabela de alertas existentes -->
         <div class="table-container">
+            <!-- Exibir mensagens de feedback ao utilizador -->
             <?php if (!empty($mensagem_feedback)): ?>
             <div class="alert alert-<?php echo $tipo_mensagem == 'success' ? 'success' : 'danger'; ?>">
                 <?php echo $mensagem_feedback; ?>
@@ -172,6 +181,7 @@ if (!$result) {
                 </thead>
                 <tbody>
                     <?php
+                    // Exibir todos os alertas na tabela
                     if (mysqli_num_rows($result) > 0) {
                         while ($alerta = mysqli_fetch_assoc($result)) {
                             echo "<tr>";
@@ -182,12 +192,13 @@ if (!$result) {
                             echo "<td>
                                 <div class='action-buttons'>
                                     <a href='?editar=" . $alerta['id'] . "' class='action-btn edit'>Editar</a>
-                                    <a href='?excluir=" . $alerta['id'] . "' class='action-btn delete' onclick='return confirm(\"Tem certeza que deseja excluir este alerta?\")'> Excluir</a>
+                                    <a href='?excluir=" . $alerta['id'] . "' class='action-btn delete' onclick='return confirm(\"Tem certeza que deseja excluir este alerta?\")'>Excluir</a>
                                 </div>
                             </td>";
                             echo "</tr>";
                         }
                     } else {
+                        // Mensagem quando não há alertas
                         echo "<tr><td colspan='5' class='no-results'>Nenhum alerta encontrado.</td></tr>";
                     }
                     ?>
@@ -196,10 +207,9 @@ if (!$result) {
         </div>
     </div>
 
-    <!-- Adicionar antes do fechamento do </body> -->
+    <!-- Rodapé da página -->
     <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
-
 </body>
 </html>
