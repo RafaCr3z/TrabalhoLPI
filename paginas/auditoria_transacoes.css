@@ -10,33 +10,25 @@
 body {
     width: 100%;
     min-height: 100vh;
-    background-image: url(fundo.png);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
+    background-color: #f5f5f5;
+    color: #333;
 }
 
 /* Navbar */
 nav {
     width: 100%;
-    height: 10vh;
+    height: 60px;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
+    background: #333;
     color: white;
-    background: rgba(0, 0, 0, 0.7);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-}
-
-.logo {
-    cursor: pointer;
-    text-decoration: none !important;
+    padding: 0 20px;
 }
 
 .logo h1 {
     color: white;
-    font-size: 1.8rem;
-    letter-spacing: 1px;
+    font-size: 1.5rem;
 }
 
 .logo span {
@@ -45,16 +37,12 @@ nav {
 
 .links {
     display: flex;
-    justify-content: space-between;
-    width: 30%;
 }
 
 .link a {
     color: white;
     text-decoration: none;
-    font-size: 1.1rem;
-    font-weight: 300;
-    transition: all 0.3s ease;
+    margin: 0 15px;
 }
 
 .link a:hover {
@@ -64,38 +52,21 @@ nav {
 .buttons {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
-
-.btn {
-    display: flex;
-    align-items: center;
-    height: 100%;
-    margin-top: -15px;
-}
-
-.btn a {
-    text-decoration: none;
-    height: 100%;
-    display: flex;
-    align-items: center;
-}
-
 
 .btn button {
+    padding: 8px 15px;
     background: #ff6b6b;
     color: white;
     border: none;
     border-radius: 4px;
-    padding: 6px 15px;
-    font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.3s ease;
 }
 
 .btn-admin {
     color: white;
-    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 section {
@@ -107,28 +78,39 @@ section {
 h1 {
     text-align: center;
     margin: 20px 0;
-    color: white;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+    color: #333;
 }
 
-h2 {
+.alert {
+    padding: 10px;
     margin-bottom: 15px;
-    color: #333;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
 }
 
 .resumo-container {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
     gap: 15px;
 }
 
 .resumo-card {
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: white;
     padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     flex: 1;
     min-width: 200px;
     text-align: center;
@@ -154,12 +136,12 @@ h2 {
     color: red;
 }
 
-.filtros-container {
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 20px;
-    border-radius: 8px;
+.filtros-container, .transacoes-container {
+    background-color: white;
+    padding: 15px;
+    border-radius: 4px;
     margin-bottom: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .form-row {
@@ -183,10 +165,9 @@ label {
 
 input, select {
     width: 100%;
-    padding: 10px;
+    padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 14px;
 }
 
 button {
@@ -197,7 +178,6 @@ button {
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
-    margin-top: 20px;
 }
 
 button:hover {
@@ -212,7 +192,6 @@ button:hover {
     text-decoration: none;
     border-radius: 4px;
     font-size: 14px;
-    margin-top: 20px;
     margin-left: 10px;
 }
 
@@ -220,20 +199,12 @@ button:hover {
     background-color: #5a6268;
 }
 
-.transacoes-container {
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
 .transacoes-table-wrapper {
-    height: 300px;
-    overflow-y: scroll;
+    max-height: 400px;
+    overflow-y: auto;
     margin-top: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    position: relative;
 }
 
 .transacoes-table-wrapper::-webkit-scrollbar {
@@ -251,69 +222,58 @@ button:hover {
 }
 
 .transacoes-table th, .transacoes-table td {
-    padding: 10px;
+    padding: 8px;
     text-align: left;
     border-bottom: 1px solid #ddd;
-    line-height: 1.4;
-    white-space: nowrap;
 }
 
 .transacoes-table th {
     background-color: #f2f2f2;
-    font-weight: 500;
     position: sticky;
     top: 0;
     z-index: 10;
-    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
-}
-
-.transacoes-table tr:hover {
-    background-color: #e6f0ff;
-}
-
-.transacoes-table tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
-
-.transacoes-table tr.spacer-row {
-    height: 30px;
-    background-color: #f9f9f9;
-    border-bottom: 1px solid #eee;
 }
 
 .no-results {
     text-align: center;
-    color: #777;
-    margin: 20px 0;
-    font-style: italic;
+    padding: 20px;
+    color: #666;
 }
 
+/* Responsividade */
 @media (max-width: 768px) {
-    .links, .buttons {
-        width: auto;
+    .form-row {
+        flex-direction: column;
     }
-
+    
+    .form-group {
+        min-width: 100%;
+    }
+    
     .resumo-container {
         flex-direction: column;
     }
-
+    
     .resumo-card {
-        width: 100%;
+        min-width: 100%;
     }
 }
 
+/* Footer */
 footer {
     position: fixed;
     bottom: 0;
     width: 100%;
-    padding: 10px;
+    padding: 8px;
     text-align: center;
     color: white;
     background: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    font-size: 0.9rem;
+    z-index: 100;
 }
 
 footer span {
@@ -321,8 +281,7 @@ footer span {
 }
 
 footer img {
-    height: 20px;
+    height: 16px;
     width: auto;
 }
-
 

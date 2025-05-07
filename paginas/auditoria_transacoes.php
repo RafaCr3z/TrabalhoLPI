@@ -2,24 +2,26 @@
 session_start();
 include '../basedados/basedados.h';
 
-// Verificar se o usuário é administrador
+// Verifica se o utilizador é administrador
+// Se não for, redireciona para a página de erro
 if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     header("Location: erro.php");
     exit();
 }
 
-// Inicializar variáveis de filtro
+// Inicializa as variáveis de filtro a partir dos parâmetros GET
 $filtro_cliente_id = isset($_GET['cliente_id']) ? intval($_GET['cliente_id']) : 0;
 $filtro_tipo = isset($_GET['tipo']) ? $_GET['tipo'] : '';
 $filtro_data_inicio = isset($_GET['data_inicio']) ? $_GET['data_inicio'] : '';
 $filtro_data_fim = isset($_GET['data_fim']) ? $_GET['data_fim'] : '';
 
-// Construir a consulta SQL com filtros
+// Constrói a consulta SQL base para obter as transações
 $sql = "SELECT t.*, u.nome as nome_cliente, u.email as email_cliente
         FROM transacoes t
         JOIN utilizadores u ON t.id_cliente = u.id
         WHERE 1=1";
 
+// Adiciona filtros à consulta SQL se estiverem definidos
 if ($filtro_cliente_id > 0) {
     $sql .= " AND t.id_cliente = " . $filtro_cliente_id;
 }
@@ -36,12 +38,13 @@ if (!empty($filtro_data_fim)) {
     $sql .= " AND DATE(t.data_transacao) <= '" . mysqli_real_escape_string($conn, $filtro_data_fim) . "'";
 }
 
+// Ordena os resultados por data de transação (mais recentes primeiro)
 $sql .= " ORDER BY t.data_transacao DESC";
 
-// Executar a consulta
+// Executa a consulta para obter as transações
 $result = mysqli_query($conn, $sql);
 
-// Obter tipos de transação para o filtro
+// Obtém os tipos de transação distintos para o filtro
 $sql_tipos = "SELECT DISTINCT tipo FROM transacoes ORDER BY tipo";
 $result_tipos = mysqli_query($conn, $sql_tipos);
 $tipos = [];
@@ -49,7 +52,7 @@ while ($row = mysqli_fetch_assoc($result_tipos)) {
     $tipos[] = $row['tipo'];
 }
 
-// Obter lista de clientes para o dropdown
+// Obtém a lista de clientes para o dropdown de filtro
 $sql_clientes = "SELECT DISTINCT u.id, u.nome, u.email
                 FROM utilizadores u
                 JOIN transacoes t ON u.id = t.id_cliente
@@ -57,7 +60,7 @@ $sql_clientes = "SELECT DISTINCT u.id, u.nome, u.email
                 ORDER BY u.nome";
 $result_clientes = mysqli_query($conn, $sql_clientes);
 
-// Calcular totais
+// Calcula os totais de depósitos, retiradas e compras
 $sql_totais = "SELECT
                 SUM(CASE WHEN tipo = 'deposito' THEN valor ELSE 0 END) as total_depositos,
                 SUM(CASE WHEN tipo = 'retirada' THEN valor ELSE 0 END) as total_retiradas,
@@ -72,6 +75,7 @@ $totais = mysqli_fetch_assoc($result_totais);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Ligação ao ficheiro CSS para estilização -->
     <link rel="stylesheet" href="auditoria_transacoes.css">
     <title>FelixBus - Auditoria de Transações</title>
 </head>
@@ -89,9 +93,11 @@ $totais = mysqli_fetch_assoc($result_totais);
         </div>
     </nav>
 
+    <!-- Secção principal do conteúdo -->
     <section>
         <h1>Auditoria de Transações</h1>
 
+        <!-- Resumo dos valores totais -->
         <div class="resumo-container">
             <div class="resumo-card">
                 <h3>Total de Depósitos</h3>
@@ -108,6 +114,7 @@ $totais = mysqli_fetch_assoc($result_totais);
             <div class="resumo-card">
                 <h3>Saldo FelixBus</h3>
                 <p class="valor">€<?php
+                    // Obtém o saldo atual da carteira FelixBus
                     $sql_saldo = "SELECT saldo FROM carteira_felixbus LIMIT 1";
                     $result_saldo = mysqli_query($conn, $sql_saldo);
                     $saldo = mysqli_fetch_assoc($result_saldo);
@@ -126,7 +133,7 @@ $totais = mysqli_fetch_assoc($result_totais);
                             <option value="0">Todos os Clientes</option>
                             <?php while ($cliente = mysqli_fetch_assoc($result_clientes)): ?>
                                 <option value="<?php echo $cliente['id']; ?>" <?php echo $filtro_cliente_id == $cliente['id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($cliente['nome']) . ' (' . htmlspecialchars($cliente['email']) . ')'; ?>
+                                    <?php echo $cliente['nome'] . ' (' . $cliente['email'] . ')'; ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
@@ -164,6 +171,7 @@ $totais = mysqli_fetch_assoc($result_totais);
             </form>
         </div>
 
+        <!-- Tabela de transações -->
         <div class="transacoes-container">
             <h2>REGISTRO DE TRANSAÇÕES</h2>
             <?php if (mysqli_num_rows($result) > 0): ?>
@@ -182,6 +190,7 @@ $totais = mysqli_fetch_assoc($result_totais);
                     <tbody>
                         <?php while ($transacao = mysqli_fetch_assoc($result)): ?>
                             <?php
+                            // Define a classe CSS e formata o valor com base no tipo de transação
                             $classe_valor = '';
                             if ($transacao['tipo'] == 'deposito') {
                                 $classe_valor = 'deposito';
@@ -197,14 +206,15 @@ $totais = mysqli_fetch_assoc($result_totais);
                             <tr>
                                 <td><?php echo $transacao['id']; ?></td>
                                 <td><?php echo date('d/m/Y H:i:s', strtotime($transacao['data_transacao'])); ?></td>
-                                <td><?php echo htmlspecialchars($transacao['nome_cliente']) . ' (' . htmlspecialchars($transacao['email_cliente']) . ')'; ?></td>
+                                <td><?php echo $transacao['nome_cliente'] . ' (' . $transacao['email_cliente'] . ')'; ?></td>
                                 <td><?php echo ucfirst($transacao['tipo']); ?></td>
                                 <td class="<?php echo $classe_valor; ?>"><?php echo $valor_formatado; ?></td>
-                                <td><?php echo htmlspecialchars($transacao['descricao']); ?></td>
+                                <td><?php echo $transacao['descricao']; ?></td>
                             </tr>
                         <?php endwhile; ?>
                         <?php
-                        // Adicionar algumas linhas vazias para garantir que a tabela tenha rolagem
+                        // Adiciona linhas vazias para garantir que a tabela tenha rolagem
+                        // quando há poucos resultados
                         $num_rows = mysqli_num_rows($result);
                         if ($num_rows < 5) {
                             for ($i = 0; $i < (5 - $num_rows); $i++) {
@@ -227,14 +237,16 @@ $totais = mysqli_fetch_assoc($result_totais);
     </footer>
 
 <script>
+    // Script para garantir que a tabela tenha rolagem visível
     document.addEventListener('DOMContentLoaded', function() {
-        // Garantir que a tabela tenha rolagem
+        // Seleciona o contentor da tabela
         const tableWrapper = document.querySelector('.transacoes-table-wrapper');
         if (tableWrapper) {
-            // Forçar a rolagem a ser visível
+            // Força a rolagem a ser visível
             tableWrapper.style.overflowY = 'scroll';
         }
     });
 </script>
 </body>
 </html>
+

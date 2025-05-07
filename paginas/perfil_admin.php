@@ -2,7 +2,7 @@
 session_start();
 include '../basedados/basedados.h';
 
-// Verificar se o usuário é administrador
+// Verificar se é administrador
 if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     header("Location: erro.php");
     exit();
@@ -15,11 +15,7 @@ $tipo_mensagem = '';
 // Buscar dados do utilizador
 $sql = "SELECT nome, email, telemovel, morada FROM utilizadores WHERE id = $id_utilizador";
 $resultado = mysqli_query($conn, $sql);
-
-if (!$resultado || mysqli_num_rows($resultado) == 0) {
-    die("Erro ao buscar dados do utilizador.");
-}
-
+if (!$resultado || mysqli_num_rows($resultado) == 0) die("Erro ao buscar dados do utilizador.");
 $dados = mysqli_fetch_assoc($resultado);
 
 // Processar formulário de atualização
@@ -28,21 +24,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['atualizar'])) {
     $telemovel = mysqli_real_escape_string($conn, $_POST['telemovel']);
     $morada = mysqli_real_escape_string($conn, $_POST['morada']);
 
-    // Verificar se o email já existe (exceto para o próprio utilizador)
+    // Verificar se email já existe
     $sql_check = "SELECT * FROM utilizadores WHERE email = '$email' AND id != $id_utilizador";
-    $result_check = mysqli_query($conn, $sql_check);
-
-    if (mysqli_num_rows($result_check) > 0) {
-        $mensagem = "Este email já está em uso por outro utilizador.";
+    if (mysqli_num_rows(mysqli_query($conn, $sql_check)) > 0) {
+        $mensagem = "Este email já está a ser utilizado por outro utilizador.";
         $tipo_mensagem = "error";
     } else {
         $sql_update = "UPDATE utilizadores SET email = '$email', telemovel = '$telemovel', morada = '$morada' WHERE id = $id_utilizador";
-
         if (mysqli_query($conn, $sql_update)) {
             $mensagem = "Dados atualizados com sucesso!";
             $tipo_mensagem = "success";
-
-            // Atualizar dados na sessão
             $dados['email'] = $email;
             $dados['telemovel'] = $telemovel;
             $dados['morada'] = $morada;
@@ -53,47 +44,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['atualizar'])) {
     }
 }
 
-// Processar alteração de senha
+// Processar alteração de palavra-passe
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
     $senha_atual = $_POST['senha_atual'];
     $nova_senha = $_POST['nova_senha'];
     $confirmar_senha = $_POST['confirmar_senha'];
 
-    // Verificar se a nova senha e a confirmação são iguais
     if ($nova_senha != $confirmar_senha) {
-        $mensagem = "A nova senha e a confirmação não coincidem.";
+        $mensagem = "A nova palavra-passe e a confirmação não coincidem.";
         $tipo_mensagem = "error";
     } else {
-        // Verificar se a senha atual está correta
+        // Verificar palavra-passe atual
         $sql_senha = "SELECT pwd FROM utilizadores WHERE id = $id_utilizador";
-        $result_senha = mysqli_query($conn, $sql_senha);
-        $row_senha = mysqli_fetch_assoc($result_senha);
-
-        // Verificar se a senha está em formato de hash ou não
+        $row_senha = mysqli_fetch_assoc(mysqli_query($conn, $sql_senha));
+        
         $senha_valida = false;
         if (substr($row_senha['pwd'], 0, 4) === '$2y$') {
-            // Senha já está em formato de hash bcrypt
             $senha_valida = password_verify($senha_atual, $row_senha['pwd']);
         } else {
-            // Senha antiga sem hash - verificar diretamente
             $senha_valida = ($senha_atual === $row_senha['pwd']);
         }
 
         if ($senha_valida) {
-            // Gerar hash da nova senha
             $hashed_pwd = password_hash($nova_senha, PASSWORD_DEFAULT);
-
             $sql_update = "UPDATE utilizadores SET pwd = '$hashed_pwd' WHERE id = $id_utilizador";
-
+            
             if (mysqli_query($conn, $sql_update)) {
-                $mensagem = "Senha alterada com sucesso!";
+                $mensagem = "Palavra-passe alterada com sucesso!";
                 $tipo_mensagem = "success";
             } else {
-                $mensagem = "Erro ao alterar senha: " . mysqli_error($conn);
+                $mensagem = "Erro ao alterar palavra-passe: " . mysqli_error($conn);
                 $tipo_mensagem = "error";
             }
         } else {
-            $mensagem = "Senha atual incorreta.";
+            $mensagem = "Palavra-passe atual incorreta.";
             $tipo_mensagem = "error";
         }
     }
@@ -107,7 +91,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="perfil_admin.css">
     <link rel="stylesheet" href="common.css">
-    <title>FelixBus - Meu Perfil</title>
+    <title>FelixBus - O Meu Perfil</title>
 </head>
 <body>
     <nav>
@@ -124,7 +108,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
     </nav>
 
     <section>
-        <h1>Meu Perfil</h1>
+        <h1>O Meu Perfil</h1>
 
         <?php if (!empty($mensagem)): ?>
             <div class="alert alert-<?php echo $tipo_mensagem == 'success' ? 'success' : 'danger'; ?>">
@@ -138,57 +122,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['alterar_senha'])) {
                 <form method="post" action="perfil_admin.php">
                     <div class="form-group">
                         <label for="nome">Nome:</label>
-                        <input type="text" id="nome" name="nome" value="<?php echo htmlspecialchars($dados['nome']); ?>" readonly>
+                        <input type="text" id="nome" name="nome" value="<?php echo $dados['nome']; ?>" readonly>
                         <small>O nome não pode ser alterado.</small>
                     </div>
-
                     <div class="form-group">
                         <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($dados['email']); ?>" required>
+                        <input type="email" id="email" name="email" value="<?php echo $dados['email']; ?>" required>
                     </div>
-
                     <div class="form-group">
                         <label for="telemovel">Telemóvel:</label>
-                        <input type="text" id="telemovel" name="telemovel" value="<?php echo htmlspecialchars($dados['telemovel']); ?>" required>
+                        <input type="text" id="telemovel" name="telemovel" value="<?php echo $dados['telemovel']; ?>" required>
                     </div>
-
                     <div class="form-group">
                         <label for="morada">Morada:</label>
-                        <textarea id="morada" name="morada" required><?php echo htmlspecialchars($dados['morada']); ?></textarea>
+                        <textarea id="morada" name="morada" required><?php echo $dados['morada']; ?></textarea>
                     </div>
-
                     <button type="submit" name="atualizar">Atualizar Dados</button>
                 </form>
             </div>
 
             <div class="form-container">
-                <h2>Alterar Senha</h2>
+                <h2>Alterar Palavra-passe</h2>
                 <form method="post" action="perfil_admin.php">
                     <div class="form-group">
-                        <label for="senha_atual">Senha Atual:</label>
+                        <label for="senha_atual">Palavra-passe Atual:</label>
                         <input type="password" id="senha_atual" name="senha_atual" required>
                     </div>
-
                     <div class="form-group">
-                        <label for="nova_senha">Nova Senha:</label>
+                        <label for="nova_senha">Nova Palavra-passe:</label>
                         <input type="password" id="nova_senha" name="nova_senha" required>
                     </div>
-
                     <div class="form-group">
-                        <label for="confirmar_senha">Confirmar Nova Senha:</label>
+                        <label for="confirmar_senha">Confirmar Nova Palavra-passe:</label>
                         <input type="password" id="confirmar_senha" name="confirmar_senha" required>
                     </div>
-
-                    <button type="submit" name="alterar_senha">Alterar Senha</button>
+                    <button type="submit" name="alterar_senha">Alterar Palavra-passe</button>
                 </form>
             </div>
         </div>
     </section>
 
-    <!-- Adicionar antes do fechamento do </body> -->
     <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
 </body>
 </html>
+
 
