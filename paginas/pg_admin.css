@@ -8,24 +8,17 @@
 }
 
 body {
-    width: 100%;
-    min-height: 100vh;
-    background-image: url(fundo.png);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
+    background: #f5f5f5;
+    font-family: 'Arial', sans-serif;
 }
 
 /* Navbar */
 nav {
-    width: 100%;
-    height: 10vh;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
+    background: #333;
     color: white;
-    background: rgba(0, 0, 0, 0.7);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
 }
 
 .logo {
@@ -34,9 +27,8 @@ nav {
 }
 
 .logo h1 {
-    color: white;
-    font-size: 1.8rem;
-    letter-spacing: 1px;
+    margin: 0;
+    font-size: 1.5rem;
 }
 
 .logo span {
@@ -135,17 +127,11 @@ section {
 }
 
 .card {
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    width: 250px;
-    text-align: center;
-    transition: transform 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-5px);
+    background: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
 }
 
 .card h2 {
@@ -160,13 +146,12 @@ section {
 }
 
 .card-btn {
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: #007BFF;
+    background: #007BFF;
     color: white;
+    padding: 8px 15px;
+    border-radius: 3px;
     text-decoration: none;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
+    display: inline-block;
 }
 
 .card-btn:hover {
@@ -179,10 +164,10 @@ section {
 }
 
 .resumo-financeiro {
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-top: 30px;
 }
 
@@ -216,7 +201,7 @@ section {
 }
 
 .valor {
-    font-size: 24px;
+    font-size: 18px;
     font-weight: bold;
     color: #007BFF;
 }
@@ -238,17 +223,10 @@ section {
 }
 
 footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
+    background: #333;
+    color: white;
     padding: 10px;
     text-align: center;
-    color: white;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
 }
 
 footer span {
@@ -259,6 +237,7 @@ footer img {
     height: 20px;
     width: auto;
 }
+
 
 
 

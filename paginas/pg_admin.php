@@ -1,8 +1,8 @@
 <?php
-session_start();
-include '../basedados/basedados.h';
-if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
-    header("Location: erro.php");
+    session_start();
+    include '../basedados/basedados.h';
+    if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
+        header("Location: erro.php");
     exit();
 }
 ?>
@@ -16,6 +16,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     <title>FelixBus - Área de Administração</title>
 </head>
 <body>
+    <!--NAVBAR -->
     <nav>
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
@@ -26,6 +27,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
         </div>
     </nav>
 
+    <!--SECTION -->
     <section>
         <div class="admin-dashboard">
             <h1>Painel do Administração</h1>
@@ -117,7 +119,7 @@ if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
         </div>
     </section>
     
-    <!-- Adicionar antes do fechamento do </body> -->
+    <!--FOOTER -->
     <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>

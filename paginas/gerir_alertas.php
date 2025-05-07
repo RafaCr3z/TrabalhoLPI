@@ -130,7 +130,7 @@ if (!$result) {
 
                 <div class="form-group">
                     <label for="mensagem">Mensagem:</label>
-                    <textarea id="mensagem" name="mensagem" required><?php echo $alerta_para_editar ? htmlspecialchars($alerta_para_editar['mensagem']) : ''; ?></textarea>
+                    <textarea id="mensagem" name="mensagem" required><?php echo $alerta_para_editar ? $alerta_para_editar['mensagem'] : ''; ?></textarea>
                 </div>
 
                 <div class="form-group">
@@ -176,7 +176,7 @@ if (!$result) {
                         while ($alerta = mysqli_fetch_assoc($result)) {
                             echo "<tr>";
                             echo "<td>" . $alerta['id'] . "</td>";
-                            echo "<td>" . htmlspecialchars($alerta['mensagem']) . "</td>";
+                            echo "<td>" . $alerta['mensagem'] . "</td>";
                             echo "<td>" . date('d/m/Y H:i', strtotime($alerta['data_inicio'])) . "</td>";
                             echo "<td>" . date('d/m/Y H:i', strtotime($alerta['data_fim'])) . "</td>";
                             echo "<td>

@@ -47,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $operacao = $_POST["operacao"];
 
     if ($valor <= 0) {
-        $_SESSION['mensagem'] = "Valor inválido. Por favor, insira um valor maior que zero.";
+        $_SESSION['mensagem'] = "Valor inválido. Por favor, introduza um valor superior a zero.";
         $_SESSION['tipo_mensagem'] = "danger";
 
         // Redirecionar para evitar reenvio do formulário ao atualizar a página
@@ -60,12 +60,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         try {
             if ($operacao == "adicionar") {
                 $sql_atualiza = "UPDATE carteiras SET saldo = saldo + $valor WHERE id_cliente = $id_cliente";
-                $tipo_transacao = "deposito";
+                $tipo_transacao = "depósito";
                 $descricao = "Depósito de €$valor na carteira";
             } else if ($operacao == "retirar" && $row_saldo['saldo'] >= $valor) {
                 $sql_atualiza = "UPDATE carteiras SET saldo = saldo - $valor WHERE id_cliente = $id_cliente";
-                $tipo_transacao = "retirada";
-                $descricao = "Retirada de €$valor da carteira";
+                $tipo_transacao = "levantamento";
+                $descricao = "Levantamento de €$valor da carteira";
             } else {
                 $_SESSION['mensagem'] = "Saldo insuficiente para realizar esta operação.";
                 $_SESSION['tipo_mensagem'] = "danger";
@@ -144,7 +144,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </nav>
 
     <section>
-        <h1>Minha Carteira</h1>
+        <h1>A Minha Carteira</h1>
 
         <?php if (!empty($mensagem)): ?>
             <div class="alert alert-<?php echo $tipo_mensagem; ?>">
@@ -168,8 +168,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <input type="number" id="valor" name="valor" step="0.01" required>
                 <label for="operacao">Operação:</label>
                 <select id="operacao" name="operacao" required>
-                    <option value="adicionar">Adicionar</option>
-                    <option value="retirar">Retirar</option>
+                    <option value="adicionar">Depositar</option>
+                    <option value="retirar">Levantar</option>
                 </select>
                 <button type="submit">Confirmar</button>
             </form>
@@ -177,6 +177,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <div class="historico-container">
             <h2>Histórico de Transações</h2>
+            <p class="scroll-hint">Deslize para ver mais transações</p>
             <div class="historico-table-container">
                 <table class="historico-table">
                     <thead>
@@ -196,7 +197,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if (mysqli_num_rows($result_historico) > 0) {
                         while ($transacao = mysqli_fetch_assoc($result_historico)) {
                             $classe_valor = '';
-                            if ($transacao['tipo'] == 'deposito') {
+                            if ($transacao['tipo'] == 'depósito') {
                                 $classe_valor = 'deposito';
                                 $valor_formatado = '+€' . number_format($transacao['valor'], 2, ',', '.');
                             } else {
