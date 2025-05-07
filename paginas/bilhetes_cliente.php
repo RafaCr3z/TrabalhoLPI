@@ -2,83 +2,87 @@
 session_start();
 include '../basedados/basedados.h';
 
+// Verifica se o utilizador está autenticado e se é um cliente (nível 3)
+// Se não for, redireciona para a página de erro
 if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
     header("Location: erro.php");
     exit();
 }
 
+// Obtém o ID do cliente a partir da sessão
 $id_cliente = $_SESSION["id_utilizador"];
-$id_carteira_felixbus = 1; // ID da carteira da FelixBus
+// Define o ID da carteira da FelixBus (sistema)
+$id_carteira_felixbus = 1;
 
-// Buscar saldo do cliente
+// Consulta o saldo atual do cliente na base de dados
 $sql_saldo = "SELECT saldo FROM carteiras WHERE id_cliente = $id_cliente";
 $result_saldo = mysqli_query($conn, $sql_saldo);
 $row_saldo = mysqli_fetch_assoc($result_saldo);
 
+// Inicializa variáveis para mensagens de feedback
 $mensagem = '';
 $tipo_mensagem = '';
 
-// Verificar se há mensagem na URL
+// Verifica se existem mensagens passadas por URL (após redirecionamentos)
 if (isset($_GET['msg']) && isset($_GET['tipo'])) {
-    $mensagem = urldecode($_GET['msg']);
+    $mensagem = $_GET['msg'];
     $tipo_mensagem = $_GET['tipo'];
 }
 
-// Verificar se a coluna 'disponivel' existe na tabela 'horarios'
+// Verifica se a coluna 'disponivel' existe na tabela 'horarios'
+// Se não existir, adiciona-a (para compatibilidade com versões anteriores)
 $check_column = "SHOW COLUMNS FROM horarios LIKE 'disponivel'";
 $column_result = mysqli_query($conn, $check_column);
 
 if (mysqli_num_rows($column_result) == 0) {
-    // A coluna não existe, vamos criá-la
-    $add_column = "ALTER TABLE horarios ADD COLUMN disponivel TINYINT(1) NOT NULL DEFAULT 1";
-    mysqli_query($conn, $add_column);
+    mysqli_query($conn, "ALTER TABLE horarios ADD COLUMN disponivel TINYINT(1) NOT NULL DEFAULT 1");
 }
 
-// Verificar se a coluna 'numero_lugar' existe na tabela 'bilhetes'
+// Verifica se a coluna 'numero_lugar' existe na tabela 'bilhetes'
+// Se não existir, adiciona-a (para compatibilidade com versões anteriores)
 $check_column = "SHOW COLUMNS FROM bilhetes LIKE 'numero_lugar'";
 $column_result = mysqli_query($conn, $check_column);
 
 if (mysqli_num_rows($column_result) == 0) {
-    // A coluna não existe, vamos criá-la
-    $add_column = "ALTER TABLE bilhetes ADD COLUMN numero_lugar INT";
-    mysqli_query($conn, $add_column);
+    mysqli_query($conn, "ALTER TABLE bilhetes ADD COLUMN numero_lugar INT");
 }
 
-// Processar compra de bilhete
+// Processa o formulário de compra de bilhete quando submetido
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
+    // Obtém e valida os dados do formulário
     $id_rota = intval($_POST['rota']);
     list($hora_viagem, $data_viagem) = explode('|', $_POST['horario']);
     $quantidade = isset($_POST['quantidade']) ? intval($_POST['quantidade']) : 1;
     $lugares = isset($_POST['lugares']) ? $_POST['lugares'] : '';
 
-    // Validar quantidade mínima
+    // Valida se a quantidade de bilhetes é pelo menos 1
     if ($quantidade < 1) {
-        $msg = urlencode("A quantidade de bilhetes deve ser pelo menos 1.");
+        $msg = "A quantidade de bilhetes deve ser pelo menos 1.";
         header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
         exit();
     }
 
-    // Validar seleção de lugares
+    // Valida se foram selecionados lugares
     if (empty($lugares)) {
-        $msg = urlencode("Por favor, selecione os lugares para os bilhetes.");
+        $msg = "Por favor, selecione os lugares para os bilhetes.";
         header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
         exit();
     }
 
-    // Converter a string de lugares em um array
+    // Converte a string de lugares numa array
     $lugares_array = explode(',', $lugares);
 
-    // Verificar se a quantidade de lugares selecionados corresponde à quantidade de bilhetes
+    // Verifica se a quantidade de lugares selecionados corresponde à quantidade de bilhetes
     if (count($lugares_array) != $quantidade) {
-        $msg = urlencode("A quantidade de lugares selecionados não corresponde à quantidade de bilhetes.");
+        $msg = "A quantidade de lugares selecionados não corresponde à quantidade de bilhetes.";
         header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
         exit();
     }
 
-    // Converter a data do formato dd/mm/yyyy para yyyy-mm-dd
+    // Converte a data do formato dd/mm/yyyy para yyyy-mm-dd (formato SQL)
     $data_formatada = date('Y-m-d', strtotime(str_replace('/', '-', $data_viagem)));
 
-    // Verificar se a rota existe e obter informações
+    // Verifica se a rota existe e obtém informações como preço, origem e destino
     $sql_rota = "SELECT r.preco, r.origem, r.destino, r.capacidade
                  FROM rotas r
                  WHERE r.id = ? AND r.disponivel = 1";
@@ -94,7 +98,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
         $destino = $row_rota['destino'];
         $capacidade = $row_rota['capacidade'];
 
-        // Verificar se os lugares já estão ocupados
+        // Verifica se os lugares selecionados já estão ocupados
         $lugares_str = implode(',', $lugares_array);
         $sql_check_lugares = "SELECT numero_lugar FROM bilhetes
                              WHERE id_rota = ?
@@ -106,36 +110,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
         mysqli_stmt_execute($stmt);
         $result_check_lugares = mysqli_stmt_get_result($stmt);
 
+        // Se encontrar lugares já ocupados, mostra mensagem de erro
         if (mysqli_num_rows($result_check_lugares) > 0) {
             $lugares_ocupados = [];
             while ($row = mysqli_fetch_assoc($result_check_lugares)) {
                 $lugares_ocupados[] = $row['numero_lugar'];
             }
-            $msg = urlencode("Os seguintes lugares já estão ocupados: " . implode(', ', $lugares_ocupados));
+            $msg = "Os seguintes lugares já estão ocupados: " . implode(', ', $lugares_ocupados);
             header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
             exit();
         }
 
-        // Verificar se o cliente tem saldo suficiente para todos os bilhetes
+        // Calcula o preço total da compra
         $preco_total = $preco * $quantidade;
 
+        // Verifica se o cliente tem saldo suficiente
         if ($row_saldo['saldo'] >= $preco_total) {
+            // Inicia uma transação para garantir a integridade dos dados
             mysqli_begin_transaction($conn);
 
             try {
-                // 1. Reduzir saldo do cliente
+                // 1. Reduz o saldo do cliente
                 $sql_reduzir = "UPDATE carteiras SET saldo = saldo - ? WHERE id_cliente = ?";
                 $stmt = mysqli_prepare($conn, $sql_reduzir);
                 mysqli_stmt_bind_param($stmt, "di", $preco_total, $id_cliente);
                 mysqli_stmt_execute($stmt);
 
-                // 2. Aumentar saldo da FelixBus
+                // 2. Aumenta o saldo da FelixBus
                 $sql_aumentar = "UPDATE carteira_felixbus SET saldo = saldo + ? WHERE id = ?";
                 $stmt = mysqli_prepare($conn, $sql_aumentar);
                 mysqli_stmt_bind_param($stmt, "di", $preco_total, $id_carteira_felixbus);
                 mysqli_stmt_execute($stmt);
 
-                // 3. Registar a transação
+                // 3. Regista a transação no histórico
                 $descricao = "Compra de $quantidade bilhete(s): $origem para $destino (Lugares: $lugares)";
                 $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
                                 VALUES (?, ?, ?, 'compra', ?)";
@@ -143,7 +150,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
                 mysqli_stmt_bind_param($stmt, "iids", $id_cliente, $id_carteira_felixbus, $preco_total, $descricao);
                 mysqli_stmt_execute($stmt);
 
-                // 4. Criar os bilhetes com os lugares selecionados
+                // 4. Cria os bilhetes com os lugares selecionados
                 foreach ($lugares_array as $lugar) {
                     $sql_bilhete = "INSERT INTO bilhetes (id_cliente, id_rota, data_viagem, hora_viagem, numero_lugar)
                                    VALUES (?, ?, ?, ?, ?)";
@@ -152,32 +159,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
                     mysqli_stmt_execute($stmt);
                 }
 
-                // 5. Atualizar lugares disponíveis na tabela horarios
+                // 5. Atualiza o número de lugares disponíveis na tabela horarios
                 $sql_update_lugares = "UPDATE horarios SET lugares_disponiveis = lugares_disponiveis - ?
                                      WHERE id_rota = ? AND data_viagem = ? AND horario_partida = ?";
                 $stmt = mysqli_prepare($conn, $sql_update_lugares);
                 mysqli_stmt_bind_param($stmt, "iiss", $quantidade, $id_rota, $data_formatada, $hora_viagem);
                 mysqli_stmt_execute($stmt);
 
+                // Confirma todas as operações da transação
                 mysqli_commit($conn);
 
-                $msg = urlencode("$quantidade bilhete(s) comprado(s) com sucesso para os lugares: $lugares!");
+                // Redireciona com mensagem de sucesso
+                $msg = "$quantidade bilhete(s) comprado(s) com sucesso para os lugares: $lugares!";
                 header("Location: bilhetes_cliente.php?msg=$msg&tipo=success");
                 exit();
 
             } catch (Exception $e) {
+                // Em caso de erro, reverte todas as operações
                 mysqli_rollback($conn);
-                $msg = urlencode($e->getMessage());
+                $msg = $e->getMessage();
                 header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
                 exit();
             }
         } else {
-            $msg = urlencode("Saldo insuficiente para comprar $quantidade bilhete(s). Total: €" . number_format($preco_total, 2, ',', '.'));
+            // Mensagem de erro se o saldo for insuficiente
+            $msg = "Saldo insuficiente para comprar $quantidade bilhete(s). Total: €" . number_format($preco_total, 2, ',', '.');
             header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
             exit();
         }
     } else {
-        $msg = urlencode("Rota não encontrada ou não disponível.");
+        // Mensagem de erro se a rota não for encontrada
+        $msg = "Rota não encontrada ou não disponível.";
         header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
         exit();
     }
@@ -300,7 +312,7 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                                 <option value="">Selecione uma rota</option>
                                 <?php while ($rota = mysqli_fetch_assoc($result_rotas)): ?>
                                     <option value="<?php echo $rota['id_rota']; ?>">
-                                        <?php echo htmlspecialchars($rota['origem'] . ' → ' . $rota['destino'] . ' - €' . number_format($rota['preco'], 2, ',', '.')); ?>
+                                        <?php echo $rota['origem'] . ' → ' . $rota['destino'] . ' - €' . number_format($rota['preco'], 2, ',', '.'); ?>
                                     </option>
                                 <?php endwhile; ?>
                             </select>
@@ -364,15 +376,13 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                                             <td>
                                                 <?php echo $contador_bilhetes++; ?>
                                             </td>
-                                            <td><?php echo htmlspecialchars($bilhete['origem'] . ' → ' . $bilhete['destino']); ?></td>
-                                            <td><?php echo htmlspecialchars($bilhete['nome_cliente']); ?></td>
+                                            <td><?php echo $bilhete['origem'] . ' → ' . $bilhete['destino']; ?></td>
+                                            <td><?php echo $bilhete['nome_cliente']; ?></td>
                                             <td><?php echo date('d/m/Y', strtotime($bilhete['data_viagem'])); ?></td>
                                             <td><?php echo $bilhete['hora_viagem']; ?></td>
                                             <td><?php echo $bilhete['quantidade']; ?></td>
                                             <td><?php
-                                                $lugares = $bilhete['lugares'] ?
-                                                    implode(', ', array_filter(explode(',', $bilhete['lugares']))) :
-                                                    'Não definido';
+                                                $lugares = $bilhete['lugares'] ? implode(', ', array_filter(explode(',', $bilhete['lugares']))) : 'Não definido';
                                                 echo $lugares;
                                             ?></td>
                                             <td class="preco">€<?php echo number_format($bilhete['preco'], 2, ',', '.'); ?></td>
