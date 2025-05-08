@@ -127,9 +127,9 @@
             </form>
         </div>
 
-        <?php if ($pesquisa_realizada): ?>
-            <div class="results-container">
-                <?php if (empty($resultados)): ?>
+        <?php if ($pesquisa_realizada): ?> <!-- Verifica se a pesquisa foi realizada -->
+            <div class="results-container"> <!-- Contentor dos resultados -->
+                <?php if (empty($resultados)): ?> <!-- Se não houver resultados -->
                     <p class="no-results">Nenhum resultado encontrado.</p>
                 <?php else: ?>
                     <h3>Resultados da Pesquisa</h3>
@@ -147,11 +147,11 @@
                             <tbody>
                                 <?php foreach ($resultados as $rota): ?>
                                     <tr>
-                                        <td><?php echo $rota['origem']; ?></td>
-                                        <td><?php echo $rota['destino']; ?></td>
-                                        <td><?php echo date('d/m/Y', strtotime($rota['data_viagem'])); ?></td>
-                                        <td><?php echo $rota['horario_partida']; ?></td>
-                                        <td><?php echo '€' . number_format($rota['preco'], 2, ',', '.'); ?></td>
+                                        <td><?php echo $rota['origem']; ?></td> <!-- Mostra a origem -->
+                                        <td><?php echo $rota['destino']; ?></td> <!-- Mostra o destino -->
+                                        <td><?php echo date('d/m/Y', strtotime($rota['data_viagem'])); ?></td> <!-- Formata e mostra a data -->
+                                        <td><?php echo $rota['horario_partida']; ?></td> <!-- Mostra o horário -->
+                                        <td><?php echo '€' . number_format($rota['preco'], 2, ',', '.'); ?></td> <!-- Formata e mostra o preço -->
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -166,18 +166,17 @@
     <!-- Alertas -->
     <div class="alertas-box">
         <div class="alertas-titulo">AVISOS IMPORTANTES</div>
-        <?php if (empty($mensagens)): ?>
+        <?php if (empty($mensagens)): ?> <!-- Se não houver mensagens -->
             <div class="alerta-item">Nenhum aviso no momento.</div>
-        <?php else: ?>
-            <?php foreach ($mensagens as $mensagem): ?>
+        <?php else: ?> <!-- Se houver mensagens -->
+            <?php foreach ($mensagens as $mensagem): ?> <!-- Itera sobre as mensagens -->
                 <div class="alerta-item">
-                    <?php echo $mensagem['conteudo']; ?>
+                    <?php echo $mensagem['conteudo']; ?> <!-- Mostra o conteúdo da mensagem -->
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-
-    <!-- Adicionar antes do fechamento do </body> -->
+    
     <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
