@@ -112,12 +112,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="origem">Origem:</label>
-                        <input type="text" id="origem" name="origem" placeholder="Ex: Lisboa" value="<?php echo htmlspecialchars($origem); ?>">
+                        <input type="text" id="origem" name="origem" placeholder="Ex: Lisboa" value="<?php echo $origem; ?>">
                     </div>
 
                     <div class="form-group">
                         <label for="destino">Destino:</label>
-                        <input type="text" id="destino" name="destino" placeholder="Ex: Porto" value="<?php echo htmlspecialchars($destino); ?>">
+                        <input type="text" id="destino" name="destino" placeholder="Ex: Porto" value="<?php echo $destino; ?>">
                     </div>
 
                     <div class="form-group">
@@ -147,10 +147,10 @@
                             <tbody>
                                 <?php foreach ($resultados as $rota): ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($rota['origem']); ?></td>
-                                        <td><?php echo htmlspecialchars($rota['destino']); ?></td>
+                                        <td><?php echo $rota['origem']; ?></td>
+                                        <td><?php echo $rota['destino']; ?></td>
                                         <td><?php echo date('d/m/Y', strtotime($rota['data_viagem'])); ?></td>
-                                        <td><?php echo htmlspecialchars($rota['horario_partida']); ?></td>
+                                        <td><?php echo $rota['horario_partida']; ?></td>
                                         <td><?php echo '€' . number_format($rota['preco'], 2, ',', '.'); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
