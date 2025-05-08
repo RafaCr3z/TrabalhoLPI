@@ -128,7 +128,7 @@
         </div>
 
         <?php if ($pesquisa_realizada): ?> <!-- Verifica se a pesquisa foi realizada -->
-            <div class="results-container"> <!-- Contentor dos resultados -->
+            <div class="results-container" id="resultsContainer"> <!-- Contentor dos resultados -->
                 <?php if (empty($resultados)): ?> <!-- Se não houver resultados -->
                     <p class="no-results">Nenhum resultado encontrado.</p>
                 <?php else: ?>
@@ -176,7 +176,7 @@
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-    
+
     <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>

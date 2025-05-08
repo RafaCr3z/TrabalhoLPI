@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;400;700&display=swap');
 
 * {
     padding: 0;
@@ -10,34 +10,30 @@
 body {
     width: 100%;
     min-height: 100vh;
-    background-image: url(fundo.png);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-attachment: fixed;
+    background-color: #f5f5f5;
+    color: #333;
 }
 
 /* Navbar */
 nav {
     width: 100%;
-    height: 10vh;
+    height: 60px;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
+    background: #333;
     color: white;
-    background: rgba(0, 0, 0, 0.7);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    padding: 0 20px;
 }
 
 .logo {
     cursor: pointer;
-    text-decoration: none !important;
+    text-decoration: none;
 }
 
 .logo h1 {
     color: white;
-    font-size: 1.8rem;
-    letter-spacing: 1px;
+    font-size: 1.5rem;
 }
 
 .logo span {
@@ -46,16 +42,16 @@ nav {
 
 .links {
     display: flex;
-    justify-content: space-between;
     width: 30%;
+    justify-content: center;
 }
 
 .link a {
     color: white;
     text-decoration: none;
+    margin: 0 15px;
     font-size: 1.1rem;
     font-weight: 300;
-    transition: all 0.3s ease;
 }
 
 .link a:hover {
@@ -64,395 +60,305 @@ nav {
 
 .buttons {
     display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    width: 20%;
     align-items: center;
-    height: 35px;
-}
-
-.btn {
-    display: flex;
-    align-items: center;
-    height: 100%;
-}
-
-.btn a {
-    text-decoration: none;
-    height: 100%;
-    display: flex;
-    align-items: center;
+    gap: 10px;
 }
 
 .btn button {
-    height: 100%;
-    padding: 0 20px;
+    padding: 8px 15px;
     background: #ff6b6b;
     color: white;
     border: none;
-    border-radius: 5px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
 }
 
-/* Estilo específico para o botão Registar */
-.btn button.register-btn {
-    background: transparent;
-    border: 2px solid #ff6b6b;
-    color: #ff6b6b;
-}
-
-.btn button.register-btn:hover {
-    background: #ff6b6b;
-    color: white;
-}
-
-/* Media queries para a navbar */
-@media (max-width: 992px) {
-    .links {
-        width: 40%;
-    }
-    
-    .buttons {
-        width: 25%;
-    }
-}
-
-@media (max-width: 768px) {
-    .links {
-        width: 50%;
-    }
-    
-    .buttons {
-        width: 30%;
-    }
-}
-
-/* Seção principal melhorada */
+/* Seção principal */
 .main-section {
-    margin-top: 75px;
-    min-height: calc(100vh - 75px);
-    background: transparent;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 60px 50px;
-    position: relative;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-/* Conteúdo do hero melhorado */
+/* Conteúdo do hero */
 .hero-content {
-    margin-bottom: 50px;
-    color: white;
+    background-color: white;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     max-width: 800px;
+    margin: 20px auto;
+    text-align: center;
 }
 
 .hero-content h1 {
-    font-size: 3.5rem;
-    font-weight: 700;
-    margin-bottom: 20px;
-    line-height: 1.2;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    margin: 20px 0;
+    color: #333;
 }
 
 .hero-content p {
-    font-size: 1.3rem;
+    margin: 10px 0;
+    font-size: 16px;
+    color: #333;
     line-height: 1.6;
-    margin-bottom: 40px;
-    color: rgba(255, 255, 255, 0.9);
 }
 
-/* Consulta de Rotas, Horários e Preços */
+/* Consulta de Rotas */
 .consulta-container {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    padding: 30px;
-    border-radius: 15px;
-    width: 100%;
-    max-width: 1000px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: white;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 30px auto;
 }
 
 .consulta-container h2 {
-    color: white;
-    font-size: 2rem;
-    font-weight: 600;
-    margin-bottom: 30px;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
 }
 
-.consulta-container h3 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin: 20px 0 10px;
-    color: white;
-}
-
-/* Formulário de pesquisa melhorado */
+/* Formulário de pesquisa */
 .search-form {
     width: 100%;
 }
 
 .form-row {
     display: flex;
-    align-items: flex-end;
-    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 15px;
+    align-items: flex-end; /* Alinha os elementos pela parte inferior */
 }
 
 .form-group {
     flex: 1;
+    min-width: 200px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
 }
 
 .form-group label {
     display: block;
-    color: white;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
+    color: #555;
 }
 
 .form-group input {
     width: 100%;
-    padding: 12px;
-    border-radius: 8px;
-    border: none;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    height: 38px; /* Altura fixa para todos os inputs */
 }
 
 .search-btn {
-    padding: 12px 30px;
-    background: #ff4757;
+    padding: 8px 15px;
+    background-color: #007BFF;
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 1rem;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    width: 100%;
+    transition: background-color 0.3s;
+    height: 38px; /* Mesma altura dos inputs */
 }
 
 .search-btn:hover {
-    background: #ff2e43;
+    background-color: #0056b3;
 }
 
-/* Resultados da pesquisa melhorados */
+/* Resultados da pesquisa */
 .results-container {
-    margin-top: 30px;
+    margin-top: 20px;
     width: 100%;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.no-results {
-    text-align: center;
-    color: rgba(255, 255, 255, 0.7);
-    font-style: italic;
-    padding: 15px;
 }
 
 .results-table-wrapper {
-    max-height: 400px;
+    max-height: 300px;
     overflow-y: auto;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd #f5f5f5;
 }
 
 .results-table-wrapper::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 .results-table-wrapper::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    background: #f5f5f5;
 }
 
 .results-table-wrapper::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-}
-
-.results-table-wrapper::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.4);
+    background: #ddd;
+    border-radius: 10px;
 }
 
 .results-table {
     width: 100%;
-    min-width: 500px; /* Garante que a tabela tenha uma largura mínima */
     border-collapse: collapse;
-    margin-top: 0;
-    font-size: 0.8rem;
 }
 
-.results-table th,
-.results-table td {
-    padding: 10px 12px;
+.results-table th, .results-table td {
+    padding: 8px;
     text-align: left;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    line-height: 1.4;
-    white-space: nowrap;
+    border-bottom: 1px solid #ddd;
 }
 
 .results-table th {
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
-    font-weight: 500;
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.5px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.3);
+    background-color: #f2f2f2;
 }
 
-.results-table tr {
-    background-color: rgba(0, 0, 0, 0.2);
-    height: 40px;
+.no-results {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
 }
 
-.results-table tr:hover {
-    background-color: rgba(255, 58, 58, 0.2);
-}
-
-.results-table tr:nth-child(even) {
-    background-color: rgba(0, 0, 0, 0.3);
-}
-
-.results-table tr.spacer-row {
-    height: 30px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Definir larguras para as colunas da tabela de resultados */
-.results-table th:nth-child(1),
-.results-table td:nth-child(1),
-.results-table th:nth-child(2),
-.results-table td:nth-child(2) {
-    width: 30%;
-}
-
-.results-table th:nth-child(3),
-.results-table td:nth-child(3),
-.results-table th:nth-child(4),
-.results-table td:nth-child(4) {
-    width: 20%;
-}
-
-/* Alertas - versão simplificada */
+/* Alertas */
 .alertas-box {
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    width: 300px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Sombra mais pronunciada */
-    overflow: hidden;
-    z-index: 9999;
+    background-color: white;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 20px auto 60px;
 }
 
 .alertas-titulo {
-    background: #ff6b6b;
-    color: white;
-    padding: 12px;
-    text-align: center;
     font-weight: bold;
-    font-size: 16px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); /* Sombra suave no texto */
+    margin-bottom: 15px;
+    color: #333;
+    text-align: center;
 }
 
 .alerta-item {
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+}
+
+/* Carrossel de Rotas Populares */
+.rotas-populares {
+    background-color: white;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 30px auto;
+}
+
+.rotas-populares h2 {
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.rotas-slider {
+    display: flex;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 10px 0;
+    gap: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd #f5f5f5;
+}
+
+.rotas-slider::-webkit-scrollbar {
+    height: 6px;
+}
+
+.rotas-slider::-webkit-scrollbar-track {
+    background: #f5f5f5;
+    border-radius: 10px;
+}
+
+.rotas-slider::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 10px;
+}
+
+.rota-card {
+    min-width: 250px;
+    background: #f9f9f9;
+    border-radius: 4px;
     padding: 15px;
-    border-top: 1px solid #ddd;
-    background: white;
-    color: #000000; /* Preto puro para máximo contraste */
-    font-size: 14px; /* Tamanho de fonte específico */
-    font-weight: 500; /* Peso da fonte um pouco mais forte */
-    line-height: 1.4; /* Melhor espaçamento entre linhas */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+    cursor: pointer;
 }
 
-.alerta-item:first-of-type {
-    border-top: none;
+.rota-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-/* Reset forçado de cores herdadas */
-.alertas-box,
-.alerta-item,
-.alerta-item * {
-    color: #000000 !important; /* Força a cor preta */
+.rota-origem-destino {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    color: #333;
 }
 
-.alerta-item:hover {
-    background-color: #f0f0f0;
+.rota-preco {
+    color: #007BFF;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
 }
 
-/* Responsividade */
-@media (max-width: 992px) {
-    .links {
-        width: 45%;
-        gap: 25px;
-    }
-    
-    .buttons {
-        width: 25%;
-    }
-    
-    .hero-content h1 {
-        font-size: 2.8rem;
-    }
+.rota-info {
+    display: flex;
+    justify-content: space-between;
+    color: #666;
+    font-size: 0.9rem;
 }
 
-@media (max-width: 768px) {
-    nav {
-        padding: 0 20px;
-    }
-    
-    .links {
-        display: none;
-    }
-    
-    .buttons {
-        width: auto;
-    }
-    
-    .main-section {
-        padding: 40px 20px;
-    }
-    
-    .hero-content h1 {
-        font-size: 2.2rem;
-    }
-    
-    .hero-content p {
-        font-size: 1.1rem;
-    }
-    
-    .form-group {
-        min-width: 100%;
-    }
+.slider-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.slider-btn {
+    background: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.slider-btn:hover {
+    background: #0056b3;
 }
 
 footer {
     position: fixed;
     bottom: 0;
     width: 100%;
-    padding: 10px;
+    padding: 6px;
     text-align: center;
     color: white;
     background: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+    font-size: 0.8rem;
+    z-index: 100;
 }
 
 footer span {
@@ -460,6 +366,111 @@ footer span {
 }
 
 footer img {
-    height: 20px;
+    height: 14px;
     width: auto;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .links, .buttons {
+        width: auto;
+    }
+    
+    .hero-content, .consulta-container, .alertas-box {
+        width: 95%;
+    }
+}
+
+@media (max-width: 768px) {
+    nav {
+        flex-direction: column;
+        height: auto;
+        padding: 10px 0;
+    }
+    
+    .links, .buttons {
+        margin: 10px 0;
+        width: 90%;
+    }
+    
+    .links {
+        justify-content: space-around;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+}
+
+/* Botão de scroll para cima */
+.scroll-top-btn {
+    position: fixed;
+    bottom: 70px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 99;
+}
+
+.scroll-top-btn.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.scroll-top-btn:hover {
+    background-color: #0056b3;
+    transform: translateY(-3px);
+}
+
+/* Botão de scroll para baixo */
+.scroll-down-btn {
+    position: fixed;
+    bottom: 120px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background-color: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    z-index: 99;
+}
+
+.scroll-down-btn:hover {
+    background-color: #e74c3c;
+    transform: translateY(3px);
+}
+
+/* Setas para os botões */
+.arrow-up, .arrow-down {
+    border: solid white;
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+}
+
+.arrow-up {
+    transform: rotate(-135deg);
+}
+
+.arrow-down {
+    transform: rotate(45deg);
 }
