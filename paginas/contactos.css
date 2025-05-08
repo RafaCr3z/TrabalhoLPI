@@ -71,6 +71,12 @@ nav {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.btn button:hover {
+    background-color: #e05555;
 }
 
 .btn button.register-btn {
@@ -196,5 +202,7 @@ footer img {
     height: 20px;
     width: auto;
 }
+
+
 
 
