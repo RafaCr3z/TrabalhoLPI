@@ -151,7 +151,7 @@
                                         <td><?php echo $rota['destino']; ?></td> <!-- Mostra o destino -->
                                         <td><?php echo date('d/m/Y', strtotime($rota['data_viagem'])); ?></td> <!-- Formata e mostra a data -->
                                         <td><?php echo $rota['horario_partida']; ?></td> <!-- Mostra o horário -->
-                                        <td><?php echo '€' . number_format($rota['preco'], 2, ',', '.'); ?></td> <!-- Formata e mostra o preço -->
+                                        <td><?php echo number_format($rota['preco'], 2, ',', '.') . ' €'; ?></td> <!-- Formata e mostra o preço em formato PT -->
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
