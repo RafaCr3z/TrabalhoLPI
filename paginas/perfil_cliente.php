@@ -2,6 +2,7 @@
     session_start();
     include '../basedados/basedados.h';
 
+    // Verifica se o utilizador está autenticado e se é um cliente (nível 3)
     if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
         header("Location: erro.php");
         exit();
@@ -9,26 +10,28 @@
 
     $id_utilizador = $_SESSION["id_utilizador"];
 
-
+    // Consulta SQL para obter os dados do utilizador
     $sql = "SELECT nome, email, telemovel, morada FROM utilizadores WHERE id = $id_utilizador";
     $resultado = mysqli_query($conn, $sql);
 
+    // Verifica se a consulta foi bem-sucedida
     if (!$resultado) {
         die("Erro na consulta: " . mysqli_error($conn));
     }
 
+    // Verifica se foram encontrados dados para o utilizador
     if (mysqli_num_rows($resultado) > 0) {
         $dados = mysqli_fetch_assoc($resultado);
     } else {
         die("Nenhum dado encontrado para o utilizador.");
     }
 
+    // Verificação adicional para garantir que os dados foram obtidos
     if (!$dados) {
         die("Nenhum dado encontrado para o utilizador.");
     }
 
-
-    mysqli_close($conn);
+    mysqli_close($conn); // Fecha a ligação à base de dados
 ?>
 
 <!DOCTYPE html>
@@ -58,11 +61,12 @@
         <h1>Meu Perfil</h1>
 
         <div class="profile-container">
+            <!-- Informações do perfil do utilizador -->
             <div class="profile-info">
-                <p><strong>Nome:</strong> <?php echo htmlspecialchars($dados['nome']); ?></p>
-                <p><strong>Email:</strong> <?php echo htmlspecialchars($dados['email']); ?></p>
-                <p><strong>Telemóvel:</strong> <?php echo htmlspecialchars($dados['telemovel']); ?></p>
-                <p><strong>Morada:</strong> <?php echo nl2br(htmlspecialchars($dados['morada'])); ?></p>
+                <p><strong>Nome:</strong> <?php echo $dados['nome']; ?></p>
+                <p><strong>Email:</strong> <?php echo $dados['email']; ?></p>
+                <p><strong>Telemóvel:</strong> <?php echo $dados['telemovel']; ?></p>
+                <p><strong>Morada:</strong> <?php echo $dados['morada']; ?></p>
             </div>
 
             <!-- Botão de Editar Perfil alinhado à direita -->
@@ -72,7 +76,6 @@
         </div>
     </section>
 
-    <!-- Adicionar antes do fechamento do </body> -->
     <footer>
         © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
