@@ -19,62 +19,93 @@ $alerta_para_editar = null;
 // Carregar alerta para edição se o parâmetro 'editar' estiver presente no URL
 if (isset($_GET['editar']) && !empty($_GET['editar'])) {
     $id_editar = intval($_GET['editar']);
-    $sql_editar = "SELECT * FROM alertas WHERE id = $id_editar";
-    $result_editar = mysqli_query($conn, $sql_editar);
+    
+    // Usar prepared statement para buscar alerta
+    $stmt_editar = mysqli_prepare($conn, "SELECT * FROM alertas WHERE id = ?");
+    mysqli_stmt_bind_param($stmt_editar, "i", $id_editar);
+    mysqli_stmt_execute($stmt_editar);
+    $result_editar = mysqli_stmt_get_result($stmt_editar);
 
     if (mysqli_num_rows($result_editar) > 0) {
         $alerta_para_editar = mysqli_fetch_assoc($result_editar);
     }
+    mysqli_stmt_close($stmt_editar);
 }
 
 // Processar formulário para adicionar novo alerta
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
-    $mensagem = mysqli_real_escape_string($conn, $_POST['mensagem']);
-    $data_inicio = $_POST['data_inicio'];
-    $data_fim = $_POST['data_fim'];
-
-    $sql = "INSERT INTO alertas (mensagem, data_inicio, data_fim) VALUES ('$mensagem', '$data_inicio', '$data_fim')";
-    if(mysqli_query($conn, $sql)) {
-        $mensagem_feedback = "Alerta adicionado com sucesso!";
-        $tipo_mensagem = "success";
-    } else {
-        $mensagem_feedback = "Erro ao adicionar alerta: " . mysqli_error($conn);
+    // Validate dates
+    if (!strtotime($_POST['data_inicio']) || !strtotime($_POST['data_fim'])) {
+        $mensagem_feedback = "Data inválida!";
         $tipo_mensagem = "error";
+        // Redirect or handle error
+    } else if (strtotime($_POST['data_inicio']) > strtotime($_POST['data_fim'])) {
+        $mensagem_feedback = "A data de início deve ser anterior à data de fim!";
+        $tipo_mensagem = "error";
+    } else {
+        // Usar prepared statement para inserir
+        $stmt = mysqli_prepare($conn, "INSERT INTO alertas (mensagem, data_inicio, data_fim) VALUES (?, ?, ?)");
+        mysqli_stmt_bind_param($stmt, "sss", $_POST['mensagem'], $_POST['data_inicio'], $_POST['data_fim']);
+        
+        if(mysqli_stmt_execute($stmt)) {
+            $mensagem_feedback = "Alerta adicionado com sucesso!";
+            $tipo_mensagem = "success";
+        } else {
+            $mensagem_feedback = "Erro ao adicionar alerta: " . mysqli_error($conn);
+            $tipo_mensagem = "error";
+        }
+        mysqli_stmt_close($stmt);
     }
 }
 
 // Processar formulário para atualizar alerta existente
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['atualizar'])) {
     $id_alerta = intval($_POST['id_alerta']);
-    $mensagem = mysqli_real_escape_string($conn, $_POST['mensagem']);
-    $data_inicio = $_POST['data_inicio'];
-    $data_fim = $_POST['data_fim'];
-
-    $sql = "UPDATE alertas SET mensagem = '$mensagem', data_inicio = '$data_inicio', data_fim = '$data_fim' WHERE id = $id_alerta";
-
-    if (mysqli_query($conn, $sql)) {
-        $mensagem_feedback = "Alerta com ID $id_alerta foi editado com sucesso!";
-        $tipo_mensagem = "success";
-        // Redirecionar para limpar o formulário de edição
-        header("Location: gerir_alertas.php?msg=updated&id=$id_alerta");
-        exit();
-    } else {
-        $mensagem_feedback = "Erro ao atualizar alerta ID $id_alerta: " . mysqli_error($conn);
+    
+    // Validate dates
+    if (!strtotime($_POST['data_inicio']) || !strtotime($_POST['data_fim'])) {
+        $mensagem_feedback = "Data inválida!";
         $tipo_mensagem = "error";
+        // Redirect or handle error
+    } else if (strtotime($_POST['data_inicio']) > strtotime($_POST['data_fim'])) {
+        $mensagem_feedback = "A data de início deve ser anterior à data de fim!";
+        $tipo_mensagem = "error";
+    } else {
+        // Usar prepared statement para atualizar
+        $stmt = mysqli_prepare($conn, "UPDATE alertas SET mensagem = ?, data_inicio = ?, data_fim = ? WHERE id = ?");
+        mysqli_stmt_bind_param($stmt, "sssi", $_POST['mensagem'], $_POST['data_inicio'], $_POST['data_fim'], $id_alerta);
+        
+        if (mysqli_stmt_execute($stmt)) {
+            $mensagem_feedback = "Alerta com ID $id_alerta foi editado com sucesso!";
+            $tipo_mensagem = "success";
+            mysqli_stmt_close($stmt);
+            // Redirecionar para limpar o formulário de edição
+            header("Location: gerir_alertas.php?msg=updated&id=$id_alerta");
+            exit();
+        } else {
+            $mensagem_feedback = "Erro ao atualizar alerta ID $id_alerta: " . mysqli_error($conn);
+            $tipo_mensagem = "error";
+        }
+        mysqli_stmt_close($stmt);
     }
 }
 
 // Processar pedido para excluir alerta
 if (isset($_GET['excluir'])) {
     $id = intval($_GET['excluir']);
-    $sql = "DELETE FROM alertas WHERE id = $id";
-    if(mysqli_query($conn, $sql)) {
+    
+    // Usar prepared statement para excluir
+    $stmt = mysqli_prepare($conn, "DELETE FROM alertas WHERE id = ?");
+    mysqli_stmt_bind_param($stmt, "i", $id);
+    
+    if(mysqli_stmt_execute($stmt)) {
         $mensagem_feedback = "Alerta com ID $id foi excluído com sucesso!";
         $tipo_mensagem = "success";
     } else {
         $mensagem_feedback = "Erro ao excluir alerta ID $id: " . mysqli_error($conn);
         $tipo_mensagem = "error";
     }
+    mysqli_stmt_close($stmt);
 }
 
 // Definir mensagem se vier de um redirecionamento após atualização
@@ -88,8 +119,11 @@ if (isset($_GET['msg'])) {
 }
 
 // Buscar todos os alertas existentes para exibir na tabela
-$sql = "SELECT * FROM alertas ORDER BY id ASC";
-$result = mysqli_query($conn, $sql);
+$sql = "SELECT * FROM alertas";
+$stmt = mysqli_prepare($conn, $sql);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+mysqli_stmt_close($stmt);
 
 if (!$result) {
     $mensagem_feedback = "Erro ao buscar alertas: " . mysqli_error($conn);
@@ -134,7 +168,7 @@ if (!$result) {
                 <!-- Campo para a mensagem do alerta -->
                 <div class="form-group">
                     <label for="mensagem">Mensagem:</label>
-                    <textarea id="mensagem" name="mensagem" required><?php echo $alerta_para_editar ? $alerta_para_editar['mensagem'] : ''; ?></textarea>
+                    <textarea id="mensagem" name="mensagem" required><?php echo $alerta_para_editar ? htmlspecialchars($alerta_para_editar['mensagem'], ENT_QUOTES, 'UTF-8') : ''; ?></textarea>
                 </div>
 
                 <!-- Campo para a data de início -->
@@ -186,7 +220,7 @@ if (!$result) {
                         while ($alerta = mysqli_fetch_assoc($result)) {
                             echo "<tr>";
                             echo "<td>" . $alerta['id'] . "</td>";
-                            echo "<td>" . $alerta['mensagem'] . "</td>";
+                            echo "<td>" . htmlspecialchars($alerta['mensagem'], ENT_QUOTES, 'UTF-8') . "</td>";
                             echo "<td>" . date('d/m/Y H:i', strtotime($alerta['data_inicio'])) . "</td>";
                             echo "<td>" . date('d/m/Y H:i', strtotime($alerta['data_fim'])) . "</td>";
                             echo "<td>
@@ -213,3 +247,4 @@ if (!$result) {
     </footer>
 </body>
 </html>
+

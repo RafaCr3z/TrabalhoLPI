@@ -342,10 +342,72 @@ footer img {
     width: auto;
 }
 
+/* Estilos para a seção de filtros */
+.filtros-container {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
+.filtros-container h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.2rem;
+}
 
+.filtro-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
 
+.filtro-form .form-group {
+    flex: 1;
+    min-width: 200px;
+}
 
+.filtro-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
 
+.filtro-form input,
+.filtro-form select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
 
+.filtro-form button {
+    padding: 8px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.filtro-form button:hover {
+    background-color: #45a049;
+}
+
+.limpar-btn {
+    padding: 8px 15px;
+    background-color: #f8f9fa;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.limpar-btn:hover {
+    background-color: #e9ecef;
+}
 
