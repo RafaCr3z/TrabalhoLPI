@@ -3,6 +3,7 @@
     include '../basedados/basedados.h';
     if (isset($_SESSION["id_nivel"]) && $_SESSION["id_nivel"] > 0){
         header("Location: erro.php");
+        exit;
     }
 
     // Inicializa variáveis para a pesquisa
@@ -17,32 +18,49 @@
         $destino = isset($_POST['destino']) ? trim($_POST['destino']) : '';
         $pesquisa_realizada = true;
 
-        // Constrói a consulta SQL
+        // Constrói a consulta SQL com prepared statements
         $sql = "SELECT r.id, r.origem, r.destino, r.preco, h.horario_partida, h.data_viagem
                 FROM rotas r
                 JOIN horarios h ON r.id = h.id_rota
                 WHERE r.disponivel = 1";
 
+        $params = [];
+        $types = "";
+
         // Adiciona filtros se foram fornecidos
         if (!empty($origem)) {
-            $sql .= " AND r.origem LIKE '%" . mysqli_real_escape_string($conn, $origem) . "%'";
+            $sql .= " AND r.origem LIKE ?";
+            $params[] = "%".$origem."%";
+            $types .= "s";
         }
         if (!empty($destino)) {
-            $sql .= " AND r.destino LIKE '%" . mysqli_real_escape_string($conn, $destino) . "%'";
+            $sql .= " AND r.destino LIKE ?";
+            $params[] = "%".$destino."%";
+            $types .= "s";
         }
 
         $sql .= " ORDER BY r.origem ASC, r.destino ASC, h.data_viagem ASC, h.horario_partida ASC";
 
-        // Executa a consulta
-        $resultado = mysqli_query($conn, $sql);
-
-        if (!$resultado) {
-            echo "<script>alert('Erro na consulta: " . mysqli_error($conn) . "');</script>";
-        } else {
-            // Armazena os resultados
-            while ($row = mysqli_fetch_assoc($resultado)) {
-                $resultados[] = $row;
+        // Prepara e executa a consulta
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt) {
+            if (!empty($params)) {
+                mysqli_stmt_bind_param($stmt, $types, ...$params);
             }
+            mysqli_stmt_execute($stmt);
+            $resultado = mysqli_stmt_get_result($stmt);
+
+            if (!$resultado) {
+                echo "<script>alert('Erro na consulta: " . mysqli_error($conn) . "');</script>";
+            } else {    
+                // Armazena os resultados
+                while ($row = mysqli_fetch_assoc($resultado)) {
+                    $resultados[] = $row;
+                }
+            }
+            mysqli_stmt_close($stmt);
+        } else {
+            echo "<script>alert('Erro na preparação da consulta: " . mysqli_error($conn) . "');</script>";
         }
     }
 
@@ -58,16 +76,24 @@
     $mensagens = [];
     $data_atual = date('Y-m-d H:i:s');
 
-    // Consulta simplificada
+    // Consulta com prepared statement
     $sql_mensagens = "SELECT * FROM alertas";
-    $resultado_mensagens = mysqli_query($conn, $sql_mensagens);
+    $stmt_mensagens = mysqli_prepare($conn, $sql_mensagens);
 
-    if (!$resultado_mensagens) {
-        echo "<!-- Erro na consulta: " . mysqli_error($conn) . " -->";
-    } else {
-        while ($row = mysqli_fetch_assoc($resultado_mensagens)) {
-            $mensagens[] = ['conteudo' => $row['mensagem']];
+    if ($stmt_mensagens) {
+        mysqli_stmt_execute($stmt_mensagens);
+        $resultado_mensagens = mysqli_stmt_get_result($stmt_mensagens);
+
+        if (!$resultado_mensagens) {
+            echo "<!-- Erro na consulta: " . mysqli_error($conn) . " -->";
+        } else {
+            while ($row = mysqli_fetch_assoc($resultado_mensagens)) {
+                $mensagens[] = ['conteudo' => $row['mensagem']];
+            }
         }
+        mysqli_stmt_close($stmt_mensagens);
+    } else {
+        echo "<!-- Erro na preparação da consulta: " . mysqli_error($conn) . " -->";
     }
 
     // Debug: Número de mensagens encontradas
@@ -171,7 +197,7 @@
         <?php else: ?> <!-- Se houver mensagens -->
             <?php foreach ($mensagens as $mensagem): ?> <!-- Itera sobre as mensagens -->
                 <div class="alerta-item">
-                    <?php echo $mensagem['conteudo']; ?> <!-- Mostra o conteúdo da mensagem -->
+                    <?php echo htmlspecialchars($mensagem['conteudo'], ENT_QUOTES, 'UTF-8'); ?>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
