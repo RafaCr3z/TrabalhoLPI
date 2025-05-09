@@ -2,6 +2,11 @@
 session_start();
 include '../basedados/basedados.h';
 
+// Adicionar esta função no topo do arquivo, após o include
+function h($string) {
+    return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
+}
+
 // Verificar se é administrador
 if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     header("Location: erro.php");
@@ -19,65 +24,96 @@ $tipo_mensagem = '';
 // Verificar se deve mostrar utilizadores inativos (parâmetro do URL)
 $mostrar_inativos = isset($_GET['mostrar_inativos']) ? (int)$_GET['mostrar_inativos'] : 0;
 
+// Adicionar após a inicialização de $mostrar_inativos
+$pesquisa = isset($_GET['pesquisa']) ? mysqli_real_escape_string($conn, $_GET['pesquisa']) : '';
+
 // Processar formulário de adição de novo utilizador
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
-    // Capturar e sanitizar dados do formulário
-    $user = mysqli_real_escape_string($conn, $_POST['user']);
-    $nome = mysqli_real_escape_string($conn, $_POST['nome']);
-    $email = mysqli_real_escape_string($conn, $_POST['email']);
-    $pwd = password_hash($_POST['pwd'], PASSWORD_DEFAULT); // Hash da palavra-passe para segurança
-    $telemovel = mysqli_real_escape_string($conn, $_POST['telemovel']);
-    $morada = mysqli_real_escape_string($conn, $_POST['morada']);
-    $tipo_perfil = intval($_POST['tipo_perfil']);
+    // Validação de dados
+    $erros = [];
 
-    // Verificar se o utilizador ou email já existem no sistema
-    if (mysqli_num_rows(mysqli_query($conn, "SELECT * FROM utilizadores WHERE user = '$user' OR email = '$email'")) > 0) {
-        $mensagem = "Utilizador ou email já existe";
+    // Validar telemóvel (9 dígitos)
+    if (!preg_match('/^[0-9]{9}$/', $_POST['telemovel'])) {
+        $erros[] = "O telemóvel deve conter exatamente 9 dígitos numéricos";
+    }
+
+    // Validar email
+    if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+        $erros[] = "O email é inválido";
+    }
+
+    // Verificar se há erros
+    if (!empty($erros)) {
+        $mensagem = "Erros de validação: " . implode(", ", $erros);
         $tipo_mensagem = "danger";
     } else {
-        // Inserir novo utilizador na base de dados
-        $sql = "INSERT INTO utilizadores (user, nome, email, pwd, telemovel, morada, tipo_perfil)
-                VALUES ('$user', '$nome', '$email', '$pwd', '$telemovel', '$morada', $tipo_perfil)";
+        // Capturar e sanitizar dados do formulário
+        $user = mysqli_real_escape_string($conn, $_POST['user']);
+        $nome = mysqli_real_escape_string($conn, $_POST['nome']);
+        $email = mysqli_real_escape_string($conn, $_POST['email']);
+        $pwd = password_hash($_POST['pwd'], PASSWORD_DEFAULT); // Hash da palavra-passe para segurança
+        $telemovel = mysqli_real_escape_string($conn, $_POST['telemovel']);
+        $morada = mysqli_real_escape_string($conn, $_POST['morada']);
+        $tipo_perfil = intval($_POST['tipo_perfil']);
 
-        if (mysqli_query($conn, $sql)) {
-            $id_novo = mysqli_insert_id($conn);
-            // Se for cliente (tipo_perfil 3), criar carteira com saldo inicial 0
-            if ($tipo_perfil == 3) {
-                mysqli_query($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_novo, 0.00)");
-            }
-            $mensagem = "Utilizador adicionado com sucesso!";
-            $tipo_mensagem = "success";
-        } else {
-            $mensagem = "Erro ao adicionar utilizador: " . mysqli_error($conn);
+        // Verificar se o utilizador ou email já existem no sistema
+        if (mysqli_num_rows(mysqli_query($conn, "SELECT * FROM utilizadores WHERE user = '$user' OR email = '$email'")) > 0) {
+            $mensagem = "O utilizador ou email já existe";
             $tipo_mensagem = "danger";
+        } else {
+            // Inserir novo utilizador na base de dados
+            $sql = "INSERT INTO utilizadores (user, nome, email, pwd, telemovel, morada, tipo_perfil)
+                    VALUES ('$user', '$nome', '$email', '$pwd', '$telemovel', '$morada', $tipo_perfil)";
+
+            if (mysqli_query($conn, $sql)) {
+                $id_novo = mysqli_insert_id($conn);
+                // Se for cliente (tipo_perfil 3), criar carteira com saldo inicial 0
+                if ($tipo_perfil == 3) {
+                    mysqli_query($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_novo, 0.00)");
+                }
+                $mensagem = "Utilizador adicionado com sucesso!";
+                $tipo_mensagem = "success";
+            } else {
+                $mensagem = "Erro ao adicionar utilizador: " . mysqli_error($conn);
+                $tipo_mensagem = "danger";
+            }
         }
     }
 }
 
 // Processar formulário de edição de utilizador existente
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['editar'])) {
-    // Capturar e sanitizar dados do formulário
+    // Capturar dados do formulário
     $id = intval($_POST['id']);
-    $nome = mysqli_real_escape_string($conn, $_POST['nome']);
-    $email = mysqli_real_escape_string($conn, $_POST['email']);
-    $telemovel = mysqli_real_escape_string($conn, $_POST['telemovel']);
-    $morada = mysqli_real_escape_string($conn, $_POST['morada']);
+    $nome = $_POST['nome'];
+    $email = $_POST['email'];
+    $telemovel = $_POST['telemovel'];
+    $morada = $_POST['morada'];
 
-    // Construir consulta de atualização
-    $sql = "UPDATE utilizadores SET nome = '$nome', email = '$email', telemovel = '$telemovel', morada = '$morada'";
-    // Adicionar atualização de palavra-passe apenas se uma nova palavra-passe foi fornecida
+    // Construir consulta com prepared statement
+    $sql = "UPDATE utilizadores SET nome = ?, email = ?, telemovel = ?, morada = ? WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    
     if (!empty($_POST['pwd'])) {
-        $sql .= ", pwd = '" . password_hash($_POST['pwd'], PASSWORD_DEFAULT) . "'";
+        // Se senha fornecida, atualizar também a senha
+        $sql = "UPDATE utilizadores SET nome = ?, email = ?, telemovel = ?, morada = ?, pwd = ? WHERE id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        $pwd_hash = password_hash($_POST['pwd'], PASSWORD_DEFAULT);
+        mysqli_stmt_bind_param($stmt, "sssssi", $nome, $email, $telemovel, $morada, $pwd_hash, $id);
+    } else {
+        // Sem atualização de senha
+        mysqli_stmt_bind_param($stmt, "ssssi", $nome, $email, $telemovel, $morada, $id);
     }
 
     // Executar a atualização
-    if (mysqli_query($conn, $sql . " WHERE id = $id")) {
+    if (mysqli_stmt_execute($stmt)) {
         $mensagem = "Utilizador editado com sucesso!";
         $tipo_mensagem = "success";
     } else {
         $mensagem = "Erro ao editar utilizador: " . mysqli_error($conn);
         $tipo_mensagem = "danger";
     }
+    mysqli_stmt_close($stmt);
 }
 
 // Processar solicitação para alterar estado (ativar/inativar utilizador)
@@ -123,14 +159,22 @@ while ($row = mysqli_fetch_assoc($result_perfis)) {
     $perfis[$row['id']] = $row['descricao'];
 }
 
-// Construir consulta para buscar utilizadores com informações de perfil
+// Modificar a consulta SQL para incluir a pesquisa
 $sql = "SELECT u.*, p.descricao as perfil_nome
         FROM utilizadores u
-        JOIN perfis p ON u.tipo_perfil = p.id";
-// Filtrar apenas utilizadores ativos se não estiver a mostrar inativos
+        JOIN perfis p ON u.tipo_perfil = p.id
+        WHERE 1=1";
+
+// Filtrar por estado ativo/inativo
 if (!$mostrar_inativos) {
-    $sql .= " WHERE u.ativo = 1";
+    $sql .= " AND u.ativo = 1";
 }
+
+// Adicionar filtro de pesquisa
+if (!empty($pesquisa)) {
+    $sql .= " AND (u.nome LIKE '%$pesquisa%' OR u.email LIKE '%$pesquisa%' OR u.telemovel LIKE '%$pesquisa%')";
+}
+
 $sql .= " ORDER BY u.id ASC";
 $utilizadores = mysqli_query($conn, $sql);
 ?>
@@ -170,9 +214,20 @@ $utilizadores = mysqli_query($conn, $sql);
         <?php endif; ?>
 
         <div class="container">
-            <!-- Formulário para adicionar novo utilizador -->
+            <!-- Formulário de pesquisa -->
+            <div class="pesquisa-container">
+                <form method="GET" action="gerir_utilizadores.php">
+                    <div class="input-group">
+                        <input type="text" name="pesquisa" class="form-control" placeholder="Pesquisar por nome, email ou telemóvel" value="<?= h($pesquisa) ?>">
+                        <input type="hidden" name="mostrar_inativos" value="<?= $mostrar_inativos ?>">
+                        <button class="btn-pesquisa" type="submit">Pesquisar</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Formulário de adição de utilizador -->
             <div class="form-container">
-                <h2>Adicionar Utilizador</h2>
+                <h2>Adicionar Novo Utilizador</h2>
                 <form method="post" action="gerir_utilizadores.php">
                     <div class="form-group">
                         <label for="user">Nome de Utilizador:</label>
@@ -346,9 +401,16 @@ $utilizadores = mysqli_query($conn, $sql);
             document.getElementById('edit-email').value = email;
             document.getElementById('edit-telemovel').value = telemovel;
             document.getElementById('edit-morada').value = morada;
-            document.getElementById('edit-pwd').value = ''; // Limpar campo de senha
+            document.getElementById('edit-pwd').value = ''; // Limpar campo de palavra-passe
+            
             // Exibir o modal
             document.getElementById('modal-editar').style.display = 'block';
+            
+            // Garantir que o modal está visível no ecrã
+            window.scrollTo(0, 0); // Rolar para o topo da página
+            
+            // Focar no primeiro campo para melhor usabilidade
+            document.getElementById('edit-nome').focus();
         }
 
         // Função para fechar o modal de edição
@@ -363,9 +425,25 @@ $utilizadores = mysqli_query($conn, $sql);
                 modal.style.display = 'none';
             }
         }
+        
+        // Adicionar evento para fechar com a tecla ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                fecharModalEditar();
+            }
+        });
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
 
 
 

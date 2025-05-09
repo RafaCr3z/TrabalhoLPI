@@ -2,129 +2,147 @@
 session_start();
 include '../basedados/basedados.h';
 
-// Verifica se o utilizador é administrador
+// Verifica se o utilizador tem permissões de administrador
+// Se não for administrador, redireciona para a página de erro
 if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
     header("Location: erro.php");
     exit();
 }
 
-// Ligação à base de dados
+// Estabelece ligação à base de dados MySQL
 $conn = mysqli_connect("localhost", "root", "", "FelixBus");
 
-// Inicializar variáveis
+// Inicializa variáveis para mensagens de feedback e controlo de estado
 $mensagem_feedback = '';
 $tipo_mensagem = '';
 $alerta_para_editar = null;
 
-// Carregar alerta para edição se o parâmetro 'editar' estiver presente no URL
+// Verifica se foi solicitada a edição de um alerta através do URL
 if (isset($_GET['editar']) && !empty($_GET['editar'])) {
+    // Converte o ID para inteiro para evitar injeção SQL
     $id_editar = intval($_GET['editar']);
     
-    // Usar prepared statement para buscar alerta
+    // Utiliza prepared statement para buscar o alerta a ser editado
     $stmt_editar = mysqli_prepare($conn, "SELECT * FROM alertas WHERE id = ?");
     mysqli_stmt_bind_param($stmt_editar, "i", $id_editar);
     mysqli_stmt_execute($stmt_editar);
     $result_editar = mysqli_stmt_get_result($stmt_editar);
 
+    // Se encontrar o alerta, guarda os dados para preencher o formulário
     if (mysqli_num_rows($result_editar) > 0) {
         $alerta_para_editar = mysqli_fetch_assoc($result_editar);
     }
+    // Liberta recursos da consulta
     mysqli_stmt_close($stmt_editar);
 }
 
-// Processar formulário para adicionar novo alerta
+// Processa o formulário para adicionar um novo alerta
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
-    // Validate dates
+    // Valida as datas inseridas pelo utilizador
     if (!strtotime($_POST['data_inicio']) || !strtotime($_POST['data_fim'])) {
         $mensagem_feedback = "Data inválida!";
         $tipo_mensagem = "error";
-        // Redirect or handle error
     } else if (strtotime($_POST['data_inicio']) > strtotime($_POST['data_fim'])) {
+        // Verifica se a data de início é anterior à data de fim
         $mensagem_feedback = "A data de início deve ser anterior à data de fim!";
         $tipo_mensagem = "error";
     } else {
-        // Usar prepared statement para inserir
+        // Utiliza prepared statement para inserir o novo alerta na base de dados
         $stmt = mysqli_prepare($conn, "INSERT INTO alertas (mensagem, data_inicio, data_fim) VALUES (?, ?, ?)");
         mysqli_stmt_bind_param($stmt, "sss", $_POST['mensagem'], $_POST['data_inicio'], $_POST['data_fim']);
         
+        // Executa a inserção e verifica se foi bem-sucedida
         if(mysqli_stmt_execute($stmt)) {
             $mensagem_feedback = "Alerta adicionado com sucesso!";
             $tipo_mensagem = "success";
         } else {
+            // Em caso de erro, mostra a mensagem de erro
             $mensagem_feedback = "Erro ao adicionar alerta: " . mysqli_error($conn);
             $tipo_mensagem = "error";
         }
+        // Liberta recursos da consulta
         mysqli_stmt_close($stmt);
     }
 }
 
-// Processar formulário para atualizar alerta existente
+// Processa o formulário para atualizar um alerta existente
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['atualizar'])) {
+    // Converte o ID para inteiro para evitar injeção SQL
     $id_alerta = intval($_POST['id_alerta']);
     
-    // Validate dates
+    // Valida as datas inseridas pelo utilizador
     if (!strtotime($_POST['data_inicio']) || !strtotime($_POST['data_fim'])) {
         $mensagem_feedback = "Data inválida!";
         $tipo_mensagem = "error";
-        // Redirect or handle error
     } else if (strtotime($_POST['data_inicio']) > strtotime($_POST['data_fim'])) {
+        // Verifica se a data de início é anterior à data de fim
         $mensagem_feedback = "A data de início deve ser anterior à data de fim!";
         $tipo_mensagem = "error";
     } else {
-        // Usar prepared statement para atualizar
+        // Utiliza prepared statement para atualizar o alerta na base de dados
         $stmt = mysqli_prepare($conn, "UPDATE alertas SET mensagem = ?, data_inicio = ?, data_fim = ? WHERE id = ?");
         mysqli_stmt_bind_param($stmt, "sssi", $_POST['mensagem'], $_POST['data_inicio'], $_POST['data_fim'], $id_alerta);
         
+        // Executa a atualização e verifica se foi bem-sucedida
         if (mysqli_stmt_execute($stmt)) {
             $mensagem_feedback = "Alerta com ID $id_alerta foi editado com sucesso!";
             $tipo_mensagem = "success";
             mysqli_stmt_close($stmt);
-            // Redirecionar para limpar o formulário de edição
+            // Redireciona para limpar o formulário de edição e mostrar mensagem de sucesso
             header("Location: gerir_alertas.php?msg=updated&id=$id_alerta");
             exit();
         } else {
+            // Em caso de erro, mostra a mensagem de erro
             $mensagem_feedback = "Erro ao atualizar alerta ID $id_alerta: " . mysqli_error($conn);
             $tipo_mensagem = "error";
         }
+        // Liberta recursos da consulta
         mysqli_stmt_close($stmt);
     }
 }
 
-// Processar pedido para excluir alerta
+// Processa o pedido para excluir um alerta
 if (isset($_GET['excluir'])) {
+    // Converte o ID para inteiro para evitar injeção SQL
     $id = intval($_GET['excluir']);
     
-    // Usar prepared statement para excluir
+    // Utiliza prepared statement para excluir o alerta da base de dados
     $stmt = mysqli_prepare($conn, "DELETE FROM alertas WHERE id = ?");
     mysqli_stmt_bind_param($stmt, "i", $id);
     
+    // Executa a exclusão e verifica se foi bem-sucedida
     if(mysqli_stmt_execute($stmt)) {
         $mensagem_feedback = "Alerta com ID $id foi excluído com sucesso!";
         $tipo_mensagem = "success";
     } else {
+        // Em caso de erro, mostra a mensagem de erro
         $mensagem_feedback = "Erro ao excluir alerta ID $id: " . mysqli_error($conn);
         $tipo_mensagem = "error";
     }
+    // Liberta recursos da consulta
     mysqli_stmt_close($stmt);
 }
 
-// Definir mensagem se vier de um redirecionamento após atualização
+// Define mensagem se vier de um redirecionamento após atualização
 if (isset($_GET['msg'])) {
+    // Obtém o ID do alerta atualizado, se disponível
     $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
+    // Verifica se a mensagem é de atualização bem-sucedida
     if ($_GET['msg'] == 'updated') {
         $mensagem_feedback = "Alerta com ID $id foi editado com sucesso!";
         $tipo_mensagem = "success";
     }
 }
 
-// Buscar todos os alertas existentes para exibir na tabela
+// Busca todos os alertas existentes para exibir na tabela
 $sql = "SELECT * FROM alertas";
 $stmt = mysqli_prepare($conn, $sql);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 mysqli_stmt_close($stmt);
 
+// Verifica se a consulta foi bem-sucedida
 if (!$result) {
     $mensagem_feedback = "Erro ao buscar alertas: " . mysqli_error($conn);
     $tipo_mensagem = "error";
@@ -168,18 +186,21 @@ if (!$result) {
                 <!-- Campo para a mensagem do alerta -->
                 <div class="form-group">
                     <label for="mensagem">Mensagem:</label>
+                    <!-- Preenche o campo com o valor existente se estiver a editar -->
                     <textarea id="mensagem" name="mensagem" required><?php echo $alerta_para_editar ? htmlspecialchars($alerta_para_editar['mensagem'], ENT_QUOTES, 'UTF-8') : ''; ?></textarea>
                 </div>
 
                 <!-- Campo para a data de início -->
                 <div class="form-group">
                     <label for="data_inicio">Data de Início:</label>
+                    <!-- Preenche o campo com o valor existente se estiver a editar -->
                     <input type="datetime-local" id="data_inicio" name="data_inicio" value="<?php echo $alerta_para_editar ? date('Y-m-d\TH:i', strtotime($alerta_para_editar['data_inicio'])) : ''; ?>" required>
                 </div>
 
                 <!-- Campo para a data de fim -->
                 <div class="form-group">
                     <label for="data_fim">Data de Fim:</label>
+                    <!-- Preenche o campo com o valor existente se estiver a editar -->
                     <input type="datetime-local" id="data_fim" name="data_fim" value="<?php echo $alerta_para_editar ? date('Y-m-d\TH:i', strtotime($alerta_para_editar['data_fim'])) : ''; ?>" required>
                 </div>
 
