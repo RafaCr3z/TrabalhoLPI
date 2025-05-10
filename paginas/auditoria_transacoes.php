@@ -227,11 +227,14 @@ $saldo = mysqli_fetch_assoc($result_saldo);
                             if ($transacao['tipo'] == 'deposito') {
                                 $classe_valor = 'deposito';
                                 $valor_formatado = '+€' . number_format($transacao['valor'], 2, ',', '.');
-                            } elseif ($transacao['tipo'] == 'retirada') {
-                                $classe_valor = 'retirada';
+                            } elseif ($transacao['tipo'] == 'levantamento') {
+                                $classe_valor = 'levantamento';
+                                $valor_formatado = '-€' . number_format($transacao['valor'], 2, ',', '.');
+                            } elseif ($transacao['tipo'] == 'compra') {
+                                $classe_valor = 'compra';
                                 $valor_formatado = '-€' . number_format($transacao['valor'], 2, ',', '.');
                             } else {
-                                $classe_valor = 'compra';
+                                $classe_valor = '';
                                 $valor_formatado = '€' . number_format($transacao['valor'], 2, ',', '.');
                             }
                             ?>
@@ -281,6 +284,9 @@ $saldo = mysqli_fetch_assoc($result_saldo);
 </script>
 </body>
 </html>
+
+
+
 
 
 

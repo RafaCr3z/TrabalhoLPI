@@ -86,9 +86,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // Executa a atualização do saldo
             if ($sql_atualiza && mysqli_query($conn, $sql_atualiza)) {
-                // Regista a transação no histórico
-                $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
-                                  VALUES ($id_cliente, $id_carteira_felixbus, $valor, '$tipo_transacao', '$descricao')";
+                // Registra a transação
+                $sql_transacao = "INSERT INTO transacoes (id_cliente, valor, tipo, descricao, data_transacao) 
+                                 VALUES ($id_cliente, $valor, '$tipo_transacao', '$descricao', NOW())";
 
                 if (mysqli_query($conn, $sql_transacao)) {
                     // Confirma a transação na base de dados

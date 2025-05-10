@@ -91,7 +91,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
                     }
 
                     // Registar a transação no histórico
-                    $stmt_transacao = mysqli_prepare($conn, "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao) VALUES (?, ?, ?, ?, ?)");
+                    $stmt_transacao = mysqli_prepare($conn, "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao, data_transacao) 
+                                                            VALUES (?, ?, ?, ?, ?, NOW())");
                     mysqli_stmt_bind_param($stmt_transacao, "iidss", $id_cliente, $id_carteira_felixbus, $valor, $tipo_transacao, $descricao);
                     
                     if (!mysqli_stmt_execute($stmt_transacao)) {

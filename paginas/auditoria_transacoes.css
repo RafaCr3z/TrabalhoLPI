@@ -132,7 +132,7 @@ h1 {
     color: green;
 }
 
-.retirada, .compra {
+.levantamento, .compra {
     color: red;
 }
 
@@ -284,4 +284,5 @@ footer img {
     height: 16px;
     width: auto;
 }
+
 

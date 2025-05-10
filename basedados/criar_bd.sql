@@ -82,7 +82,7 @@ CREATE TABLE bilhetes (
     id INT AUTO_INCREMENT PRIMARY KEY, -- ID sequencial automático
     id_cliente INT NOT NULL,
     id_rota INT NOT NULL,
-    data_compra DATETIME DEFAULT CURRENT_TIMESTAMP, -- Data da compra do bilhete
+    data_compra DATETIME DEFAULT NOW(), -- Data da compra do bilhete
     data_viagem DATE NOT NULL, -- Data da viagem
     hora_viagem TIME NOT NULL, -- Hora da viagem
     numero_lugar INT, -- Número do lugar no ônibus
@@ -118,8 +118,8 @@ CREATE TABLE transacoes (
     id_cliente INT NOT NULL,
     id_carteira_felixbus INT,
     valor DECIMAL(10,2) NOT NULL,
-    tipo VARCHAR(20) NOT NULL, -- Ex: "compra", "reembolso"
-    data_transacao DATETIME DEFAULT CURRENT_TIMESTAMP, -- Data da transação
+    tipo VARCHAR(20) NOT NULL, -- Ex: "compra", "levantamento", "deposito"
+    data_transacao DATETIME DEFAULT NOW(), -- Data da transação
     descricao TEXT, -- Descrição opcional da transação
     FOREIGN KEY (id_cliente) REFERENCES utilizadores(id) ON DELETE CASCADE,
     FOREIGN KEY (id_carteira_felixbus) REFERENCES carteira_felixbus(id)

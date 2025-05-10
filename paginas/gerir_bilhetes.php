@@ -108,8 +108,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
                             
                             // 3. Registrar transação
                             $descricao = "Compra de $quantidade bilhete(s): $origem para $destino (Cliente: {$cliente['nome']})";
-                            $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
-                                            VALUES (?, ?, ?, 'compra', ?)";
+                            $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao, data_transacao)
+                                            VALUES (?, ?, ?, 'compra', ?, NOW())";
                             $stmt = mysqli_prepare($conn, $sql_transacao);
                             mysqli_stmt_bind_param($stmt, "iids", $id_cliente, $id_carteira_felixbus, $preco_total, $descricao);
                             mysqli_stmt_execute($stmt);
