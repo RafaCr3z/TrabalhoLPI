@@ -15,7 +15,10 @@ $filtro_tipo = isset($_GET['tipo']) ? $_GET['tipo'] : '';
 $filtro_data_inicio = isset($_GET['data_inicio']) ? $_GET['data_inicio'] : '';
 $filtro_data_fim = isset($_GET['data_fim']) ? $_GET['data_fim'] : '';
 
-// Constrói a consulta SQL base para obter as transações
+/**
+ * Constrói a consulta SQL base para obter as transações
+ * Junta a tabela de transações com a tabela de utilizadores para obter informações do cliente
+ */
 $sql = "SELECT t.*, u.nome as nome_cliente, u.email as email_cliente
         FROM transacoes t
         JOIN utilizadores u ON t.id_cliente = u.id
@@ -23,18 +26,22 @@ $sql = "SELECT t.*, u.nome as nome_cliente, u.email as email_cliente
 
 // Adiciona filtros à consulta SQL se estiverem definidos
 if ($filtro_cliente_id > 0) {
+    // Filtra por ID do cliente específico
     $sql .= " AND t.id_cliente = " . $filtro_cliente_id;
 }
 
 if (!empty($filtro_tipo)) {
+    // Filtra por tipo de transação (depósito, levantamento, compra)
     $sql .= " AND t.tipo = '" . mysqli_real_escape_string($conn, $filtro_tipo) . "'";
 }
 
 if (!empty($filtro_data_inicio)) {
+    // Filtra transações a partir de uma data específica
     $sql .= " AND DATE(t.data_transacao) >= '" . mysqli_real_escape_string($conn, $filtro_data_inicio) . "'";
 }
 
 if (!empty($filtro_data_fim)) {
+    // Filtra transações até uma data específica
     $sql .= " AND DATE(t.data_transacao) <= '" . mysqli_real_escape_string($conn, $filtro_data_fim) . "'";
 }
 
@@ -43,10 +50,18 @@ $sql .= " ORDER BY t.data_transacao DESC";
 
 // Executa a consulta para obter as transações
 $result = mysqli_query($conn, $sql);
+if (!$result) {
+    // Tratamento de erro para a consulta principal
+    die("Erro ao buscar transações: " . mysqli_error($conn));
+}
 
 // Obtém os tipos de transação distintos para o filtro
 $sql_tipos = "SELECT DISTINCT tipo FROM transacoes ORDER BY tipo";
 $result_tipos = mysqli_query($conn, $sql_tipos);
+if (!$result_tipos) {
+    // Tratamento de erro para a consulta de tipos
+    die("Erro ao buscar tipos de transação: " . mysqli_error($conn));
+}
 $tipos = [];
 while ($row = mysqli_fetch_assoc($result_tipos)) {
     $tipos[] = $row['tipo'];
@@ -59,15 +74,32 @@ $sql_clientes = "SELECT DISTINCT u.id, u.nome, u.email
                 WHERE u.tipo_perfil = 3
                 ORDER BY u.nome";
 $result_clientes = mysqli_query($conn, $sql_clientes);
+if (!$result_clientes) {
+    // Tratamento de erro para a consulta de clientes
+    die("Erro ao buscar lista de clientes: " . mysqli_error($conn));
+}
 
-// Calcula os totais de depósitos, retiradas e compras
+// Calcula os totais de depósitos, levantamentos e compras
 $sql_totais = "SELECT
                 SUM(CASE WHEN tipo = 'deposito' THEN valor ELSE 0 END) as total_depositos,
-                SUM(CASE WHEN tipo = 'retirada' THEN valor ELSE 0 END) as total_retiradas,
+                SUM(CASE WHEN tipo = 'levantamento' THEN valor ELSE 0 END) as total_levantamentos,
                 SUM(CASE WHEN tipo = 'compra' THEN valor ELSE 0 END) as total_compras
                FROM transacoes";
 $result_totais = mysqli_query($conn, $sql_totais);
+if (!$result_totais) {
+    // Tratamento de erro para a consulta de totais
+    die("Erro ao calcular totais: " . mysqli_error($conn));
+}
 $totais = mysqli_fetch_assoc($result_totais);
+
+// Adicionar tratamento de erro para a consulta do saldo
+$sql_saldo = "SELECT saldo FROM carteira_felixbus LIMIT 1";
+$result_saldo = mysqli_query($conn, $sql_saldo);
+if (!$result_saldo) {
+    // Tratamento de erro para a consulta de saldo
+    die("Erro ao buscar saldo da FelixBus: " . mysqli_error($conn));
+}
+$saldo = mysqli_fetch_assoc($result_saldo);
 ?>
 
 <!DOCTYPE html>
@@ -104,8 +136,8 @@ $totais = mysqli_fetch_assoc($result_totais);
                 <p class="valor deposito">€<?php echo number_format($totais['total_depositos'], 2, ',', '.'); ?></p>
             </div>
             <div class="resumo-card">
-                <h3>Total de Retiradas</h3>
-                <p class="valor retirada">€<?php echo number_format($totais['total_retiradas'], 2, ',', '.'); ?></p>
+                <h3>Total de Levantamentos</h3>
+                <p class="valor levantamento">€<?php echo number_format($totais['total_levantamentos'], 2, ',', '.'); ?></p>
             </div>
             <div class="resumo-card">
                 <h3>Total de Compras</h3>
@@ -249,4 +281,11 @@ $totais = mysqli_fetch_assoc($result_totais);
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
 

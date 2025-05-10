@@ -72,7 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
                         // Operação de depósito: adicionar valor à carteira
                         $stmt_atualiza = mysqli_prepare($conn, "UPDATE carteiras SET saldo = saldo + ? WHERE id_cliente = ?");
                         mysqli_stmt_bind_param($stmt_atualiza, "di", $valor, $id_cliente);
-                        $tipo_transacao = "depósito";
+                        $tipo_transacao = "deposito";
                         $descricao = "Depósito de €" . htmlspecialchars($valor, ENT_QUOTES, 'UTF-8') . " na carteira do cliente " . htmlspecialchars($cliente['nome'], ENT_QUOTES, 'UTF-8') . " (ID: $id_cliente) por " . htmlspecialchars($_SESSION['nome'], ENT_QUOTES, 'UTF-8');
                     } else if ($operacao == "levantar") {
                         // Operação de levantamento: verificar saldo e retirar valor

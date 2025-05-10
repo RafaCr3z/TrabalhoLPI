@@ -64,12 +64,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         try {
             // Define a operação a realizar com base na escolha do utilizador
-            if ($operacao == "adicionar") {
+            if ($operacao == "depositar") {
                 // Adiciona valor à carteira
                 $sql_atualiza = "UPDATE carteiras SET saldo = saldo + $valor WHERE id_cliente = $id_cliente";
-                $tipo_transacao = "depósito";
+                $tipo_transacao = "deposito";
                 $descricao = "Depósito de €$valor na carteira";
-            } else if ($operacao == "retirar" && $row_saldo['saldo'] >= $valor) {
+            } else if ($operacao == "levantar" && $row_saldo['saldo'] >= $valor) {
                 // Retira valor da carteira se houver saldo suficiente
                 $sql_atualiza = "UPDATE carteiras SET saldo = saldo - $valor WHERE id_cliente = $id_cliente";
                 $tipo_transacao = "levantamento";
@@ -189,8 +189,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <div class="form-group">
                             <label for="operacao">Operação:</label>
                             <select id="operacao" name="operacao" required>
-                                <option value="adicionar">Depositar</option>
-                                <option value="retirar">Levantar</option>
+                                <option value="depositar">Depositar</option>
+                                <option value="levantar">Levantar</option>
                             </select>
                         </div>
                         <button type="submit">Confirmar</button>
@@ -227,7 +227,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 while ($transacao = mysqli_fetch_assoc($result_historico)) {
                                     // Define a classe CSS com base no tipo de transação
                                     $classe_valor = '';
-                                    if ($transacao['tipo'] == 'depósito') {
+                                    if ($transacao['tipo'] == 'deposito') {
                                         $classe_valor = 'deposito';
                                         $valor_formatado = '+€' . number_format($transacao['valor'], 2, ',', '.');
                                     } else {
