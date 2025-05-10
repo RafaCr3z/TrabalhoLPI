@@ -27,12 +27,14 @@ if (!empty($_SESSION['mensagem'])) {
 
 // Processar operação na carteira
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) {
+    // Verificar token CSRF para segurança
     if (isset($_SESSION['token']) && isset($_POST['token']) && $_SESSION['token'] === $_POST['token']) {
         // Validação e sanitização de dados
         $id_cliente = filter_input(INPUT_POST, 'id_cliente', FILTER_VALIDATE_INT);
         $valor = filter_input(INPUT_POST, 'valor', FILTER_VALIDATE_FLOAT);
         $operacao = filter_input(INPUT_POST, 'operacao', FILTER_SANITIZE_STRING);
 
+        // Verificar se os dados são válidos
         if (!$id_cliente || !$valor || $valor <= 0) {
             $_SESSION['mensagem'] = "Valor inválido. Por favor, insira um valor maior que zero.";
             $_SESSION['tipo_mensagem'] = "danger";
@@ -46,13 +48,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
             if (mysqli_num_rows($result_check_cliente) > 0) {
                 $cliente = mysqli_fetch_assoc($result_check_cliente);
                 
-                // Verificar carteira usando prepared statement
+                // Verificar se o cliente tem carteira, se não, criar uma
                 $stmt_check_carteira = mysqli_prepare($conn, "SELECT saldo FROM carteiras WHERE id_cliente = ?");
                 mysqli_stmt_bind_param($stmt_check_carteira, "i", $id_cliente);
                 mysqli_stmt_execute($stmt_check_carteira);
                 $result_check_carteira = mysqli_stmt_get_result($stmt_check_carteira);
                 
                 if (mysqli_num_rows($result_check_carteira) == 0) {
+                    // Criar nova carteira com saldo zero
                     $stmt_insert_carteira = mysqli_prepare($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES (?, 0.00)");
                     mysqli_stmt_bind_param($stmt_insert_carteira, "i", $id_cliente);
                     mysqli_stmt_execute($stmt_insert_carteira);
@@ -61,15 +64,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
                     $saldo_atual = mysqli_fetch_assoc($result_check_carteira)['saldo'];
                 }
 
+                // Iniciar transação para garantir integridade dos dados
                 mysqli_begin_transaction($conn);
 
                 try {
                     if ($operacao == "depositar") {
+                        // Operação de depósito: adicionar valor à carteira
                         $stmt_atualiza = mysqli_prepare($conn, "UPDATE carteiras SET saldo = saldo + ? WHERE id_cliente = ?");
                         mysqli_stmt_bind_param($stmt_atualiza, "di", $valor, $id_cliente);
                         $tipo_transacao = "depósito";
                         $descricao = "Depósito de €" . htmlspecialchars($valor, ENT_QUOTES, 'UTF-8') . " na carteira do cliente " . htmlspecialchars($cliente['nome'], ENT_QUOTES, 'UTF-8') . " (ID: $id_cliente) por " . htmlspecialchars($_SESSION['nome'], ENT_QUOTES, 'UTF-8');
                     } else if ($operacao == "levantar") {
+                        // Operação de levantamento: verificar saldo e retirar valor
                         if ($saldo_atual < $valor) {
                             throw new Exception("Saldo insuficiente para realizar esta operação.");
                         }
@@ -79,11 +85,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
                         $descricao = "Levantamento de €" . htmlspecialchars($valor, ENT_QUOTES, 'UTF-8') . " da carteira do cliente " . htmlspecialchars($cliente['nome'], ENT_QUOTES, 'UTF-8') . " (ID: $id_cliente) por " . htmlspecialchars($_SESSION['nome'], ENT_QUOTES, 'UTF-8');
                     }
 
+                    // Executar a atualização do saldo
                     if (!mysqli_stmt_execute($stmt_atualiza)) {
                         throw new Exception("Erro ao atualizar saldo: " . mysqli_error($conn));
                     }
 
-                    // Registar a transação usando prepared statement
+                    // Registar a transação no histórico
                     $stmt_transacao = mysqli_prepare($conn, "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao) VALUES (?, ?, ?, ?, ?)");
                     mysqli_stmt_bind_param($stmt_transacao, "iidss", $id_cliente, $id_carteira_felixbus, $valor, $tipo_transacao, $descricao);
                     
@@ -91,11 +98,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
                         throw new Exception("Erro ao registar transação: " . mysqli_error($conn));
                     }
 
+                    // Confirmar a transação na base de dados
                     mysqli_commit($conn);
                     $_SESSION['mensagem'] = "Operação realizada com sucesso!";
                     $_SESSION['tipo_mensagem'] = "success";
 
                 } catch (Exception $e) {
+                    // Reverter alterações em caso de erro
                     mysqli_rollback($conn);
                     $_SESSION['mensagem'] = $e->getMessage();
                     $_SESSION['tipo_mensagem'] = "danger";
@@ -107,6 +116,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['operacao_carteira'])) 
         }
     }
 
+    // Gerar novo token e redirecionar
     $_SESSION['token'] = uniqid(mt_rand(), true);
     header("Location: gerir_carteiras.php");
     exit();
@@ -133,7 +143,7 @@ $stmt_transacoes = mysqli_prepare($conn,
 mysqli_stmt_execute($stmt_transacoes);
 $result_transacoes = mysqli_stmt_get_result($stmt_transacoes);
 
-// Gerar token se não existir
+// Gerar token CSRF se não existir
 if (!isset($_SESSION['token'])) {
     $_SESSION['token'] = uniqid(mt_rand(), true);
 }
@@ -172,6 +182,7 @@ if (!isset($_SESSION['token'])) {
     <section>
         <h1>Gestão de Carteiras de Clientes</h1>
 
+        <!-- Exibir mensagens de alerta -->
         <?php if (!empty($mensagem)): ?>
             <div class="alert alert-<?php echo $tipo_mensagem; ?>">
                 <?php echo $mensagem; ?>
@@ -179,9 +190,11 @@ if (!isset($_SESSION['token'])) {
         <?php endif; ?>
 
         <div class="container">
+            <!-- Formulário para operações na carteira -->
             <div class="form-container">
                 <h2>Operações na Carteira</h2>
                 <form method="post" action="gerir_carteiras.php">
+                    <!-- Token CSRF para segurança -->
                     <input type="hidden" name="token" value="<?php echo $_SESSION['token']; ?>">
                     <div class="form-group">
                         <label for="id_cliente">Cliente:</label>
@@ -234,6 +247,7 @@ if (!isset($_SESSION['token'])) {
                                         <td><?php echo htmlspecialchars($transacao['id'], ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td><?php echo htmlspecialchars($transacao['nome_cliente'], ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td><?php echo htmlspecialchars($transacao['tipo'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <!-- Aplicar classe CSS diferente conforme o tipo de operação -->
                                         <td class="<?php echo $transacao['tipo'] == 'depósito' ? 'deposito' : 'levantamento'; ?>">
                                             €<?php echo htmlspecialchars(number_format($transacao['valor'], 2, ',', '.'), ENT_QUOTES, 'UTF-8'); ?>
                                         </td>

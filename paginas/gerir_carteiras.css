@@ -88,6 +88,7 @@ h1 {
   color: #333;
 }
 
+/* Estilos para mensagens de alerta */
 .alert {
   padding: 0.75rem;
   margin-bottom: 1rem;
@@ -107,7 +108,7 @@ h1 {
   border: 1px solid #f5c6cb;
 }
 
-/* Layout de containers */
+/* Layout de contentores */
 .container {
   display: flex;
   gap: 2rem;
@@ -136,7 +137,7 @@ h2 {
   text-align: center;
 }
 
-/* Formulário */
+/* Estilos para formulários */
 .form-group {
   margin-bottom: 1rem;
 }
@@ -171,7 +172,7 @@ button:hover {
   background: #0069d9;
 }
 
-/* Tabela de histórico */
+/* Estilos para a tabela de histórico */
 .table-responsive {
   overflow-x: auto;
   max-height: 400px;
@@ -199,7 +200,7 @@ button:hover {
   color: #28a745;
 }
 
-.retirada {
+.levantamento {
   color: #dc3545;
 }
 
@@ -245,6 +246,9 @@ footer img {
     justify-content: center;
   }
 }
+
+
+
 
 
 
