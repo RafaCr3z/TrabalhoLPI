@@ -294,15 +294,15 @@ footer {
     position: fixed;
     bottom: 0;
     width: 100%;
-    padding: 8px;
+    padding: 5px;
     text-align: center;
     color: white;
     background: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
+    gap: 5px;
+    font-size: 0.8rem;
     z-index: 100;
 }
 
@@ -311,7 +311,7 @@ footer span {
 }
 
 footer img {
-    height: 16px;
+    height: 12px;
     width: auto;
 }
 

@@ -222,7 +222,7 @@ while ($horario = mysqli_fetch_assoc($result_horarios)) {
     $horarios_por_rota[$horario['id_rota']][] = $horario;
 }
 
-// Buscar bilhetes recentes
+// Buscar bilhetes recentes ordenados pela data de compra mais recente
 $sql_bilhetes = "SELECT
                     r.origem,
                     r.destino,
@@ -231,14 +231,14 @@ $sql_bilhetes = "SELECT
                     r.preco,
                     b.data_compra,
                     u.nome as nome_cliente,
-                    COUNT(*) as quantidade,
                     GROUP_CONCAT(b.id) as ids,
-                    GROUP_CONCAT(b.numero_lugar) as lugares
+                    GROUP_CONCAT(b.numero_lugar) as lugares,
+                    COUNT(*) as quantidade
                 FROM bilhetes b
                 JOIN rotas r ON b.id_rota = r.id
                 JOIN utilizadores u ON b.id_cliente = u.id
                 GROUP BY r.origem, r.destino, b.data_viagem, b.hora_viagem, r.preco, b.data_compra, u.nome
-                ORDER BY b.data_compra DESC
+                ORDER BY b.data_compra DESC, b.id DESC
                 LIMIT 50";
 $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
 ?>
@@ -277,8 +277,8 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
         <h1>Gestão de Bilhetes</h1>
 
         <?php if (!empty($mensagem)): ?>
-            <div class="alert alert-<?php echo $tipo_mensagem; ?>">
-                <?php echo $mensagem; ?>
+            <div class="alert alert-<?php echo htmlspecialchars($tipo_mensagem, ENT_QUOTES, 'UTF-8'); ?>">
+                <?php echo htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8'); ?>
             </div>
         <?php endif; ?>
 
@@ -291,8 +291,8 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
                         <select id="id_cliente" name="id_cliente" required>
                             <option value="">Selecione um cliente</option>
                             <?php while ($cliente = mysqli_fetch_assoc($result_clientes)): ?>
-                                <option value="<?php echo $cliente['id']; ?>">
-                                    <?php echo $cliente['nome'] . ' (' . $cliente['email'] . ') - Saldo: €' . number_format($cliente['saldo'] ?? 0, 2, ',', '.'); ?>
+                                <option value="<?php echo htmlspecialchars($cliente['id'], ENT_QUOTES, 'UTF-8'); ?>">
+                                    <?php echo htmlspecialchars($cliente['nome'], ENT_QUOTES, 'UTF-8') . ' (' . htmlspecialchars($cliente['email'], ENT_QUOTES, 'UTF-8') . ') - Saldo: €' . number_format($cliente['saldo'] ?? 0, 2, ',', '.'); ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
@@ -378,30 +378,33 @@ $result_bilhetes = mysqli_query($conn, $sql_bilhetes);
                             </thead>
                             <tbody>
                                 <?php
+                                // Inicializar contador para mostrar IDs sequenciais na tabela
                                 $contador_bilhetes = 1;
+                                // Percorrer todos os bilhetes retornados pela consulta
                                 while ($bilhete = mysqli_fetch_assoc($result_bilhetes)): ?>
                                     <tr>
                                         <td><?php echo $contador_bilhetes++; ?></td>
-                                        <td><?php echo $bilhete['nome_cliente']; ?></td>
-                                        <td><?php echo $bilhete['origem'] . ' → ' . $bilhete['destino']; ?></td>
+                                        <td><?php echo htmlspecialchars($bilhete['nome_cliente'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars($bilhete['origem'], ENT_QUOTES, 'UTF-8') . ' → ' . htmlspecialchars($bilhete['destino'], ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td><?php echo date('d/m/Y', strtotime($bilhete['data_viagem'])); ?></td>
-                                        <td><?php echo $bilhete['hora_viagem']; ?></td>
-                                        <td><?php echo $bilhete['quantidade']; ?></td>
-                                        <td><?php echo $bilhete['lugares'] ? $bilhete['lugares'] : 'Não especificado'; ?></td>
+                                        <td><?php echo htmlspecialchars($bilhete['hora_viagem'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars($bilhete['quantidade'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo $bilhete['lugares'] ? htmlspecialchars($bilhete['lugares'], ENT_QUOTES, 'UTF-8') : 'Não especificado'; ?></td>
                                         <td>€<?php echo number_format($bilhete['preco'], 2, ',', '.'); ?></td>
                                         <td>€<?php echo number_format($bilhete['preco'] * $bilhete['quantidade'], 2, ',', '.'); ?></td>
                                         <td><?php echo date('d/m/Y H:i', strtotime($bilhete['data_compra'])); ?></td>
                                         <td>
                                             <?php
-                                            // Extrair os IDs dos bilhetes
+                                            // Extrair os IDs dos bilhetes do grupo
                                             $ids = explode(',', $bilhete['ids']);
                                             $contador = 1;
+                                            // Para cada bilhete no grupo, mostrar um botão de eliminação
                                             foreach ($ids as $id):
-                                                // Usar IDs sequenciais (1, 2, 3, etc.)
+                                                // Usar IDs sequenciais (1, 2, 3, etc.) para melhor apresentação
                                                 $id_sequencial = "ID " . $contador;
                                                 $contador++;
                                             ?>
-                                                <a href="gerir_bilhetes.php?eliminar_bilhete=<?php echo $id; ?>" class="btn-eliminar" onclick="return confirm('Tem certeza que deseja eliminar o bilhete <?php echo $id_sequencial; ?>?');">Eliminar <?php echo $id_sequencial; ?></a>
+                                                <a href="gerir_bilhetes.php?eliminar_bilhete=<?php echo htmlspecialchars($id, ENT_QUOTES, 'UTF-8'); ?>" class="btn-eliminar" onclick="return confirm('Tem certeza que deseja eliminar o bilhete <?php echo htmlspecialchars($id_sequencial, ENT_QUOTES, 'UTF-8'); ?>?');">Eliminar <?php echo htmlspecialchars($id_sequencial, ENT_QUOTES, 'UTF-8'); ?></a>
                                             <?php endforeach; ?>
                                         </td>
                                     </tr>
@@ -711,28 +714,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Função para validar o formulário antes de enviar
 function validarFormulario() {
+    // Obter referências aos elementos do formulário
     const quantidadeInput = document.getElementById('quantidade');
     const lugaresEscolhidos = document.getElementById('lugaresEscolhidos');
 
+    // Se os elementos não existirem, permite o envio do formulário
     if (!quantidadeInput || !lugaresEscolhidos) {
-        return true; // Se os elementos não existirem, permite o envio
+        return true;
     }
 
+    // Obter a quantidade de bilhetes e os lugares selecionados
     const quantidade = parseInt(quantidadeInput.value);
     const lugares = lugaresEscolhidos.value.split(',').filter(lugar => lugar.trim() !== '');
 
     // Verificar se a quantidade de lugares selecionados corresponde à quantidade de bilhetes
     if (lugares.length !== quantidade) {
+        // Se nenhum lugar foi selecionado
         if (lugares.length === 0) {
             alert('Por favor, selecione os lugares para os bilhetes.');
-        } else if (lugares.length < quantidade) {
+        } 
+        // Se foram selecionados menos lugares que a quantidade de bilhetes
+        else if (lugares.length < quantidade) {
             alert(`Você selecionou apenas ${lugares.length} lugar(es), mas está comprando ${quantidade} bilhete(s). Por favor, selecione todos os lugares.`);
-        } else {
+        } 
+        // Se foram selecionados mais lugares que a quantidade de bilhetes
+        else {
             alert(`Você selecionou ${lugares.length} lugar(es), mas está comprando apenas ${quantidade} bilhete(s). Por favor, ajuste a quantidade ou desmarque alguns lugares.`);
         }
         return false; // Impede o envio do formulário
     }
 
-    return true; // Permite o envio do formulário
+    return true; // Permite o envio do formulário se tudo estiver correto
 }
 </script>
