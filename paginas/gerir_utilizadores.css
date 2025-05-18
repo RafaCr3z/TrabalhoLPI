@@ -99,20 +99,17 @@ h1 {
 
 .container {
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
+    gap: 2rem; /* Espaço entre as caixas */
+    align-items: flex-start;
 }
 
 .form-container, .table-container {
-    background-color: white;
-    padding: 15px;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.form-container {
-    flex: 1;
-    min-width: 300px;
+    flex: 1 1 0;
+    min-width: 350px;
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
 
 .table-container {
