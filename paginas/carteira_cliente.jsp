@@ -1,135 +1,190 @@
-<?php
-session_start();
-include '../basedados/basedados.h';
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*, java.util.*, java.text.*" %>
+<%@ include file="../basedados/basedados.jsp" %>
 
+<%
 // Verifica se o utilizador está autenticado e se é um cliente (nível 3)
-if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
+if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 3) {
     // Redireciona para a página de erro se não for um cliente
-    header("Location: erro.php");
-    exit();
+    response.sendRedirect("erro.jsp");
+    return;
 }
 
 // Obtém o ID do cliente a partir da sessão
-$id_cliente = $_SESSION["id_utilizador"];
+int id_cliente = (Integer)session.getAttribute("id_utilizador");
 
-// Obtém o ID da carteira FelixBus (sistema)
-$sql_felixbus = "SELECT id FROM carteira_felixbus LIMIT 1";
-$result_felixbus = mysqli_query($conn, $sql_felixbus);
-$row_felixbus = mysqli_fetch_assoc($result_felixbus);
-$id_carteira_felixbus = $row_felixbus['id'];
+// Inicializa variáveis
+Connection conn = null;
+PreparedStatement pstmt = null;
+ResultSet rs = null;
+double saldo = 0.0;
+String mensagem = "";
+String tipo_mensagem = "";
 
-// Consulta o saldo atual do cliente na base de dados
-$sql_saldo = "SELECT saldo FROM carteiras WHERE id_cliente = $id_cliente";
-$result_saldo = mysqli_query($conn, $sql_saldo);
-$row_saldo = mysqli_fetch_assoc($result_saldo);
-
-// Se o cliente não tiver carteira, cria uma com saldo zero
-if (!$row_saldo) {
-    $sql_criar_carteira = "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_cliente, 0.00)";
-    mysqli_query($conn, $sql_criar_carteira);
-    $row_saldo = ['saldo' => 0.00];
-}
-
-// Inicializa variáveis para mensagens de alerta
-$mensagem = '';
-$tipo_mensagem = '';
-
-// Verifica se existem mensagens na sessão
-if (isset($_SESSION['mensagem'])) {
-    $mensagem = $_SESSION['mensagem'];
-    $tipo_mensagem = $_SESSION['tipo_mensagem'];
-
-    // Limpa as mensagens da sessão após exibi-las
-    unset($_SESSION['mensagem']);
-    unset($_SESSION['tipo_mensagem']);
-}
-
-// Verifica se o formulário foi submetido
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Obtém os valores do formulário
-    $valor = $_POST["valor"];
-    $operacao = $_POST["operacao"];
-
-    // Verifica se o valor é válido (maior que zero)
-    if ($valor <= 0) {
-        $_SESSION['mensagem'] = "Valor inválido. Por favor, introduza um valor superior a zero.";
-        $_SESSION['tipo_mensagem'] = "danger";
-
-        // Redireciona para evitar reenvio do formulário ao atualizar a página
-        header("Location: carteira_cliente.php");
-        exit();
+try {
+    conn = getConnection();
+    
+    // Obtém o ID da carteira FelixBus (sistema)
+    pstmt = conn.prepareStatement("SELECT id FROM carteira_felixbus LIMIT 1");
+    rs = pstmt.executeQuery();
+    int id_carteira_felixbus = 0;
+    if (rs.next()) {
+        id_carteira_felixbus = rs.getInt("id");
+    }
+    rs.close();
+    pstmt.close();
+    
+    // Consulta o saldo atual do cliente na base de dados
+    pstmt = conn.prepareStatement("SELECT saldo FROM carteiras WHERE id_cliente = ?");
+    pstmt.setInt(1, id_cliente);
+    rs = pstmt.executeQuery();
+    
+    // Se o cliente não tiver carteira, cria uma com saldo zero
+    if (!rs.next()) {
+        rs.close();
+        pstmt.close();
+        
+        pstmt = conn.prepareStatement("INSERT INTO carteiras (id_cliente, saldo) VALUES (?, 0.00)");
+        pstmt.setInt(1, id_cliente);
+        pstmt.executeUpdate();
+        pstmt.close();
+        
+        saldo = 0.00;
     } else {
-        // Inicia uma transação para garantir a integridade dos dados
-        mysqli_begin_transaction($conn);
-
-        try {
-            // Define a operação a realizar com base na escolha do utilizador
-            if ($operacao == "depositar") {
-                // Adiciona valor à carteira
-                $sql_atualiza = "UPDATE carteiras SET saldo = saldo + $valor WHERE id_cliente = $id_cliente";
-                $tipo_transacao = "deposito";
-                $descricao = "Depósito de €$valor na carteira";
-            } else if ($operacao == "levantar" && $row_saldo['saldo'] >= $valor) {
-                // Retira valor da carteira se houver saldo suficiente
-                $sql_atualiza = "UPDATE carteiras SET saldo = saldo - $valor WHERE id_cliente = $id_cliente";
-                $tipo_transacao = "levantamento";
-                $descricao = "Levantamento de €$valor da carteira";
-            } else {
-                // Mensagem de erro se não houver saldo suficiente
-                $_SESSION['mensagem'] = "Saldo insuficiente para realizar esta operação.";
-                $_SESSION['tipo_mensagem'] = "danger";
-
-                // Redireciona para evitar reenvio do formulário
-                header("Location: carteira_cliente.php");
-                exit();
-            }
-
-            // Executa a atualização do saldo
-            if ($sql_atualiza && mysqli_query($conn, $sql_atualiza)) {
-                // Registra a transação
-                $sql_transacao = "INSERT INTO transacoes (id_cliente, valor, tipo, descricao, data_transacao) 
-                                 VALUES ($id_cliente, $valor, '$tipo_transacao', '$descricao', NOW())";
-
-                if (mysqli_query($conn, $sql_transacao)) {
-                    // Confirma a transação na base de dados
-                    mysqli_commit($conn);
-                    // Atualiza o saldo exibido
-                    $result_saldo = mysqli_query($conn, $sql_saldo);
-                    $row_saldo = mysqli_fetch_assoc($result_saldo);
-                    // Define mensagem de sucesso
-                    $_SESSION['mensagem'] = "Operação realizada com sucesso!";
-                    $_SESSION['tipo_mensagem'] = "success";
-
-                    // Redireciona para evitar reenvio do formulário
-                    header("Location: carteira_cliente.php");
-                    exit();
+        saldo = rs.getDouble("saldo");
+        rs.close();
+        pstmt.close();
+    }
+    
+    // Verifica se existem mensagens na sessão
+    if (session.getAttribute("mensagem") != null) {
+        mensagem = (String)session.getAttribute("mensagem");
+        tipo_mensagem = (String)session.getAttribute("tipo_mensagem");
+        
+        // Limpa as mensagens da sessão após exibi-las
+        session.removeAttribute("mensagem");
+        session.removeAttribute("tipo_mensagem");
+    }
+    
+    // Verifica se o formulário foi submetido
+    if ("POST".equals(request.getMethod())) {
+        // Obtém os valores do formulário
+        double valor = Double.parseDouble(request.getParameter("valor"));
+        String operacao = request.getParameter("operacao");
+        
+        // Verifica se o valor é válido (maior que zero)
+        if (valor <= 0) {
+            session.setAttribute("mensagem", "Valor inválido. Por favor, introduza um valor superior a zero.");
+            session.setAttribute("tipo_mensagem", "danger");
+            
+            // Redireciona para evitar reenvio do formulário ao atualizar a página
+            response.sendRedirect("carteira_cliente.jsp");
+            return;
+        } else {
+            // Inicia uma transação para garantir a integridade dos dados
+            conn.setAutoCommit(false);
+            
+            try {
+                String sql_atualiza = null;
+                String tipo_transacao = null;
+                String descricao = null;
+                
+                // Define a operação a realizar com base na escolha do utilizador
+                if ("depositar".equals(operacao)) {
+                    // Adiciona valor à carteira
+                    sql_atualiza = "UPDATE carteiras SET saldo = saldo + ? WHERE id_cliente = ?";
+                    tipo_transacao = "deposito";
+                    descricao = "Depósito de €" + valor + " na carteira";
+                } else if ("levantar".equals(operacao) && saldo >= valor) {
+                    // Retira valor da carteira se houver saldo suficiente
+                    sql_atualiza = "UPDATE carteiras SET saldo = saldo - ? WHERE id_cliente = ?";
+                    tipo_transacao = "levantamento";
+                    descricao = "Levantamento de €" + valor + " da carteira";
                 } else {
-                    // Lança exceção se houver erro ao registar a transação
-                    throw new Exception("Erro ao registrar transação: " . mysqli_error($conn));
+                    // Mensagem de erro se não houver saldo suficiente
+                    session.setAttribute("mensagem", "Saldo insuficiente para realizar esta operação.");
+                    session.setAttribute("tipo_mensagem", "danger");
+                    
+                    // Redireciona para evitar reenvio do formulário
+                    response.sendRedirect("carteira_cliente.jsp");
+                    return;
                 }
-            } else {
-                // Cancela a transação e mostra mensagem de erro
-                mysqli_rollback($conn);
-                $_SESSION['mensagem'] = "Erro ao atualizar saldo: " . mysqli_error($conn);
-                $_SESSION['tipo_mensagem'] = "danger";
-
+                
+                // Executa a atualização do saldo
+                if (sql_atualiza != null) {
+                    pstmt = conn.prepareStatement(sql_atualiza);
+                    pstmt.setDouble(1, valor);
+                    pstmt.setInt(2, id_cliente);
+                    
+                    if (pstmt.executeUpdate() > 0) {
+                        pstmt.close();
+                        
+                        // Registra a transação
+                        pstmt = conn.prepareStatement("INSERT INTO transacoes (id_cliente, valor, tipo, descricao, data_transacao) VALUES (?, ?, ?, ?, NOW())");
+                        pstmt.setInt(1, id_cliente);
+                        pstmt.setDouble(2, valor);
+                        pstmt.setString(3, tipo_transacao);
+                        pstmt.setString(4, descricao);
+                        
+                        if (pstmt.executeUpdate() > 0) {
+                            // Confirma a transação na base de dados
+                            conn.commit();
+                            
+                            // Atualiza o saldo exibido
+                            pstmt = conn.prepareStatement("SELECT saldo FROM carteiras WHERE id_cliente = ?");
+                            pstmt.setInt(1, id_cliente);
+                            rs = pstmt.executeQuery();
+                            
+                            if (rs.next()) {
+                                saldo = rs.getDouble("saldo");
+                            }
+                            
+                            // Define mensagem de sucesso
+                            session.setAttribute("mensagem", "Operação realizada com sucesso!");
+                            session.setAttribute("tipo_mensagem", "success");
+                            
+                            // Redireciona para evitar reenvio do formulário
+                            response.sendRedirect("carteira_cliente.jsp");
+                            return;
+                        } else {
+                            // Lança exceção se houver erro ao registar a transação
+                            throw new Exception("Erro ao registrar transação");
+                        }
+                    } else {
+                        // Cancela a transação e mostra mensagem de erro
+                        conn.rollback();
+                        session.setAttribute("mensagem", "Erro ao atualizar saldo");
+                        session.setAttribute("tipo_mensagem", "danger");
+                        
+                        // Redireciona para evitar reenvio do formulário
+                        response.sendRedirect("carteira_cliente.jsp");
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                // Cancela a transação em caso de exceção
+                conn.rollback();
+                session.setAttribute("mensagem", e.getMessage());
+                session.setAttribute("tipo_mensagem", "danger");
+                
                 // Redireciona para evitar reenvio do formulário
-                header("Location: carteira_cliente.php");
-                exit();
+                response.sendRedirect("carteira_cliente.jsp");
+                return;
+            } finally {
+                // Restaura o modo de auto-commit
+                conn.setAutoCommit(true);
             }
-        } catch (Exception $e) {
-            // Cancela a transação em caso de exceção
-            mysqli_rollback($conn);
-            $_SESSION['mensagem'] = $e->getMessage();
-            $_SESSION['tipo_mensagem'] = "danger";
-
-            // Redireciona para evitar reenvio do formulário
-            header("Location: carteira_cliente.php");
-            exit();
         }
     }
+} catch (Exception e) {
+    mensagem = "Erro: " + e.getMessage();
+    tipo_mensagem = "danger";
+} finally {
+    if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
+    if (pstmt != null) try { pstmt.close(); } catch (SQLException e) { /* ignorar */ }
+    if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }
 }
-?>
+%>
 
 <!DOCTYPE html>
 <html lang="pt">
@@ -146,118 +201,61 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <h1>Felix<span>Bus</span></h1>
         </div>
         <div class="links">
-            <div class="link"> <a href="perfil_cliente.php">Perfil</a></div>
-            <div class="link"> <a href="pg_cliente.php">Página Inicial</a></div>
-            <div class="link"> <a href="bilhetes_cliente.php">Bilhetes</a></div>
+            <div class="link"><a href="pg_cliente.jsp">Página Inicial</a></div>
+            <div class="link"><a href="perfil_cliente.jsp">Perfil</a></div>
+            <div class="link"><a href="bilhetes_cliente.jsp">Bilhetes</a></div>
         </div>
         <div class="buttons">
-            <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
+            <div class="btn"><a href="logout.jsp"><button>Logout</button></a></div>
             <div class="btn-cliente">Área do Cliente</div>
         </div>
     </nav>
 
     <section>
-        <h1>A Minha Carteira</h1>
+        <h1>Minha Carteira</h1>
 
-        <!-- Exibe mensagens de alerta se existirem -->
-        <?php if (!empty($mensagem)): ?>
-            <div class="alert alert-<?php echo $tipo_mensagem; ?>">
-                <?php echo $mensagem; ?>
+        <% if (mensagem != null && !mensagem.isEmpty()) { %>
+            <div class="alert alert-<%= tipo_mensagem %>">
+                <%= mensagem %>
             </div>
-        <?php endif; ?>
+        <% } %>
 
-        <!-- Informações de saldo -->
-        <div class="saldo-info">
-            <h3>Seu saldo atual:</h3>
-            <span>€<?php echo number_format($row_saldo['saldo'], 2, ',', '.'); ?></span>
-        </div>
-
-        <!-- Layout de conteúdo -->
-        <div class="content-wrapper">
-            <!-- Contentor para operações na carteira -->
-            <div class="carteira-container">
-                <div class="card-header">
-                    <h2>Operações na Carteira</h2>
-                </div>
-                <div class="card-body">
-                    <!-- Formulário para operações na carteira -->
-                    <form action="carteira_cliente.php" method="post">
-                        <div class="form-group">
-                            <label for="valor">Valor:</label>
-                            <input type="number" id="valor" name="valor" step="0.01" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="operacao">Operação:</label>
-                            <select id="operacao" name="operacao" required>
-                                <option value="depositar">Depositar</option>
-                                <option value="levantar">Levantar</option>
-                            </select>
-                        </div>
-                        <button type="submit">Confirmar</button>
-                    </form>
-                </div>
+        <div class="wallet-container">
+            <div class="wallet-balance">
+                <h2>Saldo Atual</h2>
+                <div class="balance">€ <%= new DecimalFormat("#,##0.00").format(saldo) %></div>
             </div>
 
-            <!-- Contentor para o histórico de transações -->
-            <div class="historico-container">
-                <div class="card-header">
-                    <h2>Histórico de Transações</h2>
-                </div>
-                <div class="card-body">
-                    <!-- Tabela com rolagem para o histórico -->
-                    <div class="historico-table-container">
-                        <table class="historico-table">
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Tipo</th>
-                                    <th>Valor</th>
-                                    <th>Descrição</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php
-                            // Consulta para obter o histórico de transações do cliente
-                            $sql_historico = "SELECT * FROM transacoes WHERE id_cliente = $id_cliente ORDER BY data_transacao DESC LIMIT 50";
-                            $result_historico = mysqli_query($conn, $sql_historico);
-
-                            // Verifica se existem transações
-                            if (mysqli_num_rows($result_historico) > 0) {
-                                // Percorre todas as transações encontradas
-                                while ($transacao = mysqli_fetch_assoc($result_historico)) {
-                                    // Define a classe CSS com base no tipo de transação
-                                    $classe_valor = '';
-                                    if ($transacao['tipo'] == 'deposito') {
-                                        $classe_valor = 'deposito';
-                                        $valor_formatado = '+€' . number_format($transacao['valor'], 2, ',', '.');
-                                    } else {
-                                        $classe_valor = 'retirada';
-                                        $valor_formatado = '-€' . number_format($transacao['valor'], 2, ',', '.');
-                                    }
-
-                                    // Exibe cada linha da tabela com os dados da transação
-                                    echo "<tr>";
-                                    echo "<td>" . date('d/m/Y H:i', strtotime($transacao['data_transacao'])) . "</td>";
-                                    echo "<td>" . ucfirst($transacao['tipo']) . "</td>";
-                                    echo "<td class='$classe_valor'>$valor_formatado</td>";
-                                    echo "<td>" . $transacao['descricao'] . "</td>";
-                                    echo "</tr>";
-                                }
-                            } else {
-                                // Mensagem quando não há transações
-                                echo "<tr><td colspan='4' class='empty-state'>Nenhuma transação encontrada.</td></tr>";
-                            }
-                            ?>
-                            </tbody>
-                        </table>
+            <div class="wallet-actions">
+                <h2>Operações</h2>
+                <form method="post" action="carteira_cliente.jsp">
+                    <div class="form-group">
+                        <label for="valor">Valor (€):</label>
+                        <input type="number" id="valor" name="valor" step="0.01" min="0.01" placeholder="Introduza o valor" required>
                     </div>
-                </div>
+
+                    <div class="form-group">
+                        <label>Operação:</label>
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="operacao" value="depositar" checked>
+                                Depositar
+                            </label>
+                            <label>
+                                <input type="radio" name="operacao" value="levantar">
+                                Levantar
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Confirmar</button>
+                </form>
             </div>
         </div>
     </section>
 
     <footer>
-        © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
+        © <%= new java.util.Date().getYear() + 1900 %> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
 
 </body>
