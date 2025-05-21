@@ -1,264 +1,470 @@
-<?php
-session_start();
-include '../basedados/basedados.h';
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*, java.util.*, java.text.*, java.util.Set, java.util.HashSet" %>
+<%@ include file="../basedados/basedados.jsp" %>
 
+<%
 // Verifica se o utilizador está autenticado e se é um cliente (nível 3)
-if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
-    header("Location: erro.php");
-    exit();
+if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 3) {
+    response.sendRedirect("erro.jsp");
+    return;
 }
 
 // Obtém o ID do cliente a partir da sessão
-$id_cliente = $_SESSION["id_utilizador"];
-// Define o ID da carteira da FelixBus (sistema)
-$id_carteira_felixbus = 1;
-
-// Consulta o saldo atual do cliente na base de dados
-$sql_saldo = "SELECT saldo FROM carteiras WHERE id_cliente = $id_cliente";
-$result_saldo = mysqli_query($conn, $sql_saldo);
-$row_saldo = mysqli_fetch_assoc($result_saldo);
+int id_cliente = (Integer)session.getAttribute("id_utilizador");
 
 // Inicializa variáveis para mensagens de feedback
-$mensagem = '';
-$tipo_mensagem = '';
+String mensagem = "";
+String tipo_mensagem = "";
 
 // Verifica se existem mensagens passadas por URL (após redirecionamentos)
-if (isset($_GET['msg']) && isset($_GET['tipo'])) {
-    $mensagem = $_GET['msg'];
-    $tipo_mensagem = $_GET['tipo'];
+if (request.getParameter("msg") != null && request.getParameter("tipo") != null) {
+    mensagem = request.getParameter("msg");
+    tipo_mensagem = request.getParameter("tipo");
 }
 
-// Verifica se a coluna 'disponivel' existe na tabela 'horarios'
-$check_column = "SHOW COLUMNS FROM horarios LIKE 'disponivel'";
-$column_result = mysqli_query($conn, $check_column);
+// Processar a compra de bilhete
+if ("POST".equals(request.getMethod()) && request.getParameter("horario") != null) {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet rs = null;
 
-if (mysqli_num_rows($column_result) == 0) {
-    mysqli_query($conn, "ALTER TABLE horarios ADD COLUMN disponivel TINYINT(1) NOT NULL DEFAULT 1");
-}
+    try {
+        conn = getConnection();
 
-// Verifica se a coluna 'numero_lugar' existe na tabela 'bilhetes'
-$check_column = "SHOW COLUMNS FROM bilhetes LIKE 'numero_lugar'";
-$column_result = mysqli_query($conn, $check_column);
+        // Obter parâmetros do formulário
+        int id_horario = Integer.parseInt(request.getParameter("horario"));
+        int quantidade = Integer.parseInt(request.getParameter("quantidade"));
+        int id_rota = Integer.parseInt(request.getParameter("rota"));
 
-if (mysqli_num_rows($column_result) == 0) {
-    mysqli_query($conn, "ALTER TABLE bilhetes ADD COLUMN numero_lugar INT");
-}
-
-// Processa o formulário de compra de bilhete quando submetido
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comprar'])) {
-    // Obtém e valida os dados do formulário
-    $id_rota = intval($_POST['rota']);
-    list($hora_viagem, $data_viagem) = explode('|', $_POST['horario']);
-    $quantidade = isset($_POST['quantidade']) ? intval($_POST['quantidade']) : 1;
-    $lugares = isset($_POST['lugares']) ? $_POST['lugares'] : '';
-
-    // Valida se a quantidade de bilhetes é pelo menos 1
-    if ($quantidade < 1) {
-        $msg = "A quantidade de bilhetes deve ser pelo menos 1.";
-        header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
-        exit();
-    }
-
-    // Valida se foram selecionados lugares
-    if (empty($lugares)) {
-        $msg = "Por favor, selecione os lugares para os bilhetes.";
-        header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
-        exit();
-    }
-
-    // Converte a string de lugares numa array
-    $lugares_array = explode(',', $lugares);
-
-    // Verifica se a quantidade de lugares selecionados corresponde à quantidade de bilhetes
-    if (count($lugares_array) != $quantidade) {
-        $msg = "A quantidade de lugares selecionados não corresponde à quantidade de bilhetes.";
-        header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
-        exit();
-    }
-
-    // Converte a data do formato dd/mm/yyyy para yyyy-mm-dd (formato SQL)
-    $data_formatada = date('Y-m-d', strtotime(str_replace('/', '-', $data_viagem)));
-
-    // Verifica se a rota existe e obtém informações como preço, origem e destino
-    $sql_rota = "SELECT r.preco, r.origem, r.destino, r.capacidade
-                 FROM rotas r
-                 WHERE r.id = ? AND r.disponivel = 1";
-
-    $stmt = mysqli_prepare($conn, $sql_rota);
-    mysqli_stmt_bind_param($stmt, "i", $id_rota);
-    mysqli_stmt_execute($stmt);
-    $result_rota = mysqli_stmt_get_result($stmt);
-
-    if ($row_rota = mysqli_fetch_assoc($result_rota)) {
-        $preco = $row_rota['preco'];
-        $origem = $row_rota['origem'];
-        $destino = $row_rota['destino'];
-        $capacidade = $row_rota['capacidade'];
-
-        // Verifica se os lugares selecionados já estão ocupados
-        $lugares_str = implode(',', $lugares_array);
-        $sql_check_lugares = "SELECT numero_lugar FROM bilhetes
-                             WHERE id_rota = ?
-                             AND data_viagem = ?
-                             AND hora_viagem = ?
-                             AND numero_lugar IN ($lugares_str)";
-        $stmt = mysqli_prepare($conn, $sql_check_lugares);
-        mysqli_stmt_bind_param($stmt, "iss", $id_rota, $data_formatada, $hora_viagem);
-        mysqli_stmt_execute($stmt);
-        $result_check_lugares = mysqli_stmt_get_result($stmt);
-
-        // Se encontrar lugares já ocupados, mostra mensagem de erro
-        if (mysqli_num_rows($result_check_lugares) > 0) {
-            $lugares_ocupados = [];
-            while ($row = mysqli_fetch_assoc($result_check_lugares)) {
-                $lugares_ocupados[] = $row['numero_lugar'];
-            }
-            $msg = "Os seguintes lugares já estão ocupados: " . implode(', ', $lugares_ocupados);
-            header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
-            exit();
-        }
-
-        // Calcula o preço total da compra
-        $preco_total = $preco * $quantidade;
-
-        // Verifica se o cliente tem saldo suficiente
-        if ($row_saldo['saldo'] >= $preco_total) {
-            // Inicia uma transação para garantir a integridade dos dados
-            mysqli_begin_transaction($conn);
-
-            try {
-                // 1. Reduz o saldo do cliente
-                $sql_reduzir = "UPDATE carteiras SET saldo = saldo - ? WHERE id_cliente = ?";
-                $stmt = mysqli_prepare($conn, $sql_reduzir);
-                mysqli_stmt_bind_param($stmt, "di", $preco_total, $id_cliente);
-                mysqli_stmt_execute($stmt);
-
-                // 2. Aumenta o saldo da FelixBus
-                $sql_aumentar = "UPDATE carteira_felixbus SET saldo = saldo + ? WHERE id = ?";
-                $stmt = mysqli_prepare($conn, $sql_aumentar);
-                mysqli_stmt_bind_param($stmt, "di", $preco_total, $id_carteira_felixbus);
-                mysqli_stmt_execute($stmt);
-
-                // 3. Regista a transação no histórico
-                $descricao = "Compra de $quantidade bilhete(s): $origem para $destino (Lugares: $lugares)";
-                $sql_transacao = "INSERT INTO transacoes (id_cliente, id_carteira_felixbus, valor, tipo, descricao)
-                                VALUES (?, ?, ?, 'compra', ?)";
-                $stmt = mysqli_prepare($conn, $sql_transacao);
-                mysqli_stmt_bind_param($stmt, "iids", $id_cliente, $id_carteira_felixbus, $preco_total, $descricao);
-                mysqli_stmt_execute($stmt);
-
-                // 4. Cria os bilhetes com os lugares selecionados
-                foreach ($lugares_array as $lugar) {
-                    $sql_bilhete = "INSERT INTO bilhetes (id_cliente, id_rota, data_viagem, hora_viagem, numero_lugar)
-                                   VALUES (?, ?, ?, ?, ?)";
-                    $stmt = mysqli_prepare($conn, $sql_bilhete);
-                    mysqli_stmt_bind_param($stmt, "iissi", $id_cliente, $id_rota, $data_formatada, $hora_viagem, $lugar);
-                    mysqli_stmt_execute($stmt);
-                }
-
-                // 5. Atualiza o número de lugares disponíveis na tabela horarios
-                $sql_update_lugares = "UPDATE horarios SET lugares_disponiveis = lugares_disponiveis - ?
-                                     WHERE id_rota = ? AND data_viagem = ? AND horario_partida = ?";
-                $stmt = mysqli_prepare($conn, $sql_update_lugares);
-                mysqli_stmt_bind_param($stmt, "iiss", $quantidade, $id_rota, $data_formatada, $hora_viagem);
-                mysqli_stmt_execute($stmt);
-
-                // Confirma todas as operações da transação
-                mysqli_commit($conn);
-
-                // Redireciona com mensagem de sucesso
-                $msg = "$quantidade bilhete(s) comprado(s) com sucesso para os lugares: $lugares!";
-                header("Location: bilhetes_cliente.php?msg=$msg&tipo=success");
-                exit();
-
-            } catch (Exception $e) {
-                // Em caso de erro, reverte todas as operações
-                mysqli_rollback($conn);
-                $msg = $e->getMessage();
-                header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
-                exit();
-            }
+        // Validar quantidade
+        if (quantidade <= 0 || quantidade > 10) {
+            mensagem = "Quantidade inválida. Por favor, escolha entre 1 e 10 bilhetes.";
+            tipo_mensagem = "danger";
         } else {
-            // Mensagem de erro se o saldo for insuficiente
-            $msg = "Saldo insuficiente para comprar $quantidade bilhete(s). Total: €" . number_format($preco_total, 2, ',', '.');
-            header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
-            exit();
+            // Verificar se o horário existe e tem lugares disponíveis
+            pstmt = conn.prepareStatement("SELECT h.lugares_disponiveis, r.preco, r.origem, r.destino FROM horarios h JOIN rotas r ON h.id_rota = r.id WHERE h.id = ?");
+            pstmt.setInt(1, id_horario);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                int lugares_disponiveis = rs.getInt("lugares_disponiveis");
+                double preco_unitario = rs.getDouble("preco");
+                String origem = rs.getString("origem");
+                String destino = rs.getString("destino");
+
+                if (lugares_disponiveis >= quantidade) {
+                    // Calcular preço total
+                    double preco_total = preco_unitario * quantidade;
+
+                    // Verificar saldo na carteira
+                    pstmt.close();
+                    rs.close();
+
+                    pstmt = conn.prepareStatement("SELECT saldo FROM carteiras WHERE id_cliente = ?");
+                    pstmt.setInt(1, id_cliente);
+                    rs = pstmt.executeQuery();
+
+                    if (rs.next()) {
+                        double saldo = rs.getDouble("saldo");
+
+                        if (saldo >= preco_total) {
+                            // Iniciar transação
+                            conn.setAutoCommit(false);
+
+                            try {
+                                // 1. Atualizar lugares disponíveis
+                                pstmt = conn.prepareStatement("UPDATE horarios SET lugares_disponiveis = lugares_disponiveis - ? WHERE id = ?");
+                                pstmt.setInt(1, quantidade);
+                                pstmt.setInt(2, id_horario);
+                                pstmt.executeUpdate();
+
+                                // Obter data e hora da viagem
+                                pstmt = conn.prepareStatement("SELECT data_viagem, horario_partida FROM horarios WHERE id = ?");
+                                pstmt.setInt(1, id_horario);
+                                ResultSet rsHorario = pstmt.executeQuery();
+
+                                if (rsHorario.next()) {
+                                    java.sql.Date dataViagem = rsHorario.getDate("data_viagem");
+                                    java.sql.Time horaViagem = rsHorario.getTime("horario_partida");
+                                    rsHorario.close();
+
+                                    // 2. Registrar bilhete
+                                    try {
+                                        pstmt = conn.prepareStatement("INSERT INTO bilhetes (id_cliente, id_rota, data_compra, data_viagem, hora_viagem, numero_lugar) VALUES (?, ?, NOW(), ?, ?, ?)");
+                                        pstmt.setInt(1, id_cliente);
+                                        pstmt.setInt(2, id_rota);
+                                        pstmt.setDate(3, dataViagem);
+                                        pstmt.setTime(4, horaViagem);
+                                        pstmt.setInt(5, 0); // Número de lugar automático
+                                    } catch (SQLException sqle) {
+                                        // Se ocorrer um erro, pode ser porque a tabela não tem a estrutura esperada
+                                        // Vamos tentar uma consulta alternativa
+                                        out.println("<!-- Erro na inserção padrão: " + sqle.getMessage() + " -->");
+                                        out.println("<!-- Tentando inserção alternativa... -->");
+
+                                        // Verificar quais colunas existem na tabela bilhetes
+                                        DatabaseMetaData metaData = conn.getMetaData();
+                                        ResultSet columns = metaData.getColumns(null, null, "bilhetes", null);
+                                        Set<String> columnNames = new HashSet<>();
+                                        while (columns.next()) {
+                                            columnNames.add(columns.getString("COLUMN_NAME").toLowerCase());
+                                        }
+                                        columns.close();
+
+                                        // Construir a consulta com base nas colunas existentes
+                                        StringBuilder insertSQL = new StringBuilder("INSERT INTO bilhetes (");
+                                        StringBuilder valuesSQL = new StringBuilder("VALUES (");
+
+                                        insertSQL.append("id_cliente, id_rota");
+                                        valuesSQL.append("?, ?");
+
+                                        if (columnNames.contains("data_compra")) {
+                                            insertSQL.append(", data_compra");
+                                            valuesSQL.append(", NOW()");
+                                        }
+
+                                        if (columnNames.contains("data_viagem")) {
+                                            insertSQL.append(", data_viagem");
+                                            valuesSQL.append(", ?");
+                                        }
+
+                                        if (columnNames.contains("hora_viagem")) {
+                                            insertSQL.append(", hora_viagem");
+                                            valuesSQL.append(", ?");
+                                        }
+
+                                        if (columnNames.contains("numero_lugar")) {
+                                            insertSQL.append(", numero_lugar");
+                                            valuesSQL.append(", ?");
+                                        }
+
+                                        insertSQL.append(") ");
+                                        valuesSQL.append(")");
+
+                                        String finalSQL = insertSQL.toString() + valuesSQL.toString();
+                                        out.println("<!-- SQL alternativo: " + finalSQL + " -->");
+
+                                        pstmt = conn.prepareStatement(finalSQL);
+                                        int paramIndex = 1;
+
+                                        pstmt.setInt(paramIndex++, id_cliente);
+                                        pstmt.setInt(paramIndex++, id_rota);
+
+                                        if (columnNames.contains("data_viagem")) {
+                                            pstmt.setDate(paramIndex++, dataViagem);
+                                        }
+
+                                        if (columnNames.contains("hora_viagem")) {
+                                            pstmt.setTime(paramIndex++, horaViagem);
+                                        }
+
+                                        if (columnNames.contains("numero_lugar")) {
+                                            pstmt.setInt(paramIndex++, 0);
+                                        }
+                                    }
+                                    pstmt.executeUpdate();
+                                }
+
+                                // 3. Atualizar saldo na carteira
+                                pstmt = conn.prepareStatement("UPDATE carteiras SET saldo = saldo - ? WHERE id_cliente = ?");
+                                pstmt.setDouble(1, preco_total);
+                                pstmt.setInt(2, id_cliente);
+                                pstmt.executeUpdate();
+
+                                // 4. Registrar transação
+                                pstmt = conn.prepareStatement("INSERT INTO transacoes (id_cliente, valor, tipo, descricao, data_transacao) VALUES (?, ?, ?, ?, NOW())");
+                                pstmt.setInt(1, id_cliente);
+                                pstmt.setDouble(2, preco_total);
+                                pstmt.setString(3, "compra");
+                                pstmt.setString(4, "Compra de " + quantidade + " bilhete(s) para " + origem + " → " + destino);
+                                pstmt.executeUpdate();
+
+                                // Confirmar transação
+                                conn.commit();
+
+                                mensagem = "Bilhete comprado com sucesso!";
+                                tipo_mensagem = "success";
+                            } catch (Exception e) {
+                                // Reverter transação em caso de erro
+                                conn.rollback();
+                                mensagem = "Erro ao processar a compra: " + e.getMessage();
+                                tipo_mensagem = "danger";
+                            } finally {
+                                conn.setAutoCommit(true);
+                            }
+                        } else {
+                            mensagem = "Saldo insuficiente na carteira. Por favor, carregue a sua carteira.";
+                            tipo_mensagem = "danger";
+                        }
+                    } else {
+                        mensagem = "Erro ao verificar saldo na carteira.";
+                        tipo_mensagem = "danger";
+                    }
+                } else {
+                    mensagem = "Não há lugares suficientes disponíveis para esta viagem.";
+                    tipo_mensagem = "danger";
+                }
+            } else {
+                mensagem = "Horário não encontrado ou indisponível.";
+                tipo_mensagem = "danger";
+            }
         }
-    } else {
-        // Mensagem de erro se a rota não for encontrada
-        $msg = "Rota não encontrada ou não disponível.";
-        header("Location: bilhetes_cliente.php?msg=$msg&tipo=error");
-        exit();
+    } catch (Exception e) {
+        mensagem = "Erro ao processar a compra: " + e.getMessage();
+        tipo_mensagem = "danger";
+        e.printStackTrace();
+    } finally {
+        if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
+        if (pstmt != null) try { pstmt.close(); } catch (SQLException e) { /* ignorar */ }
+        if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }
     }
 }
 
-// Buscar rotas disponíveis
-$sql_rotas = "SELECT DISTINCT r.id as id_rota, r.origem, r.destino, r.preco, r.capacidade,
-             (SELECT COUNT(*) FROM horarios h WHERE h.id_rota = r.id AND h.disponivel = 1) as total_horarios
-             FROM rotas r
-             WHERE r.disponivel = 1
-             ORDER BY r.origem, r.destino";
-$result_rotas = mysqli_query($conn, $sql_rotas);
+// Inicializa variáveis para armazenar dados
+List<Map<String, String>> rotas = new ArrayList<>();
+Map<Integer, List<Map<String, String>>> horarios_por_rota = new HashMap<>();
+List<Map<String, String>> bilhetes = new ArrayList<>();
+String horariosJson = "{}"; // Inicializa com um objeto vazio
 
-// Buscar todos os horários disponíveis
-$sql_horarios = "SELECT h.id, h.id_rota, h.data_viagem, h.horario_partida, h.lugares_disponiveis,
-                h.lugares_disponiveis as capacidade_viagem, r.capacidade
-                FROM horarios h
-                JOIN rotas r ON h.id_rota = r.id
-                WHERE h.disponivel = 1
-                ORDER BY h.id_rota, h.data_viagem ASC, h.horario_partida ASC";
-$result_horarios = mysqli_query($conn, $sql_horarios);
+// Obter conexão com o banco de dados
+Connection conn = null;
+PreparedStatement stmt = null;
+ResultSet rs = null;
 
-// Organizar horários por rota
-$horarios_por_rota = [];
-while ($horario = mysqli_fetch_assoc($result_horarios)) {
-    $id_rota = $horario['id_rota'];
-    if (!isset($horarios_por_rota[$id_rota])) {
-        $horarios_por_rota[$id_rota] = [];
+try {
+    conn = getConnection();
+
+    // Verificar a estrutura da tabela bilhetes
+    try {
+        String sql_check_bilhetes = "DESCRIBE bilhetes";
+        stmt = conn.prepareStatement(sql_check_bilhetes);
+        rs = stmt.executeQuery();
+        out.println("<!-- Estrutura da tabela bilhetes: -->");
+        boolean hasTable = false;
+        while (rs.next()) {
+            hasTable = true;
+            out.println("<!-- Campo: " + rs.getString("Field") + ", Tipo: " + rs.getString("Type") + " -->");
+        }
+        rs.close();
+
+        if (!hasTable) {
+            out.println("<!-- Tabela bilhetes não encontrada, criando... -->");
+            String sql_create_bilhetes = "CREATE TABLE bilhetes (" +
+                "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                "id_cliente INT NOT NULL, " +
+                "id_rota INT NOT NULL, " +
+                "data_compra DATETIME DEFAULT NOW(), " +
+                "data_viagem DATE NOT NULL, " +
+                "hora_viagem TIME NOT NULL, " +
+                "numero_lugar INT, " +
+                "FOREIGN KEY (id_cliente) REFERENCES utilizadores(id) ON DELETE CASCADE, " +
+                "FOREIGN KEY (id_rota) REFERENCES rotas(id)" +
+                ")";
+            stmt = conn.prepareStatement(sql_create_bilhetes);
+            stmt.executeUpdate();
+            out.println("<!-- Tabela bilhetes criada com sucesso -->");
+        }
+    } catch (Exception e) {
+        out.println("<!-- Erro ao verificar estrutura da tabela bilhetes: " + e.getMessage() + " -->");
+
+        try {
+            // Tentar criar a tabela bilhetes
+            String sql_create_bilhetes = "CREATE TABLE IF NOT EXISTS bilhetes (" +
+                "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                "id_cliente INT NOT NULL, " +
+                "id_rota INT NOT NULL, " +
+                "data_compra DATETIME DEFAULT NOW(), " +
+                "data_viagem DATE NOT NULL, " +
+                "hora_viagem TIME NOT NULL, " +
+                "numero_lugar INT, " +
+                "FOREIGN KEY (id_cliente) REFERENCES utilizadores(id) ON DELETE CASCADE, " +
+                "FOREIGN KEY (id_rota) REFERENCES rotas(id)" +
+                ")";
+            stmt = conn.prepareStatement(sql_create_bilhetes);
+            stmt.executeUpdate();
+            out.println("<!-- Tabela bilhetes criada com sucesso após erro -->");
+        } catch (Exception ex) {
+            out.println("<!-- Erro ao criar tabela bilhetes: " + ex.getMessage() + " -->");
+        }
     }
 
-    // Formatar a data e hora para exibição
-    $data_formatada = date('d/m/Y', strtotime($horario['data_viagem']));
-    $hora_formatada = date('H:i', strtotime($horario['horario_partida']));
+    // Verificar se a tabela rotas tem dados
+    String sql_count_rotas = "SELECT COUNT(*) as total FROM rotas";
+    stmt = conn.prepareStatement(sql_count_rotas);
+    rs = stmt.executeQuery();
+    int totalRotas = 0;
+    if (rs.next()) {
+        totalRotas = rs.getInt("total");
+    }
+    rs.close();
+    out.println("<!-- Total de rotas na tabela: " + totalRotas + " -->");
 
-    $horarios_por_rota[$id_rota][] = [
-        'id' => $horario['id'],
-        'data_viagem' => $data_formatada,
-        'hora_formatada' => $hora_formatada,
-        'horario_partida' => $horario['horario_partida'],
-        'lugares_disponiveis' => $horario['lugares_disponiveis'],
-        'capacidade' => $horario['capacidade_viagem'] // Usar a capacidade específica da viagem
-    ];
+    // Se não houver rotas, vamos inserir algumas para teste
+    if (totalRotas == 0) {
+        out.println("<!-- Inserindo rotas de teste -->");
+        String sql_insert_rotas = "INSERT INTO rotas (id, origem, destino, preco, capacidade, disponivel) VALUES " +
+                                 "(1, 'Lisboa', 'Porto', 25.00, 50, 1), " +
+                                 "(2, 'Porto', 'Coimbra', 15.00, 40, 1), " +
+                                 "(3, 'Coimbra', 'Faro', 35.00, 30, 1), " +
+                                 "(4, 'Lisboa', 'Faro', 30.00, 45, 1)";
+        stmt = conn.prepareStatement(sql_insert_rotas);
+        stmt.executeUpdate();
+    }
+
+    // Buscar rotas disponíveis
+    String sql_rotas = "SELECT id, origem, destino, preco FROM rotas WHERE disponivel = 1 ORDER BY origem, destino";
+    stmt = conn.prepareStatement(sql_rotas);
+    rs = stmt.executeQuery();
+
+    while (rs.next()) {
+        Map<String, String> rota = new HashMap<>();
+        rota.put("id", rs.getString("id"));
+        rota.put("origem", rs.getString("origem"));
+        rota.put("destino", rs.getString("destino"));
+        rota.put("preco", rs.getString("preco"));
+        rotas.add(rota);
+    }
+    rs.close();
+    out.println("<!-- Número de rotas carregadas: " + rotas.size() + " -->");
+
+    // Verificar se a tabela horarios tem dados
+    String sql_count = "SELECT COUNT(*) as total FROM horarios";
+    stmt = conn.prepareStatement(sql_count);
+    rs = stmt.executeQuery();
+    int totalHorarios = 0;
+    if (rs.next()) {
+        totalHorarios = rs.getInt("total");
+    }
+    rs.close();
+    out.println("<!-- Total de horários na tabela: " + totalHorarios + " -->");
+
+    // Se não houver horários, vamos inserir alguns para teste
+    if (totalHorarios == 0) {
+        out.println("<!-- Inserindo horários de teste -->");
+        String sql_insert_horarios = "INSERT INTO horarios (id_rota, horario_partida, data_viagem, lugares_disponiveis, disponivel) VALUES " +
+                                    "(1, '08:00:00', '2024-06-20', 50, 1), " +
+                                    "(1, '14:00:00', '2024-06-21', 50, 1), " +
+                                    "(2, '09:30:00', '2024-06-22', 40, 1), " +
+                                    "(2, '15:30:00', '2024-06-23', 40, 1)";
+        stmt = conn.prepareStatement(sql_insert_horarios);
+        stmt.executeUpdate();
+    }
+
+    // Buscar horários disponíveis
+    String sql_horarios = "SELECT h.id, h.id_rota, h.data_viagem, h.horario_partida, h.lugares_disponiveis, r.capacidade " +
+                         "FROM horarios h " +
+                         "JOIN rotas r ON h.id_rota = r.id " +
+                         "ORDER BY h.data_viagem, h.horario_partida";
+
+    stmt = conn.prepareStatement(sql_horarios);
+    rs = stmt.executeQuery();
+
+    // Inicializar o mapa para armazenar horários por rota
+    horarios_por_rota = new HashMap<Integer, List<Map<String, String>>>();
+
+    while (rs.next()) {
+        int id_rota = rs.getInt("id_rota");
+
+        // Criar a lista de horários para esta rota se ainda não existir
+        if (!horarios_por_rota.containsKey(id_rota)) {
+            horarios_por_rota.put(id_rota, new ArrayList<Map<String, String>>());
+        }
+
+        // Criar um mapa para armazenar os dados do horário
+        Map<String, String> horario = new HashMap<String, String>();
+        horario.put("id", rs.getString("id"));
+        horario.put("id_rota", rs.getString("id_rota"));
+
+        // Formatar a data para exibição
+        java.sql.Date data_viagem = rs.getDate("data_viagem");
+        SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy");
+        String data_formatada = formatoData.format(data_viagem);
+        horario.put("data_viagem", data_formatada);
+
+        // Formatar a hora para exibição
+        java.sql.Time hora_partida = rs.getTime("horario_partida");
+        SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm");
+        String hora_formatada = formatoHora.format(hora_partida);
+        horario.put("hora_formatada", hora_formatada);
+
+        // Armazenar os dados originais também
+        horario.put("horario_partida", rs.getString("horario_partida"));
+        horario.put("lugares_disponiveis", rs.getString("lugares_disponiveis"));
+        horario.put("capacidade", rs.getString("capacidade"));
+
+        // Adicionar o horário à lista de horários desta rota
+        horarios_por_rota.get(id_rota).add(horario);
+    }
+    rs.close();
+
+    // Não precisamos mais construir JSON, pois os dados são usados diretamente no HTML
+
+    // Buscar bilhetes do cliente
+    String sql_bilhetes = "SELECT b.id, b.data_compra, b.data_viagem, b.hora_viagem, b.numero_lugar, " +
+                         "r.origem, r.destino, r.preco " +
+                         "FROM bilhetes b " +
+                         "JOIN rotas r ON b.id_rota = r.id " +
+                         "WHERE b.id_cliente = ? " +
+                         "ORDER BY b.data_viagem DESC, b.hora_viagem DESC";
+
+    stmt = conn.prepareStatement(sql_bilhetes);
+    stmt.setInt(1, id_cliente);
+    rs = stmt.executeQuery();
+
+    while (rs.next()) {
+        Map<String, String> bilhete = new HashMap<>();
+        bilhete.put("id", rs.getString("id"));
+        bilhete.put("origem", rs.getString("origem"));
+        bilhete.put("destino", rs.getString("destino"));
+
+        // Formatar a data para exibição
+        java.sql.Date data_viagem = rs.getDate("data_viagem");
+        SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy");
+        String data_formatada = formatoData.format(data_viagem);
+        bilhete.put("data_viagem", data_formatada);
+
+        // Formatar a hora para exibição
+        java.sql.Time hora_viagem = rs.getTime("hora_viagem");
+        SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm");
+        String hora_formatada = formatoHora.format(hora_viagem);
+        bilhete.put("horario_partida", hora_formatada);
+
+        // Formatar a data de compra
+        java.sql.Timestamp data_compra = rs.getTimestamp("data_compra");
+        String data_compra_formatada = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(data_compra);
+        bilhete.put("data_compra", data_compra_formatada);
+
+        // Calcular preço total (preço unitário * 1 lugar)
+        double preco = rs.getDouble("preco");
+        bilhete.put("preco_total", String.format("%.2f", preco));
+
+        // Número do lugar
+        int numero_lugar = rs.getInt("numero_lugar");
+        bilhete.put("lugares", numero_lugar > 0 ? String.valueOf(numero_lugar) : "Automático");
+
+        bilhetes.add(bilhete);
+    }
+    rs.close();
+
+} catch (Exception e) {
+    out.println("<!-- Erro: " + e.getMessage() + " -->");
+    e.printStackTrace();
+} finally {
+    if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
+    if (stmt != null) try { stmt.close(); } catch (SQLException e) { /* ignorar */ }
+    if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }
 }
 
-// Converter os horários para JSON para uso no JavaScript
-$horarios_json = json_encode($horarios_por_rota);
-
-
-// Buscar bilhetes do cliente
-$sql_bilhetes = "SELECT
-                    r.origem,
-                    r.destino,
-                    b.data_viagem,
-                    b.hora_viagem,
-                    r.preco,
-                    MIN(b.data_compra) as data_compra,
-                    u.nome as nome_cliente,
-                    COUNT(*) as quantidade,
-                    GROUP_CONCAT(b.id) as ids,
-                    GROUP_CONCAT(b.numero_lugar) as lugares
-                FROM bilhetes b
-                JOIN rotas r ON b.id_rota = r.id
-                JOIN utilizadores u ON b.id_cliente = u.id
-                WHERE b.id_cliente = ?
-                GROUP BY r.origem, r.destino, b.data_viagem, b.hora_viagem, r.preco, u.nome
-                ORDER BY b.data_viagem DESC, b.hora_viagem ASC";
-
-$stmt = mysqli_prepare($conn, $sql_bilhetes);
-mysqli_stmt_bind_param($stmt, "i", $id_cliente);
-mysqli_stmt_execute($stmt);
-$result_bilhetes = mysqli_stmt_get_result($stmt);
-?>
+// Adicionar linhas para depuração
+out.println("<!-- JSON gerado: " + horariosJson + " -->");
+out.println("<!-- Número de rotas com horários: " + horarios_por_rota.size() + " -->");
+for (Map.Entry<Integer, List<Map<String, String>>> entry : horarios_por_rota.entrySet()) {
+    out.println("<!-- Rota " + entry.getKey() + " tem " + entry.getValue().size() + " horários -->");
+    for (Map<String, String> horario : entry.getValue()) {
+        out.println("<!-- Horário: id=" + horario.get("id") + ", data=" + horario.get("data_viagem") + ", hora=" + horario.get("hora_formatada") + ", lugares=" + horario.get("lugares_disponiveis") + " -->");
+    }
+}
+%>
 
 <!DOCTYPE html>
 <html lang="pt">
@@ -267,6 +473,10 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="bilhetes_cliente.css">
     <title>FelixBus - Os Meus Bilhetes</title>
+    <script>
+        // Script para inicialização
+        console.log("Página carregada, horários pré-carregados no select");
+    </script>
 </head>
 <body>
     <nav>
@@ -274,72 +484,129 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
             <h1>Felix<span>Bus</span></h1>
         </div>
         <div class="links">
-            <div class="link"> <a href="perfil_cliente.php">Perfil</a></div>
-            <div class="link"> <a href="pg_cliente.php">Página Inicial</a></div>
-            <div class="link"> <a href="carteira_cliente.php">Carteira</a></div>
+            <div class="link"> <a href="perfil_cliente.jsp">Perfil</a></div>
+            <div class="link"> <a href="pg_cliente.jsp">Página Inicial</a></div>
+            <div class="link"> <a href="carteira_cliente.jsp">Carteira</a></div>
         </div>
         <div class="buttons">
-            <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
+            <div class="btn"><a href="logout.jsp"><button>Logout</button></a></div>
             <div class="btn-cliente">Área do Cliente</div>
         </div>
     </nav>
 
-    <div class="container">
-        <?php if ($mensagem): ?>
-            <div class="mensagem <?php echo $tipo_mensagem == 'success' ? 'success' : 'error'; ?>">
-                <?php echo $mensagem; ?>
-            </div>
-        <?php endif; ?>
+    <section>
+        <h1>Os Meus Bilhetes</h1>
 
-        <div class="saldo-info">
-            <h3>Seu saldo atual: <span>€<?php echo number_format($row_saldo['saldo'], 2, ',', '.'); ?></span></h3>
-        </div>
+        <% if (!mensagem.isEmpty()) { %>
+            <div class="alert alert-<%= tipo_mensagem %>">
+                <%= mensagem %>
+            </div>
+        <% } %>
 
         <div class="content-wrapper">
             <div class="comprar-bilhete">
                 <div class="card-header">
-                    <h2>Comprar Bilhete</h2>
+                    <h2>Comprar Novo Bilhete</h2>
                 </div>
                 <div class="card-body">
-                    <form method="post" action="bilhetes_cliente.php" id="comprarBilheteForm">
+                    <form id="comprarBilheteForm" method="post" action="bilhetes_cliente.jsp">
                         <div class="form-group">
-                            <label for="rota">Rota:</label>
+                            <label for="rota">Selecione a Rota:</label>
                             <select id="rota" name="rota" required>
                                 <option value="">Selecione uma rota</option>
-                                <?php while ($rota = mysqli_fetch_assoc($result_rotas)): ?>
-                                    <option value="<?php echo $rota['id_rota']; ?>">
-                                        <?php echo $rota['origem'] . ' → ' . $rota['destino'] . ' - €' . number_format($rota['preco'], 2, ',', '.'); ?>
+                                <% for (Map<String, String> rota : rotas) { %>
+                                    <option value="<%= rota.get("id") %>">
+                                        <%= rota.get("origem") %> → <%= rota.get("destino") %> (€<%= rota.get("preco") %>)
                                     </option>
-                                <?php endwhile; ?>
+                                <% } %>
                             </select>
                         </div>
+
                         <div class="form-group">
-                            <label for="horario">Data e Horário:</label>
+                            <label for="horario">Selecione a Data e Hora:</label>
                             <select id="horario" name="horario" required>
-                                <option value="">Selecione uma rota primeiro</option>
+                                <option value="">Selecione uma data e hora</option>
+                                <%
+                                // Pré-carregar alguns horários para cada rota
+                                for (Map.Entry<Integer, List<Map<String, String>>> entry : horarios_por_rota.entrySet()) {
+                                    int rotaId = entry.getKey();
+                                    List<Map<String, String>> horariosList = entry.getValue();
+
+                                    for (Map<String, String> horario : horariosList) {
+                                        String id = horario.get("id");
+                                        String dataViagem = horario.get("data_viagem");
+                                        String horaFormatada = horario.get("hora_formatada");
+                                        String lugaresDisponiveis = horario.get("lugares_disponiveis");
+                                        if (lugaresDisponiveis == null || lugaresDisponiveis.isEmpty()) {
+                                            lugaresDisponiveis = "0";
+                                        }
+                                %>
+                                    <option value="<%= id %>" data-rota="<%= rotaId %>"
+                                            data-data-viagem="<%= dataViagem %>"
+                                            data-hora-formatada="<%= horaFormatada %>"
+                                            data-lugares-disponiveis="<%= lugaresDisponiveis %>"
+                                            style="display: none;">
+                                        <%= dataViagem %> - <%= horaFormatada %> (<%= lugaresDisponiveis %> lugares)
+                                    </option>
+                                <%
+                                    }
+                                }
+                                %>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <label for="quantidade">Quantidade de Bilhetes:</label>
-                            <input type="number" id="quantidade" name="quantidade" min="1" value="1" required>
-                            <small id="quantidadeDisponivel"></small>
+                            <input type="number" id="quantidade" name="quantidade" min="1" max="10" value="1" required>
+                            <p id="quantidadeDisponivel" class="info-text">Selecione uma rota e hora para ver disponibilidade</p>
                         </div>
 
-                        <div class="form-group" id="lugarGroup" style="display: none;">
-                            <label>Escolha os Lugares:</label>
-                            <div id="lugaresSelector" class="lugares-grid">
-                                <!-- Os lugares serão adicionados dinamicamente aqui -->
+                    <div class="form-group" id="infoViagem" style="display: none;">
+                        <div class="info-viagem-box">
+                            <h3>Detalhes da Viagem</h3>
+                            <div class="info-viagem-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Data</div>
+                                    <div class="info-value" id="dataViagem"></div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Hora</div>
+                                    <div class="info-value" id="horarioPartida"></div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Lugares</div>
+                                    <div class="info-value" id="lugaresDisponiveis"></div>
+                                </div>
                             </div>
-                            <input type="hidden" id="lugaresEscolhidos" name="lugares" value="">
-                            <small id="lugaresInfo" class="lugar-info">Selecione os lugares no diagrama acima.</small>
+                            <div id="resumoCompra" style="display: none; margin-top: 20px; border-top: 1px solid rgba(0, 86, 179, 0.2); padding-top: 20px;">
+                                <h4 style="color: #0056b3; text-align: center; margin-bottom: 15px; font-size: 18px;">
+                                    Resumo da Compra
+                                </h4>
+                                <div class="info-viagem-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Quantidade</div>
+                                        <div class="info-value" id="quantidadeCompra"></div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Preço Total</div>
+                                        <div class="info-value" id="precoTotal"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                    </div>
 
-                        <button type="submit" name="comprar" id="btnComprar" style="display: none;">
-                            Comprar Bilhete
-                        </button>
-                    </form>
-                </div>
+                    <div class="form-group" id="lugarGroup" style="display: none;">
+                        <label>Selecione os Lugares:</label>
+                        <div id="lugaresSelector" class="lugares-grid"></div>
+                        <p id="lugaresInfo" class="info-text">Selecione os lugares no diagrama acima.</p>
+                        <input type="hidden" id="lugares" name="lugares" value="">
+                    </div>
+
+                    <button type="submit" id="btnComprar" class="btn-primary" style="display: none;">
+                        Comprar Bilhete
+                    </button>
+                </form>
             </div>
 
             <div class="meus-bilhetes">
@@ -347,352 +614,212 @@ $result_bilhetes = mysqli_stmt_get_result($stmt);
                     <h2>Meus Bilhetes</h2>
                 </div>
                 <div class="card-body">
-                    <?php if (mysqli_num_rows($result_bilhetes) > 0): ?>
-                        <div class="table-responsive">
-                            <table class="bilhetes-table">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Rota</th>
-                                        <th>Cliente</th>
-                                        <th>Data</th>
-                                        <th>Hora</th>
-                                        <th>Quantidade</th>
-                                        <th>Lugares</th>
-                                        <th>Preço Unit.</th>
-                                        <th>Preço Total</th>
-                                        <th>Data de Compra</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php
-                                    $contador_bilhetes = 1;
-                                    while ($bilhete = mysqli_fetch_assoc($result_bilhetes)): ?>
+                    <div class="bilhetes-list">
+                        <% if (!bilhetes.isEmpty()) { %>
+                            <div class="table-responsive">
+                                <table class="bilhetes-table">
+                                    <thead>
                                         <tr>
-                                            <td>
-                                                <?php echo $contador_bilhetes++; ?>
-                                            </td>
-                                            <td><?php echo $bilhete['origem'] . ' → ' . $bilhete['destino']; ?></td>
-                                            <td><?php echo $bilhete['nome_cliente']; ?></td>
-                                            <td><?php echo date('d/m/Y', strtotime($bilhete['data_viagem'])); ?></td>
-                                            <td><?php echo $bilhete['hora_viagem']; ?></td>
-                                            <td><?php echo $bilhete['quantidade']; ?></td>
-                                            <td><?php
-                                                $lugares = $bilhete['lugares'] ? implode(', ', array_filter(explode(',', $bilhete['lugares']))) : 'Não definido';
-                                                echo $lugares;
-                                            ?></td>
-                                            <td class="preco">€<?php echo number_format($bilhete['preco'], 2, ',', '.'); ?></td>
-                                            <td class="preco">€<?php echo number_format($bilhete['preco'] * $bilhete['quantidade'], 2, ',', '.'); ?></td>
-                                            <td><?php echo date('d/m/Y', strtotime($bilhete['data_compra'])); ?></td>
+                                            <th>Origem</th>
+                                            <th>Destino</th>
+                                            <th>Data</th>
+                                            <th>Hora</th>
+                                            <th>Lugares</th>
+                                            <th>Preço</th>
+                                            <th>Data Compra</th>
                                         </tr>
-                                    <?php endwhile; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php else: ?>
-                        <div class="empty-state">
-                            <p>Ainda não possui nenhum bilhete. Compre o seu primeiro bilhete agora!</p>
-                        </div>
-                    <?php endif; ?>
+                                    </thead>
+                                    <tbody>
+                                        <% for (Map<String, String> bilhete : bilhetes) { %>
+                                            <tr>
+                                                <td><%= bilhete.get("origem") %></td>
+                                                <td><%= bilhete.get("destino") %></td>
+                                                <td><%= bilhete.get("data_viagem") %></td>
+                                                <td><%= bilhete.get("horario_partida") %></td>
+                                                <td><%= bilhete.get("lugares") %></td>
+                                                <td>€<%= bilhete.get("preco_total") %></td>
+                                                <td><%= bilhete.get("data_compra") %></td>
+                                            </tr>
+                                        <% } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <% } else { %>
+                            <div class="empty-state">
+                                <p>Ainda não possui nenhum bilhete. Compre o seu primeiro bilhete agora!</p>
+                            </div>
+                        <% } %>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <script>
-    // Dados dos horários carregados do PHP
-    const horariosRotas = <?php echo $horarios_json; ?>;
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const rotaSelect = document.getElementById('rota');
-        const horarioSelect = document.getElementById('horario');
-        const lugaresSelector = document.getElementById('lugaresSelector');
-        const lugaresEscolhidos = document.getElementById('lugaresEscolhidos');
-        const lugarGroup = document.getElementById('lugarGroup');
-        const lugaresInfo = document.getElementById('lugaresInfo');
-        const btnComprar = document.getElementById('btnComprar');
-        const quantidadeInput = document.getElementById('quantidade');
-        const quantidadeDisponivel = document.getElementById('quantidadeDisponivel');
-
-        // Armazenar os dados dos horários para uso posterior
-        let horariosData = [];
-        // Array para armazenar os lugares selecionados
-        let lugaresSelecionados = [];
-        // Array para armazenar os lugares ocupados
-        let lugaresOcupados = [];
-        // Capacidade total do ônibus
-        let capacidadeOnibus = 0;
-
-        rotaSelect.addEventListener('change', function() {
-            const rotaId = this.value;
-
-            if (!rotaId) {
-                horarioSelect.innerHTML = '<option value="">Selecione uma rota primeiro</option>';
-                lugarGroup.style.display = 'none';
-                btnComprar.style.display = 'none';
-                return;
-            }
-
-            // Limpar o select de horários
-            horarioSelect.innerHTML = '<option value="">Selecione uma data e horário</option>';
-            lugarGroup.style.display = 'none';
-            btnComprar.style.display = 'none';
-
-            // Obter os horários para a rota selecionada do banco de dados
-            horariosData = horariosRotas[rotaId] || [];
-
-            // Ordenar viagens por data e horário
-            if (horariosData.length > 0) {
-                horariosData.sort((a, b) => {
-                    const dataA = a.data_viagem.split('/').reverse().join('-') + ' ' + a.hora_formatada;
-                    const dataB = b.data_viagem.split('/').reverse().join('-') + ' ' + b.hora_formatada;
-                    return new Date(dataA) - new Date(dataB);
-                });
-            }
-
-            // Adicionar opções ao select
-            horariosData.forEach((horario, index) => {
-                const option = document.createElement('option');
-                option.value = `${horario.hora_formatada}|${horario.data_viagem}`;
-                option.textContent = `${horario.data_viagem} às ${horario.hora_formatada} (Capacidade: ${horario.capacidade})`;
-                option.dataset.index = index;
-                horarioSelect.appendChild(option);
-            });
-        });
-
-        // Quando o horário é selecionado, carregar os lugares disponíveis
-        horarioSelect.addEventListener('change', function() {
-            const selectedIndex = this.options[this.selectedIndex].dataset.index;
-            const horarioValue = this.value;
-
-            // Resetar lugares selecionados
-            lugaresSelecionados = [];
-            lugaresEscolhidos.value = '';
-
-            if (!horarioValue) {
-                lugarGroup.style.display = 'none';
-                btnComprar.style.display = 'none';
-                return;
-            }
-
-            // Se temos os dados do horário em cache
-            if (selectedIndex !== undefined && horariosData[selectedIndex]) {
-                const horario = horariosData[selectedIndex];
-
-                // Obter o número de lugares disponíveis
-                const lugaresDisponiveisTotal = parseInt(horario.lugares_disponiveis);
-
-                // Obter a capacidade do ônibus da viagem selecionada
-                capacidadeOnibus = parseInt(horario.capacidade);
-
-                // Atualizar o máximo de bilhetes disponíveis
-                quantidadeInput.max = lugaresDisponiveisTotal;
-                quantidadeInput.value = Math.min(quantidadeInput.value, lugaresDisponiveisTotal);
-                quantidadeDisponivel.textContent = `Lugares disponíveis: ${lugaresDisponiveisTotal} de ${capacidadeOnibus}`;
-
-                // Calcular lugares ocupados
-                lugaresOcupados = [];
-                for (let i = 1; i <= capacidadeOnibus; i++) {
-                    // Se o número do lugar é maior que o total de lugares disponíveis,
-                    // significa que está ocupado
-                    if (i > lugaresDisponiveisTotal) {
-                        lugaresOcupados.push(i);
-                    }
-                }
-
-                // Criar array de lugares disponíveis
-                const lugaresDisponiveis = [];
-                for (let i = 1; i <= lugaresDisponiveisTotal; i++) {
-                    lugaresDisponiveis.push(i);
-                }
-
-                renderizarLugares(lugaresDisponiveis);
-                atualizarCorDisponibilidade(lugaresDisponiveisTotal);
-            } else {
-                // Caso não encontre o horário no cache (não deve acontecer)
-                lugaresSelector.innerHTML = '<div class="error">Erro ao carregar lugares. Por favor, selecione o horário novamente.</div>';
-                lugarGroup.style.display = 'block';
-                btnComprar.style.display = 'none';
-            }
-        });
-
-        // Função para renderizar a grade de lugares
-        function renderizarLugares(lugaresDisponiveis) {
-            lugaresSelector.innerHTML = '';
-
-            if (!lugaresDisponiveis || lugaresDisponiveis.length === 0) {
-                lugaresSelector.innerHTML = '<div class="empty-state">Nenhum lugar disponível</div>';
-                return;
-            }
-
-            // Mostrar o container de lugares
-            lugarGroup.style.display = 'block';
-
-            // Criar a grade de lugares
-            for (let i = 1; i <= capacidadeOnibus; i++) {
-                const lugarElement = document.createElement('div');
-                lugarElement.classList.add('lugar');
-                lugarElement.textContent = i;
-
-                if (lugaresOcupados.includes(i)) {
-                    lugarElement.classList.add('ocupado');
-                    lugarElement.title = 'Lugar ocupado';
-                } else if (lugaresSelecionados.includes(i)) {
-                    lugarElement.classList.add('selecionado');
-                    lugarElement.title = 'Lugar selecionado';
-                } else {
-                    lugarElement.classList.add('disponivel');
-                    lugarElement.title = 'Lugar disponível';
-
-                    lugarElement.addEventListener('click', function() {
-                        const quantidadeDesejada = parseInt(quantidadeInput.value);
-                        const index = lugaresSelecionados.indexOf(i);
-
-                        // Se o lugar já está selecionado, permite desmarcar
-                        if (index !== -1) {
-                            lugaresSelecionados.splice(index, 1);
-                            lugarElement.classList.remove('selecionado');
-                            lugarElement.classList.add('disponivel');
-                        }
-                        // Se não está selecionado, verifica se pode selecionar mais lugares
-                        else {
-                            if (lugaresSelecionados.length >= quantidadeDesejada) {
-                                // Não permitir selecionar mais lugares do que a quantidade de bilhetes
-                                return;
-                            }
-
-                            lugaresSelecionados.push(i);
-                            lugarElement.classList.add('selecionado');
-                            lugarElement.classList.remove('disponivel');
-                        }
-
-                        // Atualizar o campo hidden com os lugares selecionados
-                        lugaresEscolhidos.value = lugaresSelecionados.join(',');
-
-                        // Atualizar informações sobre lugares selecionados
-                        atualizarInfoLugares();
-
-                        // Mostrar ou esconder o botão de compra
-                        // Só mostra o botão se o número de lugares selecionados for EXATAMENTE igual à quantidade de bilhetes
-                        btnComprar.style.display = lugaresSelecionados.length === quantidadeDesejada ? 'block' : 'none';
-                    });
-                }
-
-                lugaresSelector.appendChild(lugarElement);
-            }
-
-            lugarGroup.style.display = 'block';
-            atualizarInfoLugares();
-        }
-
-        // Função para atualizar informações sobre lugares selecionados
-        function atualizarInfoLugares() {
-            const quantidadeDesejada = parseInt(quantidadeInput.value);
-
-            if (lugaresSelecionados.length === 0) {
-                lugaresInfo.textContent = `Selecione ${quantidadeDesejada} lugar(es) no diagrama acima.`;
-                lugaresInfo.style.color = '#6c757d';
-            } else if (lugaresSelecionados.length < quantidadeDesejada) {
-                const faltam = quantidadeDesejada - lugaresSelecionados.length;
-                lugaresInfo.textContent = `Lugares selecionados: ${lugaresSelecionados.join(', ')}. Faltam selecionar ${faltam} lugar(es).`;
-                lugaresInfo.style.color = 'orange';
-            } else if (lugaresSelecionados.length === quantidadeDesejada) {
-                lugaresInfo.textContent = `Lugares selecionados: ${lugaresSelecionados.join(', ')}`;
-                lugaresInfo.style.color = 'green';
-            } else {
-                lugaresInfo.textContent = `Você selecionou ${lugaresSelecionados.length} lugares, mas só precisa de ${quantidadeDesejada}.`;
-                lugaresInfo.style.color = 'red';
-            }
-        }
-
-        // Atualizar a cor do texto de acordo com a disponibilidade
-        function atualizarCorDisponibilidade(totalLugaresDisponiveis) {
-            if (totalLugaresDisponiveis === 0) {
-                btnComprar.style.display = 'none';
-                quantidadeDisponivel.style.color = 'red';
-            } else {
-                quantidadeDisponivel.style.color = 'green';
-                // Não mostrar o botão até que os lugares sejam selecionados
-                btnComprar.style.display = 'none';
-            }
-
-            validarQuantidade();
-        }
-
-        // Função para validar a quantidade
-        function validarQuantidade() {
-            const max = parseInt(quantidadeInput.max);
-            const value = parseInt(quantidadeInput.value);
-
-            if (value > max) {
-                quantidadeInput.value = max;
-                return false;
-            } else if (value < 1) {
-                quantidadeInput.value = 1;
-                return false;
-            }
-
-            return true;
-        }
-
-        // Quando a quantidade é alterada, atualizar a seleção de lugares
-        quantidadeInput.addEventListener('input', function() {
-            validarQuantidade();
-
-            // Se já há lugares selecionados e a quantidade mudou
-            if (lugaresSelecionados.length > 0) {
-                const novaQuantidade = parseInt(this.value);
-
-                if (lugaresSelecionados.length !== novaQuantidade) {
-                    // Resetar lugares selecionados
-                    lugaresSelecionados = [];
-                    lugaresEscolhidos.value = '';
-
-                    // Renderizar novamente a grade de lugares
-                    const selectedIndex = horarioSelect.options[horarioSelect.selectedIndex].dataset.index;
-                    if (selectedIndex !== undefined && horariosData[selectedIndex]) {
-                        renderizarLugares(horariosData[selectedIndex].lugares_disponiveis);
-                    }
-
-                    // Esconder o botão de compra até que os lugares sejam selecionados
-                    btnComprar.style.display = 'none';
-                }
-            }
-
-            // Atualizar informações sobre lugares selecionados
-            atualizarInfoLugares();
-        });
-
-        // Validar formulário antes de submeter
-        const formCompra = document.getElementById('comprarBilheteForm');
-        formCompra.addEventListener('submit', function(e) {
-            const quantidade = parseInt(quantidadeInput.value);
-
-            if (!validarQuantidade()) {
-                e.preventDefault();
-                alert('Por favor, selecione uma quantidade válida de bilhetes.');
-                return;
-            }
-
-            // Verificar se o número de lugares selecionados corresponde à quantidade de bilhetes
-            if (lugaresSelecionados.length !== quantidade) {
-                e.preventDefault();
-                alert(`Por favor, selecione exatamente ${quantidade} lugar(es).`);
-                return;
-            }
-
-            // Verificar se os lugares foram selecionados
-            if (lugaresSelecionados.length === 0) {
-                e.preventDefault();
-                alert('Por favor, selecione os lugares para os bilhetes.');
-                return;
-            }
-        });
-    });
-    </script>
-
-    <footer>
-        © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
-    </footer>
+    <footer><%= new java.util.Date().getYear() + 1900 %><img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span></footer>
 </body>
 </html>
+
+<script>
+    // Garantir que o script seja executado após o carregamento do DOM
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM carregado, inicializando script...");
+
+        // Elementos do DOM
+        const rotaSelect = document.getElementById('rota');
+        const horarioSelect = document.getElementById('horario');
+
+        // Verificar os horários pré-carregados no select
+        console.log("Horários pré-carregados:", horarioSelect.options.length - 1);
+        const quantidadeInput = document.getElementById('quantidade');
+        const quantidadeDisponivel = document.getElementById('quantidadeDisponivel');
+        const infoViagem = document.getElementById('infoViagem');
+        const dataViagem = document.getElementById('dataViagem');
+        const horarioPartida = document.getElementById('horarioPartida');
+        const lugaresDisponiveis = document.getElementById('lugaresDisponiveis');
+        const resumoCompra = document.getElementById('resumoCompra');
+        const quantidadeCompra = document.getElementById('quantidadeCompra');
+        const precoTotal = document.getElementById('precoTotal');
+        const btnComprar = document.getElementById('btnComprar');
+
+        console.log("Elementos do DOM:", {
+            rotaSelect,
+            horarioSelect,
+            quantidadeInput,
+            quantidadeDisponivel,
+            infoViagem,
+            dataViagem,
+            horarioPartida,
+            lugaresDisponiveis,
+            resumoCompra,
+            quantidadeCompra,
+            precoTotal,
+            btnComprar
+        });
+
+        // Preço unitário da rota selecionada
+        let precoUnitario = 0;
+
+        // Quando a rota é alterada, atualizar os horários disponíveis
+        rotaSelect.addEventListener('change', function() {
+            const rotaId = this.value;
+            console.log("Rota selecionada:", rotaId);
+
+            // Esconder todas as opções de horário
+            Array.from(horarioSelect.options).forEach(option => {
+                if (option.value === "") {
+                    // Manter a opção padrão visível
+                    option.style.display = "";
+                } else {
+                    option.style.display = "none";
+                }
+            });
+
+            // Resetar o select de horários
+            horarioSelect.value = "";
+
+            // Esconder informações de viagem
+            infoViagem.style.display = 'none';
+            btnComprar.style.display = 'none';
+
+            // Se uma rota foi selecionada
+            if (rotaId) {
+                // Mostrar apenas os horários para esta rota
+                let horarioCount = 0;
+                Array.from(horarioSelect.options).forEach(option => {
+                    if (option.getAttribute('data-rota') === rotaId) {
+                        option.style.display = "";
+                        horarioCount++;
+                    }
+                });
+
+                console.log(`Encontrados ${horarioCount} horários para a rota ${rotaId}`);
+
+                // Obter o preço da rota selecionada
+                const rotaOption = rotaSelect.options[rotaSelect.selectedIndex];
+                const rotaText = rotaOption.textContent;
+                const precoMatch = rotaText.match(/\(€([0-9,.]+)\)/);
+                if (precoMatch && precoMatch[1]) {
+                    precoUnitario = parseFloat(precoMatch[1].replace(',', '.'));
+                    console.log("Preço unitário:", precoUnitario);
+                }
+
+                if (horarioCount > 0) {
+                    quantidadeDisponivel.textContent = 'Selecione uma data e hora para ver disponibilidade';
+                } else {
+                    quantidadeDisponivel.textContent = 'Não há horários disponíveis para esta rota';
+                }
+            } else {
+                quantidadeDisponivel.textContent = 'Selecione uma rota e hora para ver disponibilidade';
+            }
+        });
+
+    // Quando o horário é alterado, atualizar as informações da viagem
+    horarioSelect.addEventListener('change', function() {
+        const horarioId = this.value;
+        console.log("Horário selecionado:", horarioId);
+
+        // Esconder informações de viagem
+        infoViagem.style.display = 'none';
+        btnComprar.style.display = 'none';
+
+        // Se um horário foi selecionado
+        if (horarioId) {
+            const selectedOption = this.options[this.selectedIndex];
+            console.log("Opção selecionada:", selectedOption);
+
+            // Obter dados do dataset
+            const dataViagemText = selectedOption.getAttribute('data-data-viagem');
+            const horaFormatadaText = selectedOption.getAttribute('data-hora-formatada');
+            const lugaresDisponiveisText = selectedOption.getAttribute('data-lugares-disponiveis');
+
+            console.log("Dados do horário:", {
+                dataViagem: dataViagemText,
+                horaFormatada: horaFormatadaText,
+                lugaresDisponiveis: lugaresDisponiveisText
+            });
+
+            // Converter para número e garantir que seja um valor válido
+            const lugaresDisponiveisNum = parseInt(lugaresDisponiveisText) || 0;
+
+            // Atualizar informações da viagem
+            dataViagem.textContent = dataViagemText;
+            horarioPartida.textContent = horaFormatadaText;
+            lugaresDisponiveis.textContent = lugaresDisponiveisNum + ' lugares disponíveis';
+
+            // Mostrar informações da viagem
+            infoViagem.style.display = 'block';
+
+            // Atualizar texto de disponibilidade
+            quantidadeDisponivel.textContent = `Máximo de ${Math.min(10, lugaresDisponiveisNum)} bilhetes por compra`;
+
+            // Limitar a quantidade ao número de lugares disponíveis
+            quantidadeInput.max = Math.min(10, lugaresDisponiveisNum);
+
+            // Atualizar resumo da compra
+            atualizarResumoCompra();
+
+            // Mostrar botão de compra
+            btnComprar.style.display = 'block';
+        } else {
+            quantidadeDisponivel.textContent = 'Selecione uma data e hora para ver disponibilidade';
+        }
+    });
+
+    // Quando a quantidade é alterada, atualizar o resumo da compra
+    quantidadeInput.addEventListener('change', function() {
+        atualizarResumoCompra();
+    });
+
+    // Função para atualizar o resumo da compra
+    function atualizarResumoCompra() {
+        const quantidade = parseInt(quantidadeInput.value);
+        const total = quantidade * precoUnitario;
+
+        quantidadeCompra.textContent = quantidade;
+        precoTotal.textContent = '€' + total.toFixed(2);
+
+        resumoCompra.style.display = 'block';
+    }
+
+    }); // Fim do evento DOMContentLoaded
+</script>
