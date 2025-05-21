@@ -1,153 +1,171 @@
-<?php
-session_start();
-include '../basedados/basedados.h';
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*, java.util.*, java.text.*" %>
+<%@ include file="../basedados/basedados.jsp" %>
 
-// Verifica se o utilizador tem permissões de administrador
-// Se não for administrador, redireciona para a página de erro
-if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
-    header("Location: erro.php");
-    exit();
+<%
+// Verificar se o utilizador é administrador
+if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 1) {
+    response.sendRedirect("erro.jsp");
+    return;
 }
-
-// Estabelece ligação à base de dados MySQL
-$conn = mysqli_connect("localhost", "root", "", "FelixBus");
 
 // Inicializa variáveis para mensagens de feedback e controlo de estado
-$mensagem_feedback = '';
-$tipo_mensagem = '';
-$alerta_para_editar = null;
+String mensagem_feedback = "";
+String tipo_mensagem = "";
+Map<String, Object> alerta_para_editar = null;
 
-// Verifica se foi solicitada a edição de um alerta através do URL
-if (isset($_GET['editar']) && !empty($_GET['editar'])) {
-    // Converte o ID para inteiro para evitar injeção SQL
-    $id_editar = intval($_GET['editar']);
-    
-    // Utiliza prepared statement para buscar o alerta a ser editado
-    $stmt_editar = mysqli_prepare($conn, "SELECT * FROM alertas WHERE id = ?");
-    mysqli_stmt_bind_param($stmt_editar, "i", $id_editar);
-    mysqli_stmt_execute($stmt_editar);
-    $result_editar = mysqli_stmt_get_result($stmt_editar);
+// Obter conexão com o banco de dados
+Connection conn = null;
+try {
+    conn = getConnection();
 
-    // Se encontrar o alerta, guarda os dados para preencher o formulário
-    if (mysqli_num_rows($result_editar) > 0) {
-        $alerta_para_editar = mysqli_fetch_assoc($result_editar);
-    }
-    // Liberta recursos da consulta
-    mysqli_stmt_close($stmt_editar);
-}
-
-// Processa o formulário para adicionar um novo alerta
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
-    // Valida as datas inseridas pelo utilizador
-    if (!strtotime($_POST['data_inicio']) || !strtotime($_POST['data_fim'])) {
-        $mensagem_feedback = "Data inválida!";
-        $tipo_mensagem = "error";
-    } else if (strtotime($_POST['data_inicio']) > strtotime($_POST['data_fim'])) {
-        // Verifica se a data de início é anterior à data de fim
-        $mensagem_feedback = "A data de início deve ser anterior à data de fim!";
-        $tipo_mensagem = "error";
-    } else {
-        // Utiliza prepared statement para inserir o novo alerta na base de dados
-        $stmt = mysqli_prepare($conn, "INSERT INTO alertas (mensagem, data_inicio, data_fim) VALUES (?, ?, ?)");
-        mysqli_stmt_bind_param($stmt, "sss", $_POST['mensagem'], $_POST['data_inicio'], $_POST['data_fim']);
+    // Verifica se foi solicitada a edição de um alerta através do URL
+    if (request.getParameter("editar") != null && !request.getParameter("editar").isEmpty()) {
+        // Converte o ID para inteiro para evitar injeção SQL
+        int id_editar = Integer.parseInt(request.getParameter("editar"));
         
-        // Executa a inserção e verifica se foi bem-sucedida
-        if(mysqli_stmt_execute($stmt)) {
-            $mensagem_feedback = "Alerta adicionado com sucesso!";
-            $tipo_mensagem = "success";
-        } else {
-            // Em caso de erro, mostra a mensagem de erro
-            $mensagem_feedback = "Erro ao adicionar alerta: " . mysqli_error($conn);
-            $tipo_mensagem = "error";
+        // Utiliza prepared statement para buscar o alerta a ser editado
+        PreparedStatement stmt_editar = conn.prepareStatement("SELECT * FROM alertas WHERE id = ?");
+        stmt_editar.setInt(1, id_editar);
+        ResultSet result_editar = stmt_editar.executeQuery();
+
+        // Se encontrar o alerta, guarda os dados para preencher o formulário
+        if (result_editar.next()) {
+            alerta_para_editar = new HashMap<>();
+            alerta_para_editar.put("id", result_editar.getInt("id"));
+            alerta_para_editar.put("mensagem", result_editar.getString("mensagem"));
+            alerta_para_editar.put("data_inicio", result_editar.getString("data_inicio"));
+            alerta_para_editar.put("data_fim", result_editar.getString("data_fim"));
         }
         // Liberta recursos da consulta
-        mysqli_stmt_close($stmt);
+        result_editar.close();
+        stmt_editar.close();
     }
-}
 
-// Processa o formulário para atualizar um alerta existente
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['atualizar'])) {
-    // Converte o ID para inteiro para evitar injeção SQL
-    $id_alerta = intval($_POST['id_alerta']);
-    
-    // Valida as datas inseridas pelo utilizador
-    if (!strtotime($_POST['data_inicio']) || !strtotime($_POST['data_fim'])) {
-        $mensagem_feedback = "Data inválida!";
-        $tipo_mensagem = "error";
-    } else if (strtotime($_POST['data_inicio']) > strtotime($_POST['data_fim'])) {
-        // Verifica se a data de início é anterior à data de fim
-        $mensagem_feedback = "A data de início deve ser anterior à data de fim!";
-        $tipo_mensagem = "error";
-    } else {
-        // Utiliza prepared statement para atualizar o alerta na base de dados
-        $stmt = mysqli_prepare($conn, "UPDATE alertas SET mensagem = ?, data_inicio = ?, data_fim = ? WHERE id = ?");
-        mysqli_stmt_bind_param($stmt, "sssi", $_POST['mensagem'], $_POST['data_inicio'], $_POST['data_fim'], $id_alerta);
+    // Processa o formulário para adicionar um novo alerta
+    if ("POST".equals(request.getMethod()) && request.getParameter("adicionar") != null) {
+        String mensagem = request.getParameter("mensagem");
+        String data_inicio = request.getParameter("data_inicio");
+        String data_fim = request.getParameter("data_fim");
         
-        // Executa a atualização e verifica se foi bem-sucedida
-        if (mysqli_stmt_execute($stmt)) {
-            $mensagem_feedback = "Alerta com ID $id_alerta foi editado com sucesso!";
-            $tipo_mensagem = "success";
-            mysqli_stmt_close($stmt);
-            // Redireciona para limpar o formulário de edição e mostrar mensagem de sucesso
-            header("Location: gerir_alertas.php?msg=updated&id=$id_alerta");
-            exit();
+        // Valida as datas inseridas pelo utilizador
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        java.util.Date dataInicio = null;
+        java.util.Date dataFim = null;
+        
+        try {
+            dataInicio = sdf.parse(data_inicio);
+            dataFim = sdf.parse(data_fim);
+        } catch (ParseException e) {
+            mensagem_feedback = "Data inválida!";
+            tipo_mensagem = "error";
+        }
+        
+        if (dataInicio != null && dataFim != null && dataInicio.after(dataFim)) {
+            // Verifica se a data de início é anterior à data de fim
+            mensagem_feedback = "A data de início deve ser anterior à data de fim!";
+            tipo_mensagem = "error";
+        } else if (dataInicio != null && dataFim != null) {
+            // Utiliza prepared statement para inserir o novo alerta na base de dados
+            PreparedStatement stmt = conn.prepareStatement("INSERT INTO alertas (mensagem, data_inicio, data_fim) VALUES (?, ?, ?)");
+            stmt.setString(1, mensagem);
+            stmt.setString(2, data_inicio);
+            stmt.setString(3, data_fim);
+            
+            // Executa a inserção e verifica se foi bem-sucedida
+            if(stmt.executeUpdate() > 0) {
+                mensagem_feedback = "Alerta adicionado com sucesso!";
+                tipo_mensagem = "success";
+            } else {
+                // Em caso de erro, mostra a mensagem de erro
+                mensagem_feedback = "Erro ao adicionar alerta: " + conn.getWarnings();
+                tipo_mensagem = "error";
+            }
+            // Liberta recursos da consulta
+            stmt.close();
+        }
+    }
+
+    // Processa o formulário para atualizar um alerta existente
+    if ("POST".equals(request.getMethod()) && request.getParameter("atualizar") != null) {
+        // Converte o ID para inteiro para evitar injeção SQL
+        int id_alerta = Integer.parseInt(request.getParameter("id_alerta"));
+        String mensagem = request.getParameter("mensagem");
+        String data_inicio = request.getParameter("data_inicio");
+        String data_fim = request.getParameter("data_fim");
+        
+        // Valida as datas inseridas pelo utilizador
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        java.util.Date dataInicio = null;
+        java.util.Date dataFim = null;
+        
+        try {
+            dataInicio = sdf.parse(data_inicio);
+            dataFim = sdf.parse(data_fim);
+        } catch (ParseException e) {
+            mensagem_feedback = "Data inválida!";
+            tipo_mensagem = "error";
+        }
+        
+        if (dataInicio != null && dataFim != null && dataInicio.after(dataFim)) {
+            // Verifica se a data de início é anterior à data de fim
+            mensagem_feedback = "A data de início deve ser anterior à data de fim!";
+            tipo_mensagem = "error";
+        } else if (dataInicio != null && dataFim != null) {
+            // Utiliza prepared statement para atualizar o alerta na base de dados
+            PreparedStatement stmt = conn.prepareStatement("UPDATE alertas SET mensagem = ?, data_inicio = ?, data_fim = ? WHERE id = ?");
+            stmt.setString(1, mensagem);
+            stmt.setString(2, data_inicio);
+            stmt.setString(3, data_fim);
+            stmt.setInt(4, id_alerta);
+            
+            // Executa a atualização e verifica se foi bem-sucedida
+            if (stmt.executeUpdate() > 0) {
+                mensagem_feedback = "Alerta com ID " + id_alerta + " foi editado com sucesso!";
+                tipo_mensagem = "success";
+                stmt.close();
+                // Redireciona para limpar o formulário de edição e mostrar mensagem de sucesso
+                response.sendRedirect("gerir_alertas.jsp?msg=updated&id=" + id_alerta);
+                return;
+            } else {
+                // Em caso de erro, mostra a mensagem de erro
+                mensagem_feedback = "Erro ao atualizar alerta ID " + id_alerta + ": " + conn.getWarnings();
+                tipo_mensagem = "error";
+            }
+            // Liberta recursos da consulta
+            stmt.close();
+        }
+    }
+
+    // Processa o pedido para excluir um alerta
+    if (request.getParameter("excluir") != null) {
+        // Converte o ID para inteiro para evitar injeção SQL
+        int id = Integer.parseInt(request.getParameter("excluir"));
+        
+        // Utiliza prepared statement para excluir o alerta da base de dados
+        PreparedStatement stmt = conn.prepareStatement("DELETE FROM alertas WHERE id = ?");
+        stmt.setInt(1, id);
+        
+        // Executa a exclusão e verifica se foi bem-sucedida
+        if(stmt.executeUpdate() > 0) {
+            mensagem_feedback = "Alerta com ID " + id + " foi excluído com sucesso!";
+            tipo_mensagem = "success";
         } else {
             // Em caso de erro, mostra a mensagem de erro
-            $mensagem_feedback = "Erro ao atualizar alerta ID $id_alerta: " . mysqli_error($conn);
-            $tipo_mensagem = "error";
+            mensagem_feedback = "Erro ao excluir alerta ID " + id + ": " + conn.getWarnings();
+            tipo_mensagem = "error";
         }
         // Liberta recursos da consulta
-        mysqli_stmt_close($stmt);
+        stmt.close();
     }
-}
 
-// Processa o pedido para excluir um alerta
-if (isset($_GET['excluir'])) {
-    // Converte o ID para inteiro para evitar injeção SQL
-    $id = intval($_GET['excluir']);
-    
-    // Utiliza prepared statement para excluir o alerta da base de dados
-    $stmt = mysqli_prepare($conn, "DELETE FROM alertas WHERE id = ?");
-    mysqli_stmt_bind_param($stmt, "i", $id);
-    
-    // Executa a exclusão e verifica se foi bem-sucedida
-    if(mysqli_stmt_execute($stmt)) {
-        $mensagem_feedback = "Alerta com ID $id foi excluído com sucesso!";
-        $tipo_mensagem = "success";
-    } else {
-        // Em caso de erro, mostra a mensagem de erro
-        $mensagem_feedback = "Erro ao excluir alerta ID $id: " . mysqli_error($conn);
-        $tipo_mensagem = "error";
+    // Define mensagem se vier de um redirecionamento após atualização
+    if (request.getParameter("msg") != null && "updated".equals(request.getParameter("msg"))) {
+        int id = Integer.parseInt(request.getParameter("id"));
+        mensagem_feedback = "Alerta com ID " + id + " foi atualizado com sucesso!";
+        tipo_mensagem = "success";
     }
-    // Liberta recursos da consulta
-    mysqli_stmt_close($stmt);
-}
-
-// Define mensagem se vier de um redirecionamento após atualização
-if (isset($_GET['msg'])) {
-    // Obtém o ID do alerta atualizado, se disponível
-    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
-    // Verifica se a mensagem é de atualização bem-sucedida
-    if ($_GET['msg'] == 'updated') {
-        $mensagem_feedback = "Alerta com ID $id foi editado com sucesso!";
-        $tipo_mensagem = "success";
-    }
-}
-
-// Busca todos os alertas existentes para exibir na tabela
-$sql = "SELECT * FROM alertas";
-$stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-mysqli_stmt_close($stmt);
-
-// Verifica se a consulta foi bem-sucedida
-if (!$result) {
-    $mensagem_feedback = "Erro ao buscar alertas: " . mysqli_error($conn);
-    $tipo_mensagem = "error";
-}
-?>
+%>
 
 <!DOCTYPE html>
 <html lang="pt">
@@ -155,117 +173,157 @@ if (!$result) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="gerir_alertas.css">
+    <link rel="stylesheet" href="common.css">
     <title>FelixBus - Gestão de Alertas</title>
 </head>
 <body>
-    <!-- Barra de navegação -->
+    <!-- NAVBAR -->
     <nav>
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
         </div>
-        <div class="links">
-            <div class="link"><a href="pg_admin.php">Voltar para Página Inicial</a></div>
+        <div class="links" style="display: flex; justify-content: center; width: 50%;">
+            <div class="link"> <a href="pg_admin.jsp" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
         </div>
         <div class="buttons">
-            <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
+            <div class="btn"><a href="logout.jsp"><button>Logout</button></a></div>
             <div class="btn-admin">Área do Administrador</div>
         </div>
     </nav>
 
-    <!-- Conteúdo principal -->
-    <div class="container">
-        <!-- Formulário para adicionar ou editar alertas -->
-        <div class="form-container">
-            <h2><?php echo $alerta_para_editar ? 'Editar Alerta' : 'Adicionar Novo Alerta'; ?></h2>
-            <form method="post" action="gerir_alertas.php">
-                <?php if ($alerta_para_editar): ?>
-                    <!-- Campo oculto com ID do alerta a ser editado -->
-                    <input type="hidden" name="id_alerta" value="<?php echo $alerta_para_editar['id']; ?>">
-                <?php endif; ?>
-
-                <!-- Campo para a mensagem do alerta -->
-                <div class="form-group">
-                    <label for="mensagem">Mensagem:</label>
-                    <!-- Preenche o campo com o valor existente se estiver a editar -->
-                    <textarea id="mensagem" name="mensagem" required><?php echo $alerta_para_editar ? htmlspecialchars($alerta_para_editar['mensagem'], ENT_QUOTES, 'UTF-8') : ''; ?></textarea>
+    <!-- MAIN CONTENT -->
+    <section>
+        <div class="container">
+            <h1>Gestão de Alertas</h1>
+            
+            <% if (!mensagem_feedback.isEmpty()) { %>
+                <div class="alert <%= "success".equals(tipo_mensagem) ? "alert-success" : "alert-danger" %>">
+                    <%= mensagem_feedback %>
                 </div>
-
-                <!-- Campo para a data de início -->
-                <div class="form-group">
-                    <label for="data_inicio">Data de Início:</label>
-                    <!-- Preenche o campo com o valor existente se estiver a editar -->
-                    <input type="datetime-local" id="data_inicio" name="data_inicio" value="<?php echo $alerta_para_editar ? date('Y-m-d\TH:i', strtotime($alerta_para_editar['data_inicio'])) : ''; ?>" required>
-                </div>
-
-                <!-- Campo para a data de fim -->
-                <div class="form-group">
-                    <label for="data_fim">Data de Fim:</label>
-                    <!-- Preenche o campo com o valor existente se estiver a editar -->
-                    <input type="datetime-local" id="data_fim" name="data_fim" value="<?php echo $alerta_para_editar ? date('Y-m-d\TH:i', strtotime($alerta_para_editar['data_fim'])) : ''; ?>" required>
-                </div>
-
-                <!-- Botões de ação do formulário -->
-                <?php if ($alerta_para_editar): ?>
-                    <button type="submit" name="atualizar">Atualizar Alerta</button>
-                    <a href="gerir_alertas.php" class="cancel-btn">Cancelar</a>
-                <?php else: ?>
-                    <button type="submit" name="adicionar">Adicionar Alerta</button>
-                <?php endif; ?>
-            </form>
-        </div>
-
-        <!-- Tabela de alertas existentes -->
-        <div class="table-container">
-            <!-- Exibir mensagens de feedback ao utilizador -->
-            <?php if (!empty($mensagem_feedback)): ?>
-            <div class="alert alert-<?php echo $tipo_mensagem == 'success' ? 'success' : 'danger'; ?>">
-                <?php echo $mensagem_feedback; ?>
+            <% } %>
+            
+            <div class="form-container">
+                <h2><%= alerta_para_editar != null ? "Editar Alerta" : "Adicionar Novo Alerta" %></h2>
+                <form method="post" action="gerir_alertas.jsp">
+                    <% if (alerta_para_editar != null) { %>
+                        <input type="hidden" name="id_alerta" value="<%= alerta_para_editar.get("id") %>">
+                    <% } %>
+                    
+                    <div class="form-group">
+                        <label for="mensagem">Mensagem:</label>
+                        <textarea id="mensagem" name="mensagem" required><%= alerta_para_editar != null ? alerta_para_editar.get("mensagem") : "" %></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="data_inicio">Data de Início:</label>
+                            <input type="date" id="data_inicio" name="data_inicio" value="<%= alerta_para_editar != null ? alerta_para_editar.get("data_inicio") : "" %>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="data_fim">Data de Fim:</label>
+                            <input type="date" id="data_fim" name="data_fim" value="<%= alerta_para_editar != null ? alerta_para_editar.get("data_fim") : "" %>" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" name="<%= alerta_para_editar != null ? "atualizar" : "adicionar" %>" class="btn-primary">
+                            <%= alerta_para_editar != null ? "Atualizar Alerta" : "Adicionar Alerta" %>
+                        </button>
+                        <% if (alerta_para_editar != null) { %>
+                            <a href="gerir_alertas.jsp" class="btn-secondary">Cancelar</a>
+                        <% } %>
+                    </div>
+                </form>
             </div>
-            <?php endif; ?>
-
-            <h2>Alertas Adicionados</h2>
-            <table class="alertas-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Mensagem</th>
-                        <th>Data de Início</th>
-                        <th>Data de Fim</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    // Exibir todos os alertas na tabela
-                    if (mysqli_num_rows($result) > 0) {
-                        while ($alerta = mysqli_fetch_assoc($result)) {
-                            echo "<tr>";
-                            echo "<td>" . $alerta['id'] . "</td>";
-                            echo "<td>" . htmlspecialchars($alerta['mensagem'], ENT_QUOTES, 'UTF-8') . "</td>";
-                            echo "<td>" . date('d/m/Y H:i', strtotime($alerta['data_inicio'])) . "</td>";
-                            echo "<td>" . date('d/m/Y H:i', strtotime($alerta['data_fim'])) . "</td>";
-                            echo "<td>
-                                <div class='action-buttons'>
-                                    <a href='?editar=" . $alerta['id'] . "' class='action-btn edit'>Editar</a>
-                                    <a href='?excluir=" . $alerta['id'] . "' class='action-btn delete' onclick='return confirm(\"Tem certeza que deseja excluir este alerta?\")'>Excluir</a>
-                                </div>
-                            </td>";
-                            echo "</tr>";
-                        }
-                    } else {
-                        // Mensagem quando não há alertas
-                        echo "<tr><td colspan='5' class='no-results'>Nenhum alerta encontrado.</td></tr>";
-                    }
-                    ?>
-                </tbody>
-            </table>
+            
+            <div class="table-container">
+                <h2>Alertas Existentes</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Mensagem</th>
+                            <th>Data de Início</th>
+                            <th>Data de Fim</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <%
+                        // Busca todos os alertas para exibir na tabela
+                        Statement stmt = conn.createStatement();
+                        ResultSet rs = stmt.executeQuery("SELECT * FROM alertas ORDER BY data_inicio DESC");
+                        
+                        // Formata as datas para exibição
+                        SimpleDateFormat formatoData = new SimpleDateFormat("dd/MM/yyyy");
+                        SimpleDateFormat formatoBD = new SimpleDateFormat("yyyy-MM-dd");
+                        
+                        while (rs.next()) {
+                            int id = rs.getInt("id");
+                            String mensagem = rs.getString("mensagem");
+                            String dataInicio = rs.getString("data_inicio");
+                            String dataFim = rs.getString("data_fim");
+                            
+                            // Formata as datas para exibição
+                            String dataInicioFormatada = "";
+                            String dataFimFormatada = "";
+                            
+                            try {
+                                java.util.Date dataI = formatoBD.parse(dataInicio);
+                                java.util.Date dataF = formatoBD.parse(dataFim);
+                                dataInicioFormatada = formatoData.format(dataI);
+                                dataFimFormatada = formatoData.format(dataF);
+                            } catch (Exception e) {
+                                dataInicioFormatada = dataInicio;
+                                dataFimFormatada = dataFim;
+                            }
+                        %>
+                        <tr>
+                            <td><%= id %></td>
+                            <td><%= mensagem %></td>
+                            <td><%= dataInicioFormatada %></td>
+                            <td><%= dataFimFormatada %></td>
+                            <td>
+                                <a href="gerir_alertas.jsp?editar=<%= id %>" class="btn-edit">Editar</a>
+                                <a href="javascript:void(0)" onclick="confirmarExclusao(<%= id %>)" class="btn-delete">Excluir</a>
+                            </td>
+                        </tr>
+                        <% } 
+                        // Fecha recursos
+                        rs.close();
+                        stmt.close();
+                        %>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-
-    <!-- Rodapé da página -->
+    </section>
+    
+    <!-- FOOTER -->
     <footer>
-        © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
+        © <%= new java.util.Date().getYear() + 1900 %> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
+
+    <script>
+        function confirmarExclusao(id) {
+            if (confirm("Tem certeza que deseja excluir o alerta ID " + id + "?")) {
+                window.location.href = "gerir_alertas.jsp?excluir=" + id;
+            }
+        }
+    </script>
+
+<%
+} finally {
+    // Fechar conexão com o banco de dados
+    if (conn != null) {
+        try {
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+%>
 </body>
-</html>
 

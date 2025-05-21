@@ -63,24 +63,6 @@
                 </div>
 
                 <div class="card">
-                    <h2>Gestão de Carteiras</h2>
-                    <p>Faça a gestão do saldo das carteiras dos clientes.</p>
-                    <a href="gerir_carteiras.jsp" class="card-btn">Aceder</a>
-                </div>
-
-                <div class="card">
-                    <h2>Gestão de Bilhetes</h2>
-                    <p>Compre bilhetes para clientes e faça a gestão dos bilhetes existentes.</p>
-                    <a href="gerir_bilhetes.jsp" class="card-btn">Aceder</a>
-                </div>
-
-                <div class="card">
-                    <h2>Auditoria</h2>
-                    <p>Visualize todas as transações financeiras do sistema.</p>
-                    <a href="auditoria_transacoes.jsp" class="card-btn">Aceder</a>
-                </div>
-
-                <div class="card">
                     <h2>O Meu Perfil</h2>
                     <p>Visualize e edite os seus dados pessoais.</p>
                     <a href="perfil_admin.jsp" class="card-btn">Aceder</a>
@@ -175,4 +157,5 @@
 %>
 </body>
 </html>
+
 
