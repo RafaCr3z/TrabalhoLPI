@@ -12,13 +12,13 @@ if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("i
 // Inicializa variáveis para mensagens de feedback e controlo de estado
 String mensagem_feedback = "";
 String tipo_mensagem = "";
-Map<String, Object> alerta_para_editar = null;
+Map<String, String> alerta_para_editar = null;
 
 // Obter conexão com o banco de dados
 Connection conn = null;
 try {
     conn = getConnection();
-
+    
     // Verifica se foi solicitada a edição de um alerta através do URL
     if (request.getParameter("editar") != null && !request.getParameter("editar").isEmpty()) {
         // Converte o ID para inteiro para evitar injeção SQL
