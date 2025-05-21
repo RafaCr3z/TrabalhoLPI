@@ -1,7 +1,6 @@
-<?php
-    session_start();
-    include '../basedados/basedados.h';
-?>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*, java.util.*, java.text.*" %>
+<%@ include file="../basedados/basedados.jsp" %>
 
 <!DOCTYPE html>
 <html lang="pt">
@@ -13,17 +12,17 @@
 </head>
 <body>
     <nav>
-        <a href="index.php" class="logo">
+        <a href="index.jsp" class="logo">
             <h1>Felix<span>Bus</span></h1>
         </a>
         <div class="links">
-            <div class="link"><a href="index.php">HOME</a></div>
-            <div class="link"><a href="servicos.php">SERVIÇOS</a></div>
-            <div class="link"><a href="contactos.php">CONTACTOS</a></div>
+            <div class="link"><a href="index.jsp">HOME</a></div>
+            <div class="link"><a href="servicos.jsp">SERVIÇOS</a></div>
+            <div class="link"><a href="contactos.jsp">CONTACTOS</a></div>
         </div>
         <div class="buttons">
-            <div class="btn"><a href="login.php"><button>Login</button></a></div>
-            <div class="btn"><a href="registar.php"><button class="register-btn">Registar</button></a></div>
+            <div class="btn"><a href="login.jsp"><button>Login</button></a></div>
+            <div class="btn"><a href="registar.jsp"><button class="register-btn">Registar</button></a></div>
         </div>
     </nav>
 
@@ -109,10 +108,11 @@
         </div>
     </section>
     <footer>
-        © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
+        © <%= new java.util.Date().getYear() + 1900 %> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
 </body>
 </html>
+
 
 
 
