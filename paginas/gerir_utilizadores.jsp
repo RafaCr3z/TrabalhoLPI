@@ -45,6 +45,11 @@ Connection conn = null;
 Statement stmt = null;
 ResultSet rs = null;
 PreparedStatement pstmt = null;
+List<Map<String, Object>> utilizadores = new ArrayList<>();
+String mensagem = "";
+String tipo_mensagem = "";
+int mostrar_inativos = 0;
+String pesquisa = "";
 
 try {
     conn = getConnection();
@@ -57,16 +62,14 @@ try {
     }
     
     // Inicializar variáveis para mensagens de feedback
-    String mensagem = "";
-    String tipo_mensagem = "";
     
     // Verificar se deve mostrar utilizadores inativos (parâmetro do URL)
-    int mostrar_inativos = request.getParameter("mostrar_inativos") != null ? 
-                          Integer.parseInt(request.getParameter("mostrar_inativos")) : 0;
+    mostrar_inativos = request.getParameter("mostrar_inativos") != null ? 
+                      Integer.parseInt(request.getParameter("mostrar_inativos")) : 0;
     
     // Adicionar após a inicialização de mostrar_inativos
-    String pesquisa = request.getParameter("pesquisa") != null ? 
-                     request.getParameter("pesquisa") : "";
+    pesquisa = request.getParameter("pesquisa") != null ? 
+              request.getParameter("pesquisa") : "";
     
     // Processar formulário de adição de novo utilizador
     if ("POST".equals(request.getMethod()) && request.getParameter("adicionar") != null) {
@@ -249,7 +252,7 @@ try {
     rs = pstmt.executeQuery();
     
     // Armazenar resultados em uma lista para uso no HTML
-    List<Map<String, Object>> utilizadores = new ArrayList<>();
+    utilizadores = new ArrayList<>();
     while (rs.next()) {
         Map<String, Object> utilizador = new HashMap<>();
         utilizador.put("id", rs.getInt("id"));
@@ -264,6 +267,21 @@ try {
         utilizador.put("saldo", rs.getDouble("saldo"));
         utilizadores.add(utilizador);
     }
+} catch (Exception e) {
+    mensagem = "Erro: " + e.getMessage();
+    tipo_mensagem = "danger";
+    e.printStackTrace();
+} finally {
+    // Fechar recursos
+    try {
+        if (rs != null) rs.close();
+        if (stmt != null) stmt.close();
+        if (pstmt != null) pstmt.close();
+        if (conn != null) conn.close();
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+}
 %>
 
 <!DOCTYPE html>
@@ -273,6 +291,20 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="gerir_utilizadores.css">
     <title>FelixBus - Gestão de Utilizadores</title>
+    <script>
+        function editarUtilizador(id) {
+            // Implementar a lógica para abrir o modal de edição
+            document.getElementById('modal-editar').style.display = 'block';
+            document.getElementById('edit-id').value = id;
+            
+            // Aqui você pode adicionar código para preencher os campos do formulário
+            // com os dados do utilizador selecionado
+        }
+        
+        function fecharModalEditar() {
+            document.getElementById('modal-editar').style.display = 'none';
+        }
+    </script>
 </head>
 <body>
     <nav>
@@ -301,7 +333,7 @@ try {
             <div class="filtros">
                 <form action="gerir_utilizadores.jsp" method="get" class="form-filtro">
                     <div class="form-group">
-                        <input type="text" name="pesquisa" placeholder="Pesquisar por nome, email ou username" value="<%= h(pesquisa) %>">
+                        <input type="text" name="pesquisa" placeholder="Pesquisar por nome, email ou username" value="<%= h(pesquisa) %>" style="width: 100%; min-width: 350px; flex: 4;">
                         <button type="submit">Pesquisar</button>
                     </div>
                     <div class="form-group">
@@ -439,7 +471,7 @@ try {
         <div class="modal-content">
             <span class="close" onclick="fecharModalEditar()">&times;</span>
             <h2>Editar Utilizador</h2>
-            <form method="post" action="gerir_utilizadores.php?mostrar_inativos=<?php echo $mostrar_inativos; ?>">
+            <form method="post" action="gerir_utilizadores.jsp">
                 <!-- Campo oculto para ID do utilizador -->
                 <input type="hidden" id="edit-id" name="id">
                 <div class="form-group">
@@ -463,58 +495,16 @@ try {
                     <label for="edit-morada">Morada:</label>
                     <textarea id="edit-morada" name="morada" required></textarea>
                 </div>
-                <button type="submit" name="editar">Atualizar</button>
+                <button type="submit" name="editar" value="1">Atualizar</button>
             </form>
         </div>
     </div>
 
     <!-- Rodapé da página -->
     <footer>
-        © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
+        © <%= new java.util.Date().getYear() + 1900 %> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
-
-    <!-- Scripts JavaScript -->
-    <script>
-        // Função para abrir o modal de edição e preencher com dados do utilizador
-        function abrirModalEditar(id, nome, email, telemovel, morada) {
-            // Preencher campos do formulário com dados do utilizador
-            document.getElementById('edit-id').value = id;
-            document.getElementById('edit-nome').value = nome;
-            document.getElementById('edit-email').value = email;
-            document.getElementById('edit-telemovel').value = telemovel;
-            document.getElementById('edit-morada').value = morada;
-            document.getElementById('edit-pwd').value = ''; // Limpar campo de palavra-passe
-            
-            // Exibir o modal
-            document.getElementById('modal-editar').style.display = 'block';
-            
-            // Garantir que o modal está visível no ecrã
-            window.scrollTo(0, 0); // Rolar para o topo da página
-            
-            // Focar no primeiro campo para melhor usabilidade
-            document.getElementById('edit-nome').focus();
-        }
-
-        // Função para fechar o modal de edição
-        function fecharModalEditar() {
-            document.getElementById('modal-editar').style.display = 'none';
-        }
-
-        // Função para fechar o modal ao clicar fora dele
-        window.onclick = function(event) {
-            var modal = document.getElementById('modal-editar');
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
-        }
-        
-        // Adicionar evento para fechar com a tecla ESC
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                fecharModalEditar();
-            }
-        });
-    </script>
 </body>
 </html>
+
 
