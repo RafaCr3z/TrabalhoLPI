@@ -74,8 +74,9 @@ try {
             
             // Executa a inserção e verifica se foi bem-sucedida
             if(stmt.executeUpdate() > 0) {
-                mensagem_feedback = "Alerta adicionado com sucesso!";
-                tipo_mensagem = "success";
+                // Redireciona após sucesso para evitar reenvio do formulário ao atualizar a página
+                response.sendRedirect("gerir_alertas.jsp?msg=added");
+                return;
             } else {
                 // Em caso de erro, mostra a mensagem de erro
                 mensagem_feedback = "Erro ao adicionar alerta: " + conn.getWarnings();
@@ -148,8 +149,9 @@ try {
         
         // Executa a exclusão e verifica se foi bem-sucedida
         if(stmt.executeUpdate() > 0) {
-            mensagem_feedback = "Alerta com ID " + id + " foi excluído com sucesso!";
-            tipo_mensagem = "success";
+            // Redireciona após sucesso para evitar reenvio do comando ao atualizar a página
+            response.sendRedirect("gerir_alertas.jsp?msg=deleted&id=" + id);
+            return;
         } else {
             // Em caso de erro, mostra a mensagem de erro
             mensagem_feedback = "Erro ao excluir alerta ID " + id + ": " + conn.getWarnings();
@@ -159,11 +161,21 @@ try {
         stmt.close();
     }
 
-    // Define mensagem se vier de um redirecionamento após atualização
-    if (request.getParameter("msg") != null && "updated".equals(request.getParameter("msg"))) {
-        int id = Integer.parseInt(request.getParameter("id"));
-        mensagem_feedback = "Alerta com ID " + id + " foi atualizado com sucesso!";
-        tipo_mensagem = "success";
+    // Define mensagem se vier de um redirecionamento após operações
+    if (request.getParameter("msg") != null) {
+        String msg = request.getParameter("msg");
+        if ("updated".equals(msg)) {
+            int id = Integer.parseInt(request.getParameter("id"));
+            mensagem_feedback = "Alerta com ID " + id + " foi atualizado com sucesso!";
+            tipo_mensagem = "success";
+        } else if ("added".equals(msg)) {
+            mensagem_feedback = "Alerta adicionado com sucesso!";
+            tipo_mensagem = "success";
+        } else if ("deleted".equals(msg)) {
+            int id = Integer.parseInt(request.getParameter("id"));
+            mensagem_feedback = "Alerta com ID " + id + " foi excluído com sucesso!";
+            tipo_mensagem = "success";
+        }
     }
 %>
 
