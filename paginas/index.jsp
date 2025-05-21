@@ -15,70 +15,90 @@ String destino = "";
 List<Map<String, String>> resultados = new ArrayList<>();
 boolean pesquisa_realizada = false;
 
-// Verifica se o formulário foi enviado
-if ("POST".equals(request.getMethod()) && request.getParameter("pesquisar") != null) {
-    origem = request.getParameter("origem") != null ? request.getParameter("origem").trim() : "";
-    destino = request.getParameter("destino") != null ? request.getParameter("destino").trim() : "";
-    pesquisa_realizada = true;
+// Obter conexão com o banco de dados
+Connection conn = null;
+try {
+    conn = getConnection();
 
-    // Constrói a consulta SQL
-    StringBuilder sql = new StringBuilder("SELECT r.id, r.origem, r.destino, r.preco, h.horario_partida, h.data_viagem " +
-                                         "FROM rotas r " +
-                                         "JOIN horarios h ON r.id = h.id_rota " +
-                                         "WHERE r.disponivel = 1");
+    // Verifica se o formulário foi enviado
+    if ("POST".equals(request.getMethod()) && request.getParameter("pesquisar") != null) {
+        origem = request.getParameter("origem") != null ? request.getParameter("origem").trim() : "";
+        destino = request.getParameter("destino") != null ? request.getParameter("destino").trim() : "";
+        pesquisa_realizada = true;
 
-    List<String> params = new ArrayList<>();
+        // Constrói a consulta SQL
+        StringBuilder sql = new StringBuilder("SELECT r.id, r.origem, r.destino, r.preco, h.horario_partida, h.data_viagem " +
+                                             "FROM rotas r " +
+                                             "JOIN horarios h ON r.id = h.id_rota " +
+                                             "WHERE r.disponivel = 1");
 
-    // Adiciona filtros se foram fornecidos
-    if (!origem.isEmpty()) {
-        sql.append(" AND r.origem LIKE ?");
-        params.add("%" + origem + "%");
-    }
-    if (!destino.isEmpty()) {
-        sql.append(" AND r.destino LIKE ?");
-        params.add("%" + destino + "%");
-    }
+        List<String> params = new ArrayList<>();
 
-    sql.append(" ORDER BY r.origem ASC, r.destino ASC, h.data_viagem ASC, h.horario_partida ASC");
-
-    try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-        // Define os parâmetros
-        for (int i = 0; i < params.size(); i++) {
-            stmt.setString(i + 1, params.get(i));
+        // Adiciona filtros se foram fornecidos
+        if (!origem.isEmpty()) {
+            sql.append(" AND r.origem LIKE ?");
+            params.add("%" + origem + "%");
+        }
+        if (!destino.isEmpty()) {
+            sql.append(" AND r.destino LIKE ?");
+            params.add("%" + destino + "%");
         }
 
-        // Executa a consulta
-        ResultSet rs = stmt.executeQuery();
+        sql.append(" ORDER BY r.origem ASC, r.destino ASC, h.data_viagem ASC, h.horario_partida ASC");
 
-        // Armazena os resultados
+        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            // Define os parâmetros
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setString(i + 1, params.get(i));
+            }
+
+            // Executa a consulta
+            ResultSet rs = stmt.executeQuery();
+
+            // Armazena os resultados
+            while (rs.next()) {
+                Map<String, String> row = new HashMap<>();
+                row.put("id", rs.getString("id"));
+                row.put("origem", rs.getString("origem"));
+                row.put("destino", rs.getString("destino"));
+                row.put("preco", rs.getString("preco"));
+                row.put("horario_partida", rs.getString("horario_partida"));
+                row.put("data_viagem", rs.getString("data_viagem"));
+                resultados.add(row);
+            }
+        } catch (SQLException e) {
+            out.println("<script>alert('Erro na consulta: " + e.getMessage() + "');</script>");
+        }
+    }
+
+    // Busca alertas dinâmicos
+    List<Map<String, String>> mensagens = new ArrayList<>();
+    String data_atual = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+
+    try (Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery("SELECT * FROM alertas")) {
         while (rs.next()) {
-            Map<String, String> row = new HashMap<>();
-            row.put("id", rs.getString("id"));
-            row.put("origem", rs.getString("origem"));
-            row.put("destino", rs.getString("destino"));
-            row.put("preco", rs.getString("preco"));
-            row.put("horario_partida", rs.getString("horario_partida"));
-            row.put("data_viagem", rs.getString("data_viagem"));
-            resultados.add(row);
+            Map<String, String> mensagem = new HashMap<>();
+            mensagem.put("conteudo", rs.getString("mensagem"));
+            mensagens.add(mensagem);
         }
     } catch (SQLException e) {
-        out.println("<script>alert('Erro na consulta: " + e.getMessage() + "');</script>");
+        out.println("<!-- Erro na consulta: " + e.getMessage() + " -->");
     }
-}
-
-// Busca alertas dinâmicos
-List<Map<String, String>> mensagens = new ArrayList<>();
-String data_atual = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
-
-try (Statement stmt = conn.createStatement();
-     ResultSet rs = stmt.executeQuery("SELECT * FROM alertas")) {
-    while (rs.next()) {
-        Map<String, String> mensagem = new HashMap<>();
-        mensagem.put("conteudo", rs.getString("mensagem"));
-        mensagens.add(mensagem);
+    
+    // Armazenar as variáveis para uso na página
+    pageContext.setAttribute("mensagens", mensagens);
+    pageContext.setAttribute("resultados", resultados);
+    pageContext.setAttribute("origem", origem);
+    pageContext.setAttribute("destino", destino);
+    pageContext.setAttribute("pesquisa_realizada", pesquisa_realizada);
+    
+} catch (Exception e) {
+    out.println("<!-- Erro: " + e.getMessage() + " -->");
+} finally {
+    if (conn != null) {
+        try { conn.close(); } catch (SQLException e) { /* ignorar */ }
     }
-} catch (SQLException e) {
-    out.println("<!-- Erro na consulta: " + e.getMessage() + " -->");
 }
 %>
 
@@ -154,9 +174,9 @@ try (Statement stmt = conn.createStatement();
                             </thead>
                             <tbody>
                                 <% for (Map<String, String> rota : resultados) { 
-                                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                                    Date data = dateFormat.parse(rota.get("data_viagem"));
-                                    SimpleDateFormat displayFormat = new SimpleDateFormat("dd/MM/yyyy");
+                                    java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                                    java.util.Date data = dateFormat.parse(rota.get("data_viagem"));
+                                    java.text.SimpleDateFormat displayFormat = new java.text.SimpleDateFormat("dd/MM/yyyy");
                                 %>
                                     <tr>
                                         <td><%= rota.get("origem") %></td>
@@ -178,10 +198,13 @@ try (Statement stmt = conn.createStatement();
     <!-- Alertas -->
     <div class="alertas-box">
         <div class="alertas-titulo">AVISOS IMPORTANTES</div>
-        <% if (mensagens.isEmpty()) { %>
+        <% 
+        List<Map<String, String>> mensagensLista = (List<Map<String, String>>)pageContext.getAttribute("mensagens");
+        if (mensagensLista == null || mensagensLista.isEmpty()) { 
+        %>
             <div class="alerta-item">Nenhum aviso no momento.</div>
         <% } else { %>
-            <% for (Map<String, String> mensagem : mensagens) { %>
+            <% for (Map<String, String> mensagem : mensagensLista) { %>
                 <div class="alerta-item">
                     <%= mensagem.get("conteudo").replaceAll("<", "&lt;").replaceAll(">", "&gt;") %>
                 </div>

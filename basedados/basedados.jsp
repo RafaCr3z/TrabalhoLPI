@@ -7,7 +7,7 @@
         String dbhost = "localhost";
         String dbuser = "root";
         String dbpass = "";
-        String dbname = "FelixBus";
+        String dbname = "felixBus";
         
         Class.forName("com.mysql.jdbc.Driver");
         Connection conn = DriverManager.getConnection("jdbc:mysql://" + dbhost + "/" + dbname, dbuser, dbpass);
