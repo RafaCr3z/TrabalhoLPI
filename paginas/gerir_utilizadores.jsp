@@ -50,6 +50,7 @@ String mensagem = "";
 String tipo_mensagem = "";
 int mostrar_inativos = 0;
 String pesquisa = "";
+Map<String, Object> utilizadorParaEditar = null;
 
 try {
     conn = getConnection();
@@ -70,6 +71,25 @@ try {
     // Adicionar após a inicialização de mostrar_inativos
     pesquisa = request.getParameter("pesquisa") != null ? 
               request.getParameter("pesquisa") : "";
+    
+    // Verificar se há um ID de utilizador para editar
+    if (request.getParameter("editar") != null) {
+        int idEditar = Integer.parseInt(request.getParameter("editar"));
+        pstmt = conn.prepareStatement("SELECT id, user, nome, email, telemovel, morada, tipo_perfil FROM utilizadores WHERE id = ?");
+        pstmt.setInt(1, idEditar);
+        rs = pstmt.executeQuery();
+        
+        if (rs.next()) {
+            utilizadorParaEditar = new HashMap<>();
+            utilizadorParaEditar.put("id", rs.getInt("id"));
+            utilizadorParaEditar.put("user", rs.getString("user"));
+            utilizadorParaEditar.put("nome", rs.getString("nome"));
+            utilizadorParaEditar.put("email", rs.getString("email"));
+            utilizadorParaEditar.put("telemovel", rs.getString("telemovel"));
+            utilizadorParaEditar.put("morada", rs.getString("morada"));
+            utilizadorParaEditar.put("tipo_perfil", rs.getInt("tipo_perfil"));
+        }
+    }
     
     // Processar formulário de adição de novo utilizador
     if ("POST".equals(request.getMethod()) && request.getParameter("adicionar") != null) {
@@ -216,43 +236,40 @@ try {
         }
     }
     
-    // Buscar utilizadores para exibição
-    StringBuilder sql = new StringBuilder(
-        "SELECT u.*, " +
-        "(SELECT COUNT(*) FROM bilhetes b WHERE b.id_cliente = u.id) as total_bilhetes, " +
-        "(SELECT saldo FROM carteiras c WHERE c.id_cliente = u.id) as saldo " +
-        "FROM utilizadores u WHERE 1=1"
-    );
+    // Buscar lista de utilizadores
+    StringBuilder sql = new StringBuilder();
+    sql.append("SELECT u.id, u.user, u.nome, u.email, u.telemovel, u.morada, p.descricao as tipo, ");
+    sql.append("u.tipo_perfil, u.ativo, IFNULL(c.saldo, 0) as saldo, ");
+    sql.append("(SELECT COUNT(*) FROM bilhetes b WHERE b.id_cliente = u.id) as total_bilhetes ");
+    sql.append("FROM utilizadores u ");
+    sql.append("LEFT JOIN perfis p ON u.tipo_perfil = p.id ");
+    sql.append("LEFT JOIN carteiras c ON u.id = c.id_cliente ");
+    sql.append("WHERE 1=1 ");
     
-    List<Object> params = new ArrayList<>();
-    
-    // Adicionar filtro para mostrar inativos se necessário
+    // Filtrar por estado (ativo/inativo)
     if (mostrar_inativos == 0) {
-        sql.append(" AND u.ativo = 1");
+        sql.append("AND u.ativo = 1 ");
     }
     
-    // Adicionar filtro de pesquisa se fornecido
+    // Filtrar por pesquisa
     if (pesquisa != null && !pesquisa.trim().isEmpty()) {
-        sql.append(" AND (u.nome LIKE ? OR u.email LIKE ? OR u.user LIKE ?)");
-        String searchTerm = "%" + pesquisa + "%";
-        params.add(searchTerm);
-        params.add(searchTerm);
-        params.add(searchTerm);
+        sql.append("AND (u.nome LIKE ? OR u.email LIKE ? OR u.user LIKE ?) ");
     }
     
-    sql.append(" ORDER BY u.tipo_perfil, u.nome");
+    sql.append("ORDER BY u.id ASC");
     
     pstmt = conn.prepareStatement(sql.toString());
     
-    // Definir parâmetros da consulta
-    for (int i = 0; i < params.size(); i++) {
-        pstmt.setObject(i + 1, params.get(i));
+    // Definir parâmetros de pesquisa se necessário
+    if (pesquisa != null && !pesquisa.trim().isEmpty()) {
+        String termoPesquisa = "%" + pesquisa + "%";
+        pstmt.setString(1, termoPesquisa);
+        pstmt.setString(2, termoPesquisa);
+        pstmt.setString(3, termoPesquisa);
     }
     
     rs = pstmt.executeQuery();
     
-    // Armazenar resultados em uma lista para uso no HTML
-    utilizadores = new ArrayList<>();
     while (rs.next()) {
         Map<String, Object> utilizador = new HashMap<>();
         utilizador.put("id", rs.getInt("id"));
@@ -261,26 +278,23 @@ try {
         utilizador.put("email", rs.getString("email"));
         utilizador.put("telemovel", rs.getString("telemovel"));
         utilizador.put("morada", rs.getString("morada"));
+        utilizador.put("tipo", rs.getString("tipo"));
         utilizador.put("tipo_perfil", rs.getInt("tipo_perfil"));
         utilizador.put("ativo", rs.getInt("ativo"));
-        utilizador.put("total_bilhetes", rs.getInt("total_bilhetes"));
         utilizador.put("saldo", rs.getDouble("saldo"));
+        utilizador.put("total_bilhetes", rs.getInt("total_bilhetes"));
         utilizadores.add(utilizador);
     }
+    
 } catch (Exception e) {
     mensagem = "Erro: " + e.getMessage();
     tipo_mensagem = "danger";
     e.printStackTrace();
 } finally {
-    // Fechar recursos
-    try {
-        if (rs != null) rs.close();
-        if (stmt != null) stmt.close();
-        if (pstmt != null) pstmt.close();
-        if (conn != null) conn.close();
-    } catch (SQLException e) {
-        e.printStackTrace();
-    }
+    if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
+    if (stmt != null) try { stmt.close(); } catch (SQLException e) { /* ignorar */ }
+    if (pstmt != null) try { pstmt.close(); } catch (SQLException e) { /* ignorar */ }
+    if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }
 }
 %>
 
@@ -289,30 +303,17 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="pg_admin.css">
     <link rel="stylesheet" href="gerir_utilizadores.css">
     <title>FelixBus - Gestão de Utilizadores</title>
-    <script>
-        function editarUtilizador(id) {
-            // Implementar a lógica para abrir o modal de edição
-            document.getElementById('modal-editar').style.display = 'block';
-            document.getElementById('edit-id').value = id;
-            
-            // Aqui você pode adicionar código para preencher os campos do formulário
-            // com os dados do utilizador selecionado
-        }
-        
-        function fecharModalEditar() {
-            document.getElementById('modal-editar').style.display = 'none';
-        }
-    </script>
 </head>
 <body>
     <nav>
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
         </div>
-        <div class="links" style="display: flex; justify-content: center; width: 50%;">
-            <div class="link"> <a href="pg_admin.jsp" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
+        <div class="links">
+            <div class="link"><a href="pg_admin.jsp">Voltar para Página Inicial</a></div>
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.jsp"><button>Logout</button></a></div>
@@ -328,142 +329,131 @@ try {
                 <%= mensagem %>
             </div>
         <% } %>
-
-        <div class="container">
-            <div class="filtros">
-                <form action="gerir_utilizadores.jsp" method="get" class="form-filtro">
-                    <div class="form-group">
-                        <input type="text" name="pesquisa" placeholder="Pesquisar por nome, email ou username" value="<%= h(pesquisa) %>" style="width: 100%; min-width: 350px; flex: 4;">
-                        <button type="submit">Pesquisar</button>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" name="mostrar_inativos" value="1" <%= mostrar_inativos == 1 ? "checked" : "" %> onchange="this.form.submit()">
-                            Mostrar utilizadores inativos
-                        </label>
-                    </div>
+        
+        <div class="admin-controls">
+            <div class="search-filter">
+                <form method="get" action="gerir_utilizadores.jsp">
+                    <input type="text" name="pesquisa" placeholder="Pesquisar por nome, email ou username" value="<%= pesquisa %>">
+                    <button type="submit">Pesquisar</button>
                 </form>
             </div>
-
-            <div class="add-user">
-                <h2>Adicionar Novo Utilizador</h2>
-                <form action="gerir_utilizadores.jsp" method="post">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="user">Username:</label>
-                            <input type="text" id="user" name="user" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="nome">Nome:</label>
-                            <input type="text" id="nome" name="nome" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="email">Email:</label>
-                            <input type="email" id="email" name="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="pwd">Senha:</label>
-                            <input type="password" id="pwd" name="pwd" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="telemovel">Telemóvel:</label>
-                            <input type="text" id="telemovel" name="telemovel" required pattern="[0-9]{9}" title="O telemóvel deve ter 9 dígitos">
-                        </div>
-                        <div class="form-group">
-                            <label for="tipo_perfil">Tipo de Perfil:</label>
-                            <select id="tipo_perfil" name="tipo_perfil" required>
-                                <option value="1">Administrador</option>
-                                <option value="2">Funcionário</option>
-                                <option value="3" selected>Cliente</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group full-width">
-                            <label for="morada">Morada:</label>
-                            <input type="text" id="morada" name="morada" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group full-width">
-                            <button type="submit" name="adicionar" value="1">Adicionar Utilizador</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <div class="users-list">
-                <h2>Lista de Utilizadores</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Username</th>
-                            <th>Nome</th>
-                            <th>Email</th>
-                            <th>Telemóvel</th>
-                            <th>Tipo</th>
-                            <th>Saldo</th>
-                            <th>Bilhetes</th>
-                            <th>Estado</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% for (Map<String, Object> utilizador : utilizadores) { %>
-                            <tr class="<%= (Integer)utilizador.get("ativo") == 0 ? "inativo" : "" %>">
-                                <td><%= utilizador.get("id") %></td>
-                                <td><%= h((String)utilizador.get("user")) %></td>
-                                <td><%= h((String)utilizador.get("nome")) %></td>
-                                <td><%= h((String)utilizador.get("email")) %></td>
-                                <td><%= h((String)utilizador.get("telemovel")) %></td>
-                                <td>
-                                    <% 
-                                    int tipo = (Integer)utilizador.get("tipo_perfil");
-                                    if (tipo == 1) out.print("Admin");
-                                    else if (tipo == 2) out.print("Funcionário");
-                                    else out.print("Cliente");
-                                    %>
-                                </td>
-                                <td>
-                                    <% 
-                                    if ((Integer)utilizador.get("tipo_perfil") == 3) {
-                                        Double saldo = (Double)utilizador.get("saldo");
-                                        out.print(String.format("€%.2f", saldo).replace('.', ','));
-                                    } else {
-                                        out.print("-");
-                                    }
-                                    %>
-                                </td>
-                                <td><%= utilizador.get("total_bilhetes") %></td>
-                                <td class="text-center">
-                                    <span class="status-badge <%= utilizador.get("ativo").equals("1") ? "status-active" : "status-inactive" %>">
-                                        <%= utilizador.get("ativo").equals("1") ? "Ativo" : "Inativo" %>
-                                    </span>
-                                </td>
-                                <td class="actions-column">
-                                    <a href="gerir_utilizadores.jsp?editar=<%= utilizador.get("id") %>" class="btn-edit">Editar</a>
-                                    <a href="javascript:void(0)" onclick="confirmarExclusao(<%= utilizador.get("id") %>)" class="btn-delete">Excluir</a>
-                                </td>
-                            </tr>
-                        <% } %>
-                    </tbody>
-                </table>
+            
+            <div class="filter-options">
+                <a href="gerir_utilizadores.jsp?mostrar_inativos=<%= mostrar_inativos == 1 ? "0" : "1" %>" class="filter-btn">
+                    <%= mostrar_inativos == 1 ? "Ocultar Inativos" : "Mostrar Inativos" %>
+                </a>
+                <button onclick="document.getElementById('modal-adicionar').style.display='block'" class="add-btn">Adicionar Utilizador</button>
             </div>
         </div>
+        
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Telemóvel</th>
+                        <th>Tipo</th>
+                        <th>Saldo</th>
+                        <th>Bilhetes</th>
+                        <th>Estado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% for (Map<String, Object> utilizador : utilizadores) { %>
+                        <tr>
+                            <td><%= utilizador.get("id") %></td>
+                            <td><%= h((String)utilizador.get("user")) %></td>
+                            <td><%= h((String)utilizador.get("nome")) %></td>
+                            <td><%= h((String)utilizador.get("email")) %></td>
+                            <td><%= h((String)utilizador.get("telemovel")) %></td>
+                            <td><%= h((String)utilizador.get("tipo")) %></td>
+                            <td>
+                                <% if ((Integer)utilizador.get("tipo_perfil") == 3) { %>
+                                    €<%= String.format("%.2f", (Double)utilizador.get("saldo")).replace('.', ',') %>
+                                <% } else { %>
+                                    -
+                                <% } %>
+                            </td>
+                            <td><%= utilizador.get("total_bilhetes") %></td>
+                            <td class="text-center">
+                                <span class="status-badge <%= (Integer)utilizador.get("ativo") == 1 ? "status-active" : "status-inactive" %>">
+                                    <%= (Integer)utilizador.get("ativo") == 1 ? "Ativo" : "Inativo" %>
+                                </span>
+                            </td>
+                            <td class="actions-column">
+                                <a href="javascript:void(0)" onclick="editarUtilizador(<%= utilizador.get("id") %>)" class="btn-edit">Editar</a>
+                                
+                                <% if ((Integer)utilizador.get("ativo") == 1) { %>
+                                    <a href="gerir_utilizadores.jsp?alterar_estado=1&id=<%= utilizador.get("id") %>&ativo=0" 
+                                       class="btn-delete" 
+                                       onclick="return confirm('Tem certeza que deseja desativar este utilizador?')">Desativar</a>
+                                <% } else { %>
+                                    <a href="gerir_utilizadores.jsp?alterar_estado=1&id=<%= utilizador.get("id") %>&ativo=1" 
+                                       class="btn-activate" 
+                                       onclick="return confirm('Tem certeza que deseja ativar este utilizador?')">Ativar</a>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
     </section>
-
-    <!-- Modal para edição de utilizador -->
+    
+    <!-- Modal para adicionar utilizador -->
+    <div id="modal-adicionar" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('modal-adicionar').style.display='none'">&times;</span>
+            <h2>Adicionar Novo Utilizador</h2>
+            <form method="post" action="gerir_utilizadores.jsp">
+                <div class="form-group">
+                    <label for="user">Nome de Utilizador:</label>
+                    <input type="text" id="user" name="user" required>
+                </div>
+                <div class="form-group">
+                    <label for="nome">Nome Completo:</label>
+                    <input type="text" id="nome" name="nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="pwd">Palavra-passe:</label>
+                    <input type="password" id="pwd" name="pwd" required>
+                </div>
+                <div class="form-group">
+                    <label for="telemovel">Telemóvel:</label>
+                    <input type="text" id="telemovel" name="telemovel" required maxlength="9" minlength="9" 
+                           pattern="[0-9]{9}" title="O telemóvel deve conter 9 dígitos">
+                </div>
+                <div class="form-group">
+                    <label for="morada">Morada:</label>
+                    <textarea id="morada" name="morada" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="tipo_perfil">Tipo de Utilizador:</label>
+                    <select id="tipo_perfil" name="tipo_perfil" required>
+                        <option value="1">Administrador</option>
+                        <option value="2">Funcionário</option>
+                        <option value="3" selected>Cliente</option>
+                    </select>
+                </div>
+                <button type="submit" name="adicionar" value="1">Adicionar Utilizador</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal para editar utilizador -->
     <div id="modal-editar" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="fecharModalEditar()">&times;</span>
+            <span class="close" onclick="document.getElementById('modal-editar').style.display='none'">&times;</span>
             <h2>Editar Utilizador</h2>
             <form method="post" action="gerir_utilizadores.jsp">
-                <!-- Campo oculto para ID do utilizador -->
                 <input type="hidden" id="edit-id" name="id">
                 <div class="form-group">
                     <label for="edit-nome">Nome Completo:</label>
@@ -480,7 +470,8 @@ try {
                 </div>
                 <div class="form-group">
                     <label for="edit-telemovel">Telemóvel:</label>
-                    <input type="text" id="edit-telemovel" name="telemovel" required maxlength="9" minlength="9">
+                    <input type="text" id="edit-telemovel" name="telemovel" required maxlength="9" minlength="9"
+                           pattern="[0-9]{9}" title="O telemóvel deve conter 9 dígitos">
                 </div>
                 <div class="form-group">
                     <label for="edit-morada">Morada:</label>
@@ -490,23 +481,51 @@ try {
             </form>
         </div>
     </div>
-
-    <!-- Script para confirmação de exclusão -->
-    <script>
-    function confirmarExclusao(id) {
-        if (confirm("Tem certeza que deseja excluir este utilizador? Esta ação não pode ser desfeita.")) {
-            window.location.href = "gerir_utilizadores.jsp?excluir=" + id;
-        }
-    }
-    </script>
-
-    <!-- Rodapé da página -->
+    
     <footer>
         © <%= new java.util.Date().getYear() + 1900 %> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
+    
+    <script>
+        // Função para abrir o modal de edição e preencher com os dados do utilizador
+        function editarUtilizador(id) {
+            // Fazer uma requisição AJAX para buscar os dados do utilizador
+            fetch('gerir_utilizadores.jsp?editar=' + id)
+                .then(response => {
+                    // Recarregar a página para obter os dados do utilizador
+                    window.location.href = 'gerir_utilizadores.jsp?editar=' + id;
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar dados:', error);
+                });
+        }
+        
+        // Se houver um utilizador para editar, abrir o modal automaticamente
+        <% if (utilizadorParaEditar != null) { %>
+            document.addEventListener('DOMContentLoaded', function() {
+                var modal = document.getElementById('modal-editar');
+                document.getElementById('edit-id').value = '<%= utilizadorParaEditar.get("id") %>';
+                document.getElementById('edit-nome').value = '<%= h((String)utilizadorParaEditar.get("nome")) %>';
+                document.getElementById('edit-email').value = '<%= h((String)utilizadorParaEditar.get("email")) %>';
+                document.getElementById('edit-telemovel').value = '<%= h((String)utilizadorParaEditar.get("telemovel")) %>';
+                document.getElementById('edit-morada').value = '<%= h((String)utilizadorParaEditar.get("morada")) %>';
+                modal.style.display = 'block';
+            });
+        <% } %>
+        
+        // Fechar o modal quando o usuário clicar fora dele
+        window.onclick = function(event) {
+            var modalAdicionar = document.getElementById('modal-adicionar');
+            var modalEditar = document.getElementById('modal-editar');
+            if (event.target == modalAdicionar) {
+                modalAdicionar.style.display = 'none';
+            }
+            if (event.target == modalEditar) {
+                modalEditar.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>
-
-
 
 
