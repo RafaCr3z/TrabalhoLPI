@@ -88,14 +88,18 @@ if ("POST".equals(request.getMethod()) && request.getParameter("horario") != nul
                                     java.sql.Time horaViagem = rsHorario.getTime("horario_partida");
                                     rsHorario.close();
 
-                                    // 2. Registrar bilhete
+                                    // 2. Registrar um único bilhete com a quantidade total
                                     try {
+                                        // Preparar a consulta para inserção de bilhete
                                         pstmt = conn.prepareStatement("INSERT INTO bilhetes (id_cliente, id_rota, data_compra, data_viagem, hora_viagem, numero_lugar) VALUES (?, ?, NOW(), ?, ?, ?)");
+
+                                        // Inserir um único bilhete com a quantidade total
                                         pstmt.setInt(1, id_cliente);
                                         pstmt.setInt(2, id_rota);
                                         pstmt.setDate(3, dataViagem);
                                         pstmt.setTime(4, horaViagem);
-                                        pstmt.setInt(5, 0); // Número de lugar automático
+                                        pstmt.setInt(5, quantidade); // Número de lugar definido como a quantidade comprada
+                                        pstmt.executeUpdate();
                                     } catch (SQLException sqle) {
                                         // Se ocorrer um erro, pode ser porque a tabela não tem a estrutura esperada
                                         // Vamos tentar uma consulta alternativa
@@ -145,6 +149,8 @@ if ("POST".equals(request.getMethod()) && request.getParameter("horario") != nul
                                         out.println("<!-- SQL alternativo: " + finalSQL + " -->");
 
                                         pstmt = conn.prepareStatement(finalSQL);
+
+                                        // Inserir um único bilhete com a quantidade total
                                         int paramIndex = 1;
 
                                         pstmt.setInt(paramIndex++, id_cliente);
@@ -159,10 +165,11 @@ if ("POST".equals(request.getMethod()) && request.getParameter("horario") != nul
                                         }
 
                                         if (columnNames.contains("numero_lugar")) {
-                                            pstmt.setInt(paramIndex++, 0);
+                                            pstmt.setInt(paramIndex++, quantidade); // Número de lugar definido como a quantidade comprada
                                         }
+
+                                        pstmt.executeUpdate();
                                     }
-                                    pstmt.executeUpdate();
                                 }
 
                                 // 3. Atualizar saldo na carteira
@@ -182,7 +189,9 @@ if ("POST".equals(request.getMethod()) && request.getParameter("horario") != nul
                                 // Confirmar transação
                                 conn.commit();
 
-                                mensagem = "Bilhete comprado com sucesso!";
+                                mensagem = quantidade > 1 ?
+                                    quantidade + " bilhetes comprados com sucesso!" :
+                                    "Bilhete comprado com sucesso!";
                                 tipo_mensagem = "success";
                             } catch (Exception e) {
                                 // Reverter transação em caso de erro
@@ -224,7 +233,6 @@ if ("POST".equals(request.getMethod()) && request.getParameter("horario") != nul
 List<Map<String, String>> rotas = new ArrayList<>();
 Map<Integer, List<Map<String, String>>> horarios_por_rota = new HashMap<>();
 List<Map<String, String>> bilhetes = new ArrayList<>();
-String horariosJson = "{}"; // Inicializa com um objeto vazio
 
 // Obter conexão com o banco de dados
 Connection conn = null;
@@ -434,13 +442,15 @@ try {
         String data_compra_formatada = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(data_compra);
         bilhete.put("data_compra", data_compra_formatada);
 
-        // Calcular preço total (preço unitário * 1 lugar)
+        // Calcular preço total (preço unitário * número de lugares)
         double preco = rs.getDouble("preco");
-        bilhete.put("preco_total", String.format("%.2f", preco));
+        int lugares = rs.getInt("numero_lugar");
+        double precoTotal = preco * lugares;
+        bilhete.put("preco_total", String.format("%.2f", precoTotal));
 
         // Número do lugar
         int numero_lugar = rs.getInt("numero_lugar");
-        bilhete.put("lugares", numero_lugar > 0 ? String.valueOf(numero_lugar) : "Automático");
+        bilhete.put("lugares", String.valueOf(numero_lugar));
 
         bilhetes.add(bilhete);
     }
@@ -455,15 +465,8 @@ try {
     if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }
 }
 
-// Adicionar linhas para depuração
-out.println("<!-- JSON gerado: " + horariosJson + " -->");
+// Informação para depuração
 out.println("<!-- Número de rotas com horários: " + horarios_por_rota.size() + " -->");
-for (Map.Entry<Integer, List<Map<String, String>>> entry : horarios_por_rota.entrySet()) {
-    out.println("<!-- Rota " + entry.getKey() + " tem " + entry.getValue().size() + " horários -->");
-    for (Map<String, String> horario : entry.getValue()) {
-        out.println("<!-- Horário: id=" + horario.get("id") + ", data=" + horario.get("data_viagem") + ", hora=" + horario.get("hora_formatada") + ", lugares=" + horario.get("lugares_disponiveis") + " -->");
-    }
-}
 %>
 
 <!DOCTYPE html>
@@ -475,7 +478,6 @@ for (Map.Entry<Integer, List<Map<String, String>>> entry : horarios_por_rota.ent
     <title>FelixBus - Os Meus Bilhetes</title>
     <script>
         // Script para inicialização
-        console.log("Página carregada, horários pré-carregados no select");
     </script>
 </head>
 <body>
@@ -662,14 +664,9 @@ for (Map.Entry<Integer, List<Map<String, String>>> entry : horarios_por_rota.ent
 <script>
     // Garantir que o script seja executado após o carregamento do DOM
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("DOM carregado, inicializando script...");
-
         // Elementos do DOM
         const rotaSelect = document.getElementById('rota');
         const horarioSelect = document.getElementById('horario');
-
-        // Verificar os horários pré-carregados no select
-        console.log("Horários pré-carregados:", horarioSelect.options.length - 1);
         const quantidadeInput = document.getElementById('quantidade');
         const quantidadeDisponivel = document.getElementById('quantidadeDisponivel');
         const infoViagem = document.getElementById('infoViagem');
@@ -681,28 +678,12 @@ for (Map.Entry<Integer, List<Map<String, String>>> entry : horarios_por_rota.ent
         const precoTotal = document.getElementById('precoTotal');
         const btnComprar = document.getElementById('btnComprar');
 
-        console.log("Elementos do DOM:", {
-            rotaSelect,
-            horarioSelect,
-            quantidadeInput,
-            quantidadeDisponivel,
-            infoViagem,
-            dataViagem,
-            horarioPartida,
-            lugaresDisponiveis,
-            resumoCompra,
-            quantidadeCompra,
-            precoTotal,
-            btnComprar
-        });
-
         // Preço unitário da rota selecionada
         let precoUnitario = 0;
 
         // Quando a rota é alterada, atualizar os horários disponíveis
         rotaSelect.addEventListener('change', function() {
             const rotaId = this.value;
-            console.log("Rota selecionada:", rotaId);
 
             // Esconder todas as opções de horário
             Array.from(horarioSelect.options).forEach(option => {
@@ -732,15 +713,12 @@ for (Map.Entry<Integer, List<Map<String, String>>> entry : horarios_por_rota.ent
                     }
                 });
 
-                console.log(`Encontrados ${horarioCount} horários para a rota ${rotaId}`);
-
                 // Obter o preço da rota selecionada
                 const rotaOption = rotaSelect.options[rotaSelect.selectedIndex];
                 const rotaText = rotaOption.textContent;
                 const precoMatch = rotaText.match(/\(€([0-9,.]+)\)/);
                 if (precoMatch && precoMatch[1]) {
                     precoUnitario = parseFloat(precoMatch[1].replace(',', '.'));
-                    console.log("Preço unitário:", precoUnitario);
                 }
 
                 if (horarioCount > 0) {
@@ -756,7 +734,6 @@ for (Map.Entry<Integer, List<Map<String, String>>> entry : horarios_por_rota.ent
     // Quando o horário é alterado, atualizar as informações da viagem
     horarioSelect.addEventListener('change', function() {
         const horarioId = this.value;
-        console.log("Horário selecionado:", horarioId);
 
         // Esconder informações de viagem
         infoViagem.style.display = 'none';
@@ -765,18 +742,11 @@ for (Map.Entry<Integer, List<Map<String, String>>> entry : horarios_por_rota.ent
         // Se um horário foi selecionado
         if (horarioId) {
             const selectedOption = this.options[this.selectedIndex];
-            console.log("Opção selecionada:", selectedOption);
 
             // Obter dados do dataset
             const dataViagemText = selectedOption.getAttribute('data-data-viagem');
             const horaFormatadaText = selectedOption.getAttribute('data-hora-formatada');
             const lugaresDisponiveisText = selectedOption.getAttribute('data-lugares-disponiveis');
-
-            console.log("Dados do horário:", {
-                dataViagem: dataViagemText,
-                horaFormatada: horaFormatadaText,
-                lugaresDisponiveis: lugaresDisponiveisText
-            });
 
             // Converter para número e garantir que seja um valor válido
             const lugaresDisponiveisNum = parseInt(lugaresDisponiveisText) || 0;
