@@ -1,5 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="java.sql.*, java.util.*, java.text.*, java.security.*" %>
+<%@ page import="java.sql.*, java.util.*, java.text.*, java.security.*, java.math.BigInteger" %>
 <%@ include file="../basedados/basedados.jsp" %>
 
 <%

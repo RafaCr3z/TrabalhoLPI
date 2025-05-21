@@ -1,38 +1,51 @@
-<?php
-    session_start();
-    include '../basedados/basedados.h';
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*, java.util.*" %>
+<%@ include file="../basedados/basedados.jsp" %>
 
-    // Verifica se o utilizador está autenticado e se é um cliente (nível 3)
-    if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 3) {
-        header("Location: erro.php");
-        exit();
-    }
+<%
+// Verificar se o utilizador está autenticado e se é um cliente (nível 3)
+if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 3) {
+    response.sendRedirect("erro.jsp");
+    return;
+}
 
-    $id_utilizador = $_SESSION["id_utilizador"];
+int id_utilizador = (Integer)session.getAttribute("id_utilizador");
 
+// Buscar dados do utilizador
+Connection conn = null;
+PreparedStatement pstmt = null;
+ResultSet rs = null;
+String nome = "";
+String email = "";
+String telemovel = "";
+String morada = "";
+
+try {
+    conn = getConnection();
+    
     // Consulta SQL para obter os dados do utilizador
-    $sql = "SELECT nome, email, telemovel, morada FROM utilizadores WHERE id = $id_utilizador";
-    $resultado = mysqli_query($conn, $sql);
-
-    // Verifica se a consulta foi bem-sucedida
-    if (!$resultado) {
-        die("Erro na consulta: " . mysqli_error($conn));
-    }
-
+    pstmt = conn.prepareStatement("SELECT nome, email, telemovel, morada FROM utilizadores WHERE id = ?");
+    pstmt.setInt(1, id_utilizador);
+    rs = pstmt.executeQuery();
+    
     // Verifica se foram encontrados dados para o utilizador
-    if (mysqli_num_rows($resultado) > 0) {
-        $dados = mysqli_fetch_assoc($resultado);
+    if (rs.next()) {
+        nome = rs.getString("nome");
+        email = rs.getString("email");
+        telemovel = rs.getString("telemovel");
+        morada = rs.getString("morada");
     } else {
-        die("Nenhum dado encontrado para o utilizador.");
+        throw new Exception("Nenhum dado encontrado para o utilizador.");
     }
-
-    // Verificação adicional para garantir que os dados foram obtidos
-    if (!$dados) {
-        die("Nenhum dado encontrado para o utilizador.");
-    }
-
-    mysqli_close($conn); // Fecha a ligação à base de dados
-?>
+} catch (Exception e) {
+    out.println("Erro: " + e.getMessage());
+    return;
+} finally {
+    if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
+    if (pstmt != null) try { pstmt.close(); } catch (SQLException e) { /* ignorar */ }
+    if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }
+}
+%>
 
 <!DOCTYPE html>
 <html lang="pt">
@@ -49,12 +62,12 @@
             <h1>Felix<span>Bus</span></h1>
         </div>
         <div class="links">
-            <div class="link"> <a href="pg_cliente.php">Página Inicial</a></div>
-            <div class="link"> <a href="carteira_cliente.php">Carteira</a></div>
-            <div class="link"> <a href="bilhetes_cliente.php">Bilhetes</a></div>
+            <div class="link"> <a href="pg_cliente.jsp">Página Inicial</a></div>
+            <div class="link"> <a href="carteira_cliente.jsp">Carteira</a></div>
+            <div class="link"> <a href="bilhetes_cliente.jsp">Bilhetes</a></div>
         </div>
         <div class="buttons">
-            <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
+            <div class="btn"><a href="logout.jsp"><button>Logout</button></a></div>
             <div class="btn-cliente">Área do Cliente</div>
     </nav>
     <section>
@@ -63,21 +76,21 @@
         <div class="profile-container">
             <!-- Informações do perfil do utilizador -->
             <div class="profile-info">
-                <p><strong>Nome:</strong> <?php echo $dados['nome']; ?></p>
-                <p><strong>Email:</strong> <?php echo $dados['email']; ?></p>
-                <p><strong>Telemóvel:</strong> <?php echo $dados['telemovel']; ?></p>
-                <p><strong>Morada:</strong> <?php echo $dados['morada']; ?></p>
+                <p><strong>Nome:</strong> <%= nome %></p>
+                <p><strong>Email:</strong> <%= email %></p>
+                <p><strong>Telemóvel:</strong> <%= telemovel %></p>
+                <p><strong>Morada:</strong> <%= morada %></p>
             </div>
 
             <!-- Botão de Editar Perfil alinhado à direita -->
             <div class="btn-edit">
-                <a href="editar_perfil.php"><button>Editar Perfil</button></a>
+                <a href="editar_perfil.jsp"><button>Editar Perfil</button></a>
             </div>
         </div>
     </section>
 
     <footer>
-        © <?php echo date("Y"); ?> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
+        © <%= new java.util.Date().getYear() + 1900 %> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
 </body>
 
