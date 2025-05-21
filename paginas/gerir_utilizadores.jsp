@@ -1,183 +1,270 @@
-<?php
-session_start();
-include '../basedados/basedados.h';
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*" %>
+<%@ page import="java.util.*" %>
+<%@ page import="java.security.MessageDigest" %>
+<%@ page import="java.math.BigInteger" %>
+<%@ include file="../basedados/basedados.jsp" %>
 
-// Adicionar esta função no topo do arquivo, após o include
-function h($string) {
-    return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
+<%!
+// Método para escapar strings HTML
+public String h(String string) {
+    if (string == null) return "";
+    return string.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;");
 }
 
+// Método para gerar hash da senha
+public String passwordHash(String password) {
+    try {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] messageDigest = md.digest(password.getBytes());
+        BigInteger no = new BigInteger(1, messageDigest);
+        String hashtext = no.toString(16);
+        while (hashtext.length() < 32) {
+            hashtext = "0" + hashtext;
+        }
+        return hashtext;
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+}
+%>
+
+<%
 // Verificar se é administrador
-if (!isset($_SESSION["id_nivel"]) || $_SESSION["id_nivel"] != 1) {
-    header("Location: erro.php");
-    exit();
+if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 1) {
+    response.sendRedirect("erro.jsp");
+    return;
 }
 
-// Verificar campo 'ativo'
-if (mysqli_num_rows(mysqli_query($conn, "SHOW COLUMNS FROM utilizadores LIKE 'ativo'")) == 0) {
-    mysqli_query($conn, "ALTER TABLE utilizadores ADD ativo TINYINT(1) NOT NULL DEFAULT 1");
-}
+// Obter conexão com o banco de dados
+Connection conn = null;
+Statement stmt = null;
+ResultSet rs = null;
+PreparedStatement pstmt = null;
 
-// Inicializar variáveis para mensagens de feedback
-$mensagem = '';
-$tipo_mensagem = '';
-// Verificar se deve mostrar utilizadores inativos (parâmetro do URL)
-$mostrar_inativos = isset($_GET['mostrar_inativos']) ? (int)$_GET['mostrar_inativos'] : 0;
-
-// Adicionar após a inicialização de $mostrar_inativos
-$pesquisa = isset($_GET['pesquisa']) ? mysqli_real_escape_string($conn, $_GET['pesquisa']) : '';
-
-// Processar formulário de adição de novo utilizador
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['adicionar'])) {
-    // Validação de dados
-    $erros = [];
-
-    // Validar telemóvel (9 dígitos)
-    if (!preg_match('/^[0-9]{9}$/', $_POST['telemovel'])) {
-        $erros[] = "O telemóvel deve conter exatamente 9 dígitos numéricos";
+try {
+    conn = getConnection();
+    stmt = conn.createStatement();
+    
+    // Verificar campo 'ativo'
+    rs = stmt.executeQuery("SHOW COLUMNS FROM utilizadores LIKE 'ativo'");
+    if (!rs.next()) {
+        stmt.executeUpdate("ALTER TABLE utilizadores ADD ativo TINYINT(1) NOT NULL DEFAULT 1");
     }
-
-    // Validar email
-    if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
-        $erros[] = "O email é inválido";
-    }
-
-    // Verificar se há erros
-    if (!empty($erros)) {
-        $mensagem = "Erros de validação: " . implode(", ", $erros);
-        $tipo_mensagem = "danger";
-    } else {
-        // Capturar e sanitizar dados do formulário
-        $user = mysqli_real_escape_string($conn, $_POST['user']);
-        $nome = mysqli_real_escape_string($conn, $_POST['nome']);
-        $email = mysqli_real_escape_string($conn, $_POST['email']);
-        $pwd = password_hash($_POST['pwd'], PASSWORD_DEFAULT); // Hash da palavra-passe para segurança
-        $telemovel = mysqli_real_escape_string($conn, $_POST['telemovel']);
-        $morada = mysqli_real_escape_string($conn, $_POST['morada']);
-        $tipo_perfil = intval($_POST['tipo_perfil']);
-
-        // Verificar se o utilizador ou email já existem no sistema
-        if (mysqli_num_rows(mysqli_query($conn, "SELECT * FROM utilizadores WHERE user = '$user' OR email = '$email'")) > 0) {
-            $mensagem = "O utilizador ou email já existe";
-            $tipo_mensagem = "danger";
+    
+    // Inicializar variáveis para mensagens de feedback
+    String mensagem = "";
+    String tipo_mensagem = "";
+    
+    // Verificar se deve mostrar utilizadores inativos (parâmetro do URL)
+    int mostrar_inativos = request.getParameter("mostrar_inativos") != null ? 
+                          Integer.parseInt(request.getParameter("mostrar_inativos")) : 0;
+    
+    // Adicionar após a inicialização de mostrar_inativos
+    String pesquisa = request.getParameter("pesquisa") != null ? 
+                     request.getParameter("pesquisa") : "";
+    
+    // Processar formulário de adição de novo utilizador
+    if ("POST".equals(request.getMethod()) && request.getParameter("adicionar") != null) {
+        // Validação de dados
+        List<String> erros = new ArrayList<>();
+        
+        // Validar telemóvel (9 dígitos)
+        String telemovel = request.getParameter("telemovel");
+        if (telemovel == null || !telemovel.matches("^[0-9]{9}$")) {
+            erros.add("O telemóvel deve conter exatamente 9 dígitos numéricos");
+        }
+        
+        // Validar email
+        String email = request.getParameter("email");
+        if (email == null || !email.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+            erros.add("O email é inválido");
+        }
+        
+        // Verificar se há erros
+        if (!erros.isEmpty()) {
+            mensagem = "Erros de validação: " + String.join(", ", erros);
+            tipo_mensagem = "danger";
         } else {
-            // Inserir novo utilizador na base de dados
-            $sql = "INSERT INTO utilizadores (user, nome, email, pwd, telemovel, morada, tipo_perfil)
-                    VALUES ('$user', '$nome', '$email', '$pwd', '$telemovel', '$morada', $tipo_perfil)";
-
-            if (mysqli_query($conn, $sql)) {
-                $id_novo = mysqli_insert_id($conn);
-                // Se for cliente (tipo_perfil 3), criar carteira com saldo inicial 0
-                if ($tipo_perfil == 3) {
-                    mysqli_query($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id_novo, 0.00)");
-                }
-                $mensagem = "Utilizador adicionado com sucesso!";
-                $tipo_mensagem = "success";
+            // Capturar e sanitizar dados do formulário
+            String user = request.getParameter("user");
+            String nome = request.getParameter("nome");
+            String pwd = passwordHash(request.getParameter("pwd")); // Hash da palavra-passe para segurança
+            int tipo_perfil = Integer.parseInt(request.getParameter("tipo_perfil"));
+            String morada = request.getParameter("morada");
+            
+            // Verificar se o utilizador ou email já existem no sistema
+            pstmt = conn.prepareStatement("SELECT * FROM utilizadores WHERE user = ? OR email = ?");
+            pstmt.setString(1, user);
+            pstmt.setString(2, email);
+            rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                mensagem = "O utilizador ou email já existe";
+                tipo_mensagem = "danger";
             } else {
-                $mensagem = "Erro ao adicionar utilizador: " . mysqli_error($conn);
-                $tipo_mensagem = "danger";
+                // Inserir novo utilizador na base de dados
+                pstmt = conn.prepareStatement(
+                    "INSERT INTO utilizadores (user, nome, email, pwd, telemovel, morada, tipo_perfil) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)", 
+                    Statement.RETURN_GENERATED_KEYS
+                );
+                pstmt.setString(1, user);
+                pstmt.setString(2, nome);
+                pstmt.setString(3, email);
+                pstmt.setString(4, pwd);
+                pstmt.setString(5, telemovel);
+                pstmt.setString(6, morada);
+                pstmt.setInt(7, tipo_perfil);
+                
+                if (pstmt.executeUpdate() > 0) {
+                    rs = pstmt.getGeneratedKeys();
+                    if (rs.next()) {
+                        int id_novo = rs.getInt(1);
+                        // Se for cliente (tipo_perfil 3), criar carteira com saldo inicial 0
+                        if (tipo_perfil == 3) {
+                            pstmt = conn.prepareStatement("INSERT INTO carteiras (id_cliente, saldo) VALUES (?, 0.00)");
+                            pstmt.setInt(1, id_novo);
+                            pstmt.executeUpdate();
+                        }
+                        mensagem = "Utilizador adicionado com sucesso!";
+                        tipo_mensagem = "success";
+                    }
+                } else {
+                    mensagem = "Erro ao adicionar utilizador";
+                    tipo_mensagem = "danger";
+                }
             }
         }
     }
-}
-
-// Processar formulário de edição de utilizador existente
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['editar'])) {
-    // Capturar dados do formulário
-    $id = intval($_POST['id']);
-    $nome = $_POST['nome'];
-    $email = $_POST['email'];
-    $telemovel = $_POST['telemovel'];
-    $morada = $_POST['morada'];
-
-    // Construir consulta com prepared statement
-    $sql = "UPDATE utilizadores SET nome = ?, email = ?, telemovel = ?, morada = ? WHERE id = ?";
-    $stmt = mysqli_prepare($conn, $sql);
     
-    if (!empty($_POST['pwd'])) {
-        // Se senha fornecida, atualizar também a senha
-        $sql = "UPDATE utilizadores SET nome = ?, email = ?, telemovel = ?, morada = ?, pwd = ? WHERE id = ?";
-        $stmt = mysqli_prepare($conn, $sql);
-        $pwd_hash = password_hash($_POST['pwd'], PASSWORD_DEFAULT);
-        mysqli_stmt_bind_param($stmt, "sssssi", $nome, $email, $telemovel, $morada, $pwd_hash, $id);
-    } else {
-        // Sem atualização de senha
-        mysqli_stmt_bind_param($stmt, "ssssi", $nome, $email, $telemovel, $morada, $id);
+    // Processar formulário de edição de utilizador existente
+    if ("POST".equals(request.getMethod()) && request.getParameter("editar") != null) {
+        // Capturar dados do formulário
+        int id = Integer.parseInt(request.getParameter("id"));
+        String nome = request.getParameter("nome");
+        String email = request.getParameter("email");
+        String telemovel = request.getParameter("telemovel");
+        String morada = request.getParameter("morada");
+        String pwd = request.getParameter("pwd");
+        
+        if (pwd != null && !pwd.trim().isEmpty()) {
+            // Se senha fornecida, atualizar também a senha
+            String pwd_hash = passwordHash(pwd);
+            pstmt = conn.prepareStatement(
+                "UPDATE utilizadores SET nome = ?, email = ?, telemovel = ?, morada = ?, pwd = ? WHERE id = ?"
+            );
+            pstmt.setString(1, nome);
+            pstmt.setString(2, email);
+            pstmt.setString(3, telemovel);
+            pstmt.setString(4, morada);
+            pstmt.setString(5, pwd_hash);
+            pstmt.setInt(6, id);
+        } else {
+            // Sem atualização de senha
+            pstmt = conn.prepareStatement(
+                "UPDATE utilizadores SET nome = ?, email = ?, telemovel = ?, morada = ? WHERE id = ?"
+            );
+            pstmt.setString(1, nome);
+            pstmt.setString(2, email);
+            pstmt.setString(3, telemovel);
+            pstmt.setString(4, morada);
+            pstmt.setInt(5, id);
+        }
+        
+        // Executar a atualização
+        if (pstmt.executeUpdate() > 0) {
+            mensagem = "Utilizador editado com sucesso!";
+            tipo_mensagem = "success";
+        } else {
+            mensagem = "Erro ao editar utilizador";
+            tipo_mensagem = "danger";
+        }
     }
-
-    // Executar a atualização
-    if (mysqli_stmt_execute($stmt)) {
-        $mensagem = "Utilizador editado com sucesso!";
-        $tipo_mensagem = "success";
-    } else {
-        $mensagem = "Erro ao editar utilizador: " . mysqli_error($conn);
-        $tipo_mensagem = "danger";
-    }
-    mysqli_stmt_close($stmt);
-}
-
-// Processar solicitação para alterar estado (ativar/inativar utilizador)
-if (isset($_GET['alterar_estado']) && isset($_GET['id']) && $_GET['id'] != $_SESSION['id_utilizador']) {
-    // Não permitir que o administrador desative a sua própria conta
-    $id = intval($_GET['id']);
-    $ativo = intval($_GET['ativo']);
-
-    // Atualizar estado do utilizador
-    if (mysqli_query($conn, "UPDATE utilizadores SET ativo = $ativo WHERE id = $id")) {
-        $mensagem = "Utilizador " . ($ativo == 1 ? "ativado" : "desativado") . " com sucesso!";
-        $tipo_mensagem = "success";
-    } else {
-        $mensagem = "Erro ao alterar estado do utilizador: " . mysqli_error($conn);
-        $tipo_mensagem = "danger";
-    }
-}
-
-// Processar solicitação para alterar perfil do utilizador
-if (isset($_GET['alterar_perfil']) && isset($_GET['id']) && isset($_GET['perfil'])) {
-    $id = intval($_GET['id']);
-    $novo_perfil = intval($_GET['perfil']);
     
-    // Se o novo perfil for cliente (3), criar carteira se ainda não existir
-    if ($novo_perfil == 3) {
-        mysqli_query($conn, "INSERT INTO carteiras (id_cliente, saldo) VALUES ($id, 0.00)");
+    // Processar solicitação para alterar estado (ativar/inativar utilizador)
+    if (request.getParameter("alterar_estado") != null && request.getParameter("id") != null) {
+        int id = Integer.parseInt(request.getParameter("id"));
+        int id_utilizador = (Integer)session.getAttribute("id_utilizador");
+        
+        // Não permitir que o administrador desative a sua própria conta
+        if (id != id_utilizador) {
+            int ativo = Integer.parseInt(request.getParameter("ativo"));
+            
+            // Atualizar estado do utilizador
+            pstmt = conn.prepareStatement("UPDATE utilizadores SET ativo = ? WHERE id = ?");
+            pstmt.setInt(1, ativo);
+            pstmt.setInt(2, id);
+            
+            if (pstmt.executeUpdate() > 0) {
+                mensagem = "Estado do utilizador alterado com sucesso!";
+                tipo_mensagem = "success";
+            } else {
+                mensagem = "Erro ao alterar estado do utilizador";
+                tipo_mensagem = "danger";
+            }
+        } else {
+            mensagem = "Não é possível desativar a sua própria conta!";
+            tipo_mensagem = "danger";
+        }
     }
-
-    // Atualizar tipo de perfil do utilizador
-    if (mysqli_query($conn, "UPDATE utilizadores SET tipo_perfil = $novo_perfil WHERE id = $id")) {
-        $mensagem = "Perfil do utilizador alterado com sucesso!";
-        $tipo_mensagem = "success";
-    } else {
-        $mensagem = "Erro ao alterar perfil do utilizador: " . mysqli_error($conn);
-        $tipo_mensagem = "danger";
+    
+    // Buscar utilizadores para exibição
+    StringBuilder sql = new StringBuilder(
+        "SELECT u.*, " +
+        "(SELECT COUNT(*) FROM bilhetes b WHERE b.id_cliente = u.id) as total_bilhetes, " +
+        "(SELECT saldo FROM carteiras c WHERE c.id_cliente = u.id) as saldo " +
+        "FROM utilizadores u WHERE 1=1"
+    );
+    
+    List<Object> params = new ArrayList<>();
+    
+    // Adicionar filtro para mostrar inativos se necessário
+    if (mostrar_inativos == 0) {
+        sql.append(" AND u.ativo = 1");
     }
-}
-
-// Buscar todos os perfis disponíveis no sistema
-$perfis = [];
-$result_perfis = mysqli_query($conn, "SELECT * FROM perfis ORDER BY id ASC");
-while ($row = mysqli_fetch_assoc($result_perfis)) {
-    $perfis[$row['id']] = $row['descricao'];
-}
-
-// Modificar a consulta SQL para incluir a pesquisa
-$sql = "SELECT u.*, p.descricao as perfil_nome
-        FROM utilizadores u
-        JOIN perfis p ON u.tipo_perfil = p.id
-        WHERE 1=1";
-
-// Filtrar por estado ativo/inativo
-if (!$mostrar_inativos) {
-    $sql .= " AND u.ativo = 1";
-}
-
-// Adicionar filtro de pesquisa
-if (!empty($pesquisa)) {
-    $sql .= " AND (u.nome LIKE '%$pesquisa%' OR u.email LIKE '%$pesquisa%' OR u.telemovel LIKE '%$pesquisa%')";
-}
-
-$sql .= " ORDER BY u.id ASC";
-$utilizadores = mysqli_query($conn, $sql);
-?>
+    
+    // Adicionar filtro de pesquisa se fornecido
+    if (pesquisa != null && !pesquisa.trim().isEmpty()) {
+        sql.append(" AND (u.nome LIKE ? OR u.email LIKE ? OR u.user LIKE ?)");
+        String searchTerm = "%" + pesquisa + "%";
+        params.add(searchTerm);
+        params.add(searchTerm);
+        params.add(searchTerm);
+    }
+    
+    sql.append(" ORDER BY u.tipo_perfil, u.nome");
+    
+    pstmt = conn.prepareStatement(sql.toString());
+    
+    // Definir parâmetros da consulta
+    for (int i = 0; i < params.size(); i++) {
+        pstmt.setObject(i + 1, params.get(i));
+    }
+    
+    rs = pstmt.executeQuery();
+    
+    // Armazenar resultados em uma lista para uso no HTML
+    List<Map<String, Object>> utilizadores = new ArrayList<>();
+    while (rs.next()) {
+        Map<String, Object> utilizador = new HashMap<>();
+        utilizador.put("id", rs.getInt("id"));
+        utilizador.put("user", rs.getString("user"));
+        utilizador.put("nome", rs.getString("nome"));
+        utilizador.put("email", rs.getString("email"));
+        utilizador.put("telemovel", rs.getString("telemovel"));
+        utilizador.put("morada", rs.getString("morada"));
+        utilizador.put("tipo_perfil", rs.getInt("tipo_perfil"));
+        utilizador.put("ativo", rs.getInt("ativo"));
+        utilizador.put("total_bilhetes", rs.getInt("total_bilhetes"));
+        utilizador.put("saldo", rs.getDouble("saldo"));
+        utilizadores.add(utilizador);
+    }
+%>
 
 <!DOCTYPE html>
 <html lang="pt">
@@ -188,164 +275,159 @@ $utilizadores = mysqli_query($conn, $sql);
     <title>FelixBus - Gestão de Utilizadores</title>
 </head>
 <body>
-    <!-- Barra de navegação -->
     <nav>
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
         </div>
         <div class="links" style="display: flex; justify-content: center; width: 50%;">
-            <div class="link"> <a href="pg_admin.php" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
+            <div class="link"> <a href="pg_admin.jsp" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
         </div>
         <div class="buttons">
-            <div class="btn"><a href="logout.php"><button>Logout</button></a></div>
+            <div class="btn"><a href="logout.jsp"><button>Logout</button></a></div>
             <div class="btn-admin">Área do Administrador</div>
         </div>
     </nav>
 
-    <!-- Conteúdo principal -->
     <section>
         <h1>Gestão de Utilizadores</h1>
-
-        <!-- Exibir mensagens de feedback (sucesso/erro) -->
-        <?php if (!empty($mensagem)): ?>
-            <div class="alert alert-<?php echo $tipo_mensagem; ?>">
-                <?php echo $mensagem; ?>
+        
+        <% if (mensagem != null && !mensagem.isEmpty()) { %>
+            <div class="alert alert-<%= tipo_mensagem %>">
+                <%= mensagem %>
             </div>
-        <?php endif; ?>
+        <% } %>
 
         <div class="container">
-            <!-- Formulário de pesquisa -->
-            <div class="pesquisa-container">
-                <form method="GET" action="gerir_utilizadores.php">
-                    <div class="input-group">
-                        <input type="text" name="pesquisa" class="form-control" placeholder="Pesquisar por nome, email ou telemóvel" value="<?= h($pesquisa) ?>">
-                        <input type="hidden" name="mostrar_inativos" value="<?= $mostrar_inativos ?>">
-                        <button class="btn-pesquisa" type="submit">Pesquisar</button>
+            <div class="filtros">
+                <form action="gerir_utilizadores.jsp" method="get" class="form-filtro">
+                    <div class="form-group">
+                        <input type="text" name="pesquisa" placeholder="Pesquisar por nome, email ou username" value="<%= h(pesquisa) %>">
+                        <button type="submit">Pesquisar</button>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="mostrar_inativos" value="1" <%= mostrar_inativos == 1 ? "checked" : "" %> onchange="this.form.submit()">
+                            Mostrar utilizadores inativos
+                        </label>
                     </div>
                 </form>
             </div>
 
-            <!-- Formulário de adição de utilizador -->
-            <div class="form-container">
+            <div class="add-user">
                 <h2>Adicionar Novo Utilizador</h2>
-                <form method="post" action="gerir_utilizadores.php">
-                    <div class="form-group">
-                        <label for="user">Nome de Utilizador:</label>
-                        <input type="text" id="user" name="user" required>
+                <form action="gerir_utilizadores.jsp" method="post">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="user">Username:</label>
+                            <input type="text" id="user" name="user" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="nome">Nome:</label>
+                            <input type="text" id="nome" name="nome" required>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="nome">Nome Completo:</label>
-                        <input type="text" id="nome" name="nome" required>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="pwd">Senha:</label>
+                            <input type="password" id="pwd" name="pwd" required>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" required>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="telemovel">Telemóvel:</label>
+                            <input type="text" id="telemovel" name="telemovel" required pattern="[0-9]{9}" title="O telemóvel deve ter 9 dígitos">
+                        </div>
+                        <div class="form-group">
+                            <label for="tipo_perfil">Tipo de Perfil:</label>
+                            <select id="tipo_perfil" name="tipo_perfil" required>
+                                <option value="1">Administrador</option>
+                                <option value="2">Funcionário</option>
+                                <option value="3" selected>Cliente</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="pwd">Palavra-passe:</label>
-                        <input type="password" id="pwd" name="pwd" required>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="morada">Morada:</label>
+                            <input type="text" id="morada" name="morada" required>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="telemovel">Telemóvel:</label>
-                        <input type="text" id="telemovel" name="telemovel" required maxlength="9" minlength="9">
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <button type="submit" name="adicionar" value="1">Adicionar Utilizador</button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="morada">Morada:</label>
-                        <textarea id="morada" name="morada" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="tipo_perfil">Tipo de Perfil:</label>
-                        <select id="tipo_perfil" name="tipo_perfil" required>
-                            <?php foreach ($perfis as $id => $descricao): ?>
-                                <option value="<?php echo $id; ?>"><?php echo ucfirst($descricao); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <button type="submit" name="adicionar">Adicionar Utilizador</button>
                 </form>
             </div>
 
-            <!-- Tabela de utilizadores existentes -->
-            <div class="table-container">
-                <h2>Utilizadores</h2>
-                <!-- Filtros para mostrar utilizadores ativos/todos -->
-                <div class="filtro-container">
-                    <a href="?mostrar_inativos=0" class="filtro-btn <?php echo !$mostrar_inativos ? 'active' : ''; ?>">Ativos</a>
-                    <a href="?mostrar_inativos=1" class="filtro-btn <?php echo $mostrar_inativos ? 'active' : ''; ?>">Todos</a>
-                </div>
-
-                <table class="utilizadores-table">
+            <div class="users-list">
+                <h2>Lista de Utilizadores</h2>
+                <table>
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Utilizador</th>
+                            <th>Username</th>
                             <th>Nome</th>
                             <th>Email</th>
                             <th>Telemóvel</th>
-                            <th>Morada</th>
-                            <th>Perfil</th>
+                            <th>Tipo</th>
+                            <th>Saldo</th>
+                            <th>Bilhetes</th>
                             <th>Estado</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($utilizador = mysqli_fetch_assoc($utilizadores)): ?>
-                            <!-- Aplicar classe para estilizar utilizadores inativos -->
-                            <tr class="<?php echo isset($utilizador['ativo']) && !$utilizador['ativo'] ? 'utilizador-inativo' : ''; ?>">
-                                <td><?php echo $utilizador['id']; ?></td>
-                                <td><?php echo $utilizador['user']; ?></td>
-                                <td><?php echo $utilizador['nome']; ?></td>
-                                <td><?php echo $utilizador['email']; ?></td>
-                                <td><?php echo $utilizador['telemovel']; ?></td>
-                                <td><?php echo $utilizador['morada']; ?></td>
+                        <% for (Map<String, Object> utilizador : utilizadores) { %>
+                            <tr class="<%= (Integer)utilizador.get("ativo") == 0 ? "inativo" : "" %>">
+                                <td><%= utilizador.get("id") %></td>
+                                <td><%= h((String)utilizador.get("user")) %></td>
+                                <td><%= h((String)utilizador.get("nome")) %></td>
+                                <td><%= h((String)utilizador.get("email")) %></td>
+                                <td><%= h((String)utilizador.get("telemovel")) %></td>
                                 <td>
-                                    <!-- Distintivo para indicar o tipo de perfil com cor específica -->
-                                    <span class="perfil-badge perfil-<?php echo $utilizador['tipo_perfil']; ?>">
-                                        <?php echo ucfirst($utilizador['perfil_nome']); ?>
+                                    <% 
+                                    int tipo = (Integer)utilizador.get("tipo_perfil");
+                                    if (tipo == 1) out.print("Admin");
+                                    else if (tipo == 2) out.print("Funcionário");
+                                    else out.print("Cliente");
+                                    %>
+                                </td>
+                                <td>
+                                    <% 
+                                    if ((Integer)utilizador.get("tipo_perfil") == 3) {
+                                        Double saldo = (Double)utilizador.get("saldo");
+                                        out.print(String.format("€%.2f", saldo).replace('.', ','));
+                                    } else {
+                                        out.print("-");
+                                    }
+                                    %>
+                                </td>
+                                <td><%= utilizador.get("total_bilhetes") %></td>
+                                <td>
+                                    <span class="status-badge <%= (Integer)utilizador.get("ativo") == 1 ? "active" : "inactive" %>">
+                                        <%= (Integer)utilizador.get("ativo") == 1 ? "Ativo" : "Inativo" %>
                                     </span>
                                 </td>
                                 <td>
-                                    <!-- Distintivo para indicar o estado (ativo/inativo) -->
-                                    <span class="estado-badge estado-<?php echo $utilizador['ativo'] ? 'ativo' : 'inativo'; ?>">
-                                        <?php echo $utilizador['ativo'] ? 'Ativo' : 'Inativo'; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <!-- Contentor para botões de ação -->
-                                    <div class="acoes-container">
-                                        <!-- Botão para abrir modal de edição -->
-                                        <button class="acao-btn editar-btn" onclick="abrirModalEditar(<?php echo $utilizador['id']; ?>, '<?php echo addslashes($utilizador['nome']); ?>', '<?php echo addslashes($utilizador['email']); ?>', '<?php echo addslashes($utilizador['telemovel']); ?>', '<?php echo addslashes($utilizador['morada']); ?>')">Editar</button>
-
-                                        <!-- Menu suspenso para alterar perfil -->
-                                        <div class="acoes-dropdown">
-                                            <button class="dropdown-btn">Alterar Perfil</button>
-                                            <div class="dropdown-content">
-                                                <?php foreach ($perfis as $id => $descricao): ?>
-                                                    <?php if ($id != $utilizador['tipo_perfil']): ?>
-                                                        <a href="?alterar_perfil=1&id=<?php echo $utilizador['id']; ?>&perfil=<?php echo $id; ?>&mostrar_inativos=<?php echo $mostrar_inativos; ?>">
-                                                            <?php echo ucfirst($descricao); ?>
-                                                        </a>
-                                                    <?php endif; ?>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </div>
-
-                                        <!-- Botões para ativar/inativar (não mostrar para o próprio utilizador) -->
-                                        <?php if ($utilizador['id'] != $_SESSION['id_utilizador']): ?>
-                                            <?php if (isset($utilizador['ativo']) && $utilizador['ativo']): ?>
-                                                <a href="?alterar_estado=1&id=<?php echo $utilizador['id']; ?>&ativo=0&mostrar_inativos=<?php echo $mostrar_inativos; ?>" class="acao-btn inativar-btn" onclick="return confirm('Tem a certeza que deseja inativar este utilizador?')">Inativar</a>
-                                            <?php else: ?>
-                                                <a href="?alterar_estado=1&id=<?php echo $utilizador['id']; ?>&ativo=1&mostrar_inativos=<?php echo $mostrar_inativos; ?>" class="acao-btn ativar-btn">Ativar</a>
-                                            <?php endif; ?>
-                                        <?php endif; ?>
+                                    <div class="action-buttons">
+                                        <button class="edit-btn" onclick="editarUtilizador(<%= utilizador.get("id") %>)">Editar</button>
+                                        
+                                        <% if ((Integer)utilizador.get("id") != (Integer)session.getAttribute("id_utilizador")) { %>
+                                            <% if ((Integer)utilizador.get("ativo") == 1) { %>
+                                                <a href="gerir_utilizadores.jsp?alterar_estado=1&id=<%= utilizador.get("id") %>&ativo=0" class="deactivate-btn">Desativar</a>
+                                            <% } else { %>
+                                                <a href="gerir_utilizadores.jsp?alterar_estado=1&id=<%= utilizador.get("id") %>&ativo=1" class="activate-btn">Ativar</a>
+                                            <% } %>
+                                        <% } %>
                                     </div>
                                 </td>
                             </tr>
-                        <?php endwhile; ?>
-                        <?php if (mysqli_num_rows($utilizadores) == 0): ?>
-                            <!-- Mensagem quando não há utilizadores -->
-                            <tr><td colspan="9" class="no-results">Nenhum utilizador encontrado.</td></tr>
-                        <?php endif; ?>
+                        <% } %>
                     </tbody>
                 </table>
             </div>
@@ -435,15 +517,4 @@ $utilizadores = mysqli_query($conn, $sql);
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
 
