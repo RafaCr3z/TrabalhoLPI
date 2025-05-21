@@ -20,6 +20,7 @@ ResultSet rs = null;
 double saldo = 0.0;
 String mensagem = "";
 String tipo_mensagem = "";
+List<Map<String, Object>> transacoes = new ArrayList<>();
 
 try {
     conn = getConnection();
@@ -55,6 +56,29 @@ try {
         rs.close();
         pstmt.close();
     }
+    
+    // Busca o histórico de transações do cliente
+    pstmt = conn.prepareStatement(
+        "SELECT id, valor, tipo, descricao, data_transacao " +
+        "FROM transacoes " +
+        "WHERE id_cliente = ? " +
+        "ORDER BY data_transacao DESC " +
+        "LIMIT 20"
+    );
+    pstmt.setInt(1, id_cliente);
+    rs = pstmt.executeQuery();
+    
+    while (rs.next()) {
+        Map<String, Object> transacao = new HashMap<>();
+        transacao.put("id", rs.getInt("id"));
+        transacao.put("valor", rs.getDouble("valor"));
+        transacao.put("tipo", rs.getString("tipo"));
+        transacao.put("descricao", rs.getString("descricao"));
+        transacao.put("data_transacao", rs.getTimestamp("data_transacao"));
+        transacoes.add(transacao);
+    }
+    rs.close();
+    pstmt.close();
     
     // Verifica se existem mensagens na sessão
     if (session.getAttribute("mensagem") != null) {
@@ -250,6 +274,59 @@ try {
 
                     <button type="submit" class="btn-submit">Confirmar</button>
                 </form>
+            </div>
+            
+            <div class="transaction-history">
+                <h2>Histórico de Transações</h2>
+                <% if (transacoes.isEmpty()) { %>
+                    <p class="no-transactions">Nenhuma transação encontrada.</p>
+                <% } else { %>
+                    <div class="transactions-table-wrapper">
+                        <table class="transactions-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Tipo</th>
+                                    <th>Valor</th>
+                                    <th>Descrição</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% 
+                                SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+                                for (Map<String, Object> transacao : transacoes) { 
+                                    String tipo = (String)transacao.get("tipo");
+                                    double valor = (Double)transacao.get("valor");
+                                    Date dataTransacao = (Date)transacao.get("data_transacao");
+                                    String descricao = (String)transacao.get("descricao");
+                                    
+                                    String classeValor = "";
+                                    String valorFormatado = "";
+                                    
+                                    if ("deposito".equals(tipo)) {
+                                        classeValor = "deposito";
+                                        valorFormatado = "+€" + new DecimalFormat("#,##0.00").format(valor);
+                                    } else if ("levantamento".equals(tipo)) {
+                                        classeValor = "levantamento";
+                                        valorFormatado = "-€" + new DecimalFormat("#,##0.00").format(valor);
+                                    } else if ("compra".equals(tipo)) {
+                                        classeValor = "compra";
+                                        valorFormatado = "-€" + new DecimalFormat("#,##0.00").format(valor);
+                                    } else {
+                                        valorFormatado = "€" + new DecimalFormat("#,##0.00").format(valor);
+                                    }
+                                %>
+                                <tr>
+                                    <td><%= dateFormat.format(dataTransacao) %></td>
+                                    <td><%= tipo.substring(0, 1).toUpperCase() + tipo.substring(1) %></td>
+                                    <td class="<%= classeValor %>"><%= valorFormatado %></td>
+                                    <td><%= descricao %></td>
+                                </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } %>
             </div>
         </div>
     </section>

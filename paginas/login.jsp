@@ -1,6 +1,26 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.sql.*" %>
+<%@ page import="java.security.MessageDigest" %>
+<%@ page import="java.math.BigInteger" %>
 <%@ include file="../basedados/basedados.jsp" %>
+
+<%!
+// Método para gerar hash da senha usando SHA-256
+public static String hashPassword(String password) {
+    try {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] messageDigest = md.digest(password.getBytes());
+        BigInteger no = new BigInteger(1, messageDigest);
+        String hashtext = no.toString(16);
+        while (hashtext.length() < 32) {
+            hashtext = "0" + hashtext;
+        }
+        return hashtext;
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+}
+%>
 
 <%
     // Verificar se o utilizador já está autenticado
@@ -61,8 +81,9 @@
                                 senhaCorreta = true;
                             }
                         } else {
-                            // Senha armazenada em texto simples, faz comparação direta
-                            senhaCorreta = pass.equals(pwd_stored);
+                            // Verifica se a senha está armazenada como hash SHA-256
+                            String hashedPass = hashPassword(pass);
+                            senhaCorreta = hashedPass.equals(pwd_stored) || pass.equals(pwd_stored);
                         }
                         
                         if (senhaCorreta) {
