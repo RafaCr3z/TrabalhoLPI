@@ -14,6 +14,8 @@ String mensagem = "";
 String tipo_mensagem = "";
 Map<String, Object> rota_para_editar = null;
 Map<String, Object> horario_para_editar = null;
+List<Map<String, Object>> rotas = new ArrayList<>();
+List<Map<String, Object>> horarios = new ArrayList<>();
 
 // Processar mensagens da sessão
 if (session.getAttribute("mensagem_rota") != null) {
@@ -320,7 +322,6 @@ try {
     rs = stmt.executeQuery("SELECT r.*, (SELECT COUNT(*) FROM horarios WHERE id_rota = r.id) as total_horarios " +
                           "FROM rotas r WHERE r.disponivel = 1 ORDER BY r.id ASC");
     
-    List<Map<String, Object>> rotas = new ArrayList<>();
     while (rs.next()) {
         Map<String, Object> rota = new HashMap<>();
         rota.put("id", rs.getInt("id"));
@@ -340,7 +341,6 @@ try {
                           "WHERE h.disponivel = 1 " +
                           "ORDER BY h.data_viagem DESC, h.horario_partida ASC");
     
-    List<Map<String, Object>> horarios = new ArrayList<>();
     while (rs.next()) {
         Map<String, Object> horario = new HashMap<>();
         horario.put("id", rs.getInt("id"));
@@ -545,7 +545,7 @@ try {
                                 <td>€<%= String.format("%.2f", rota.get("preco")) %></td>
                                 <td><%= rota.get("capacidade") %></td>
                                 <td><%= rota.get("total_horarios") %></td>
-                                <td>
+                                <td class="actions-column">
                                     <a href="gerir_rotas.jsp?editar=<%= rota.get("id") %>" class="btn-edit">Editar</a>
                                     <a href="javascript:void(0)" onclick="confirmarExclusaoRota(<%= rota.get("id") %>)" class="btn-delete">Excluir</a>
                                 </td>
@@ -576,7 +576,7 @@ try {
                                 <td><%= horario.get("data_viagem") %></td>
                                 <td><%= horario.get("horario_partida") %></td>
                                 <td><%= horario.get("lugares_disponiveis") %></td>
-                                <td>
+                                <td class="actions-column">
                                     <a href="gerir_rotas.jsp?editar_horario=<%= horario.get("id") %>" class="btn-edit">Editar</a>
                                     <a href="javascript:void(0)" onclick="confirmarExclusaoHorario(<%= horario.get("id") %>)" class="btn-delete">Excluir</a>
                                 </td>
@@ -607,4 +607,10 @@ try {
     </script>
 </body>
 </html>
+
+
+
+
+
+
 

@@ -440,23 +440,14 @@ try {
                                     %>
                                 </td>
                                 <td><%= utilizador.get("total_bilhetes") %></td>
-                                <td>
-                                    <span class="status-badge <%= (Integer)utilizador.get("ativo") == 1 ? "active" : "inactive" %>">
-                                        <%= (Integer)utilizador.get("ativo") == 1 ? "Ativo" : "Inativo" %>
+                                <td class="text-center">
+                                    <span class="status-badge <%= utilizador.get("ativo").equals("1") ? "status-active" : "status-inactive" %>">
+                                        <%= utilizador.get("ativo").equals("1") ? "Ativo" : "Inativo" %>
                                     </span>
                                 </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="edit-btn" onclick="editarUtilizador(<%= utilizador.get("id") %>)">Editar</button>
-                                        
-                                        <% if ((Integer)utilizador.get("id") != (Integer)session.getAttribute("id_utilizador")) { %>
-                                            <% if ((Integer)utilizador.get("ativo") == 1) { %>
-                                                <a href="gerir_utilizadores.jsp?alterar_estado=1&id=<%= utilizador.get("id") %>&ativo=0" class="deactivate-btn">Desativar</a>
-                                            <% } else { %>
-                                                <a href="gerir_utilizadores.jsp?alterar_estado=1&id=<%= utilizador.get("id") %>&ativo=1" class="activate-btn">Ativar</a>
-                                            <% } %>
-                                        <% } %>
-                                    </div>
+                                <td class="actions-column">
+                                    <a href="gerir_utilizadores.jsp?editar=<%= utilizador.get("id") %>" class="btn-edit">Editar</a>
+                                    <a href="javascript:void(0)" onclick="confirmarExclusao(<%= utilizador.get("id") %>)" class="btn-delete">Excluir</a>
                                 </td>
                             </tr>
                         <% } %>
@@ -500,11 +491,22 @@ try {
         </div>
     </div>
 
+    <!-- Script para confirmação de exclusão -->
+    <script>
+    function confirmarExclusao(id) {
+        if (confirm("Tem certeza que deseja excluir este utilizador? Esta ação não pode ser desfeita.")) {
+            window.location.href = "gerir_utilizadores.jsp?excluir=" + id;
+        }
+    }
+    </script>
+
     <!-- Rodapé da página -->
     <footer>
         © <%= new java.util.Date().getYear() + 1900 %> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
 </body>
 </html>
+
+
 
 

@@ -28,15 +28,16 @@ try {
         PreparedStatement stmt_editar = conn.prepareStatement("SELECT * FROM alertas WHERE id = ?");
         stmt_editar.setInt(1, id_editar);
         ResultSet result_editar = stmt_editar.executeQuery();
-
+        
         // Se encontrar o alerta, guarda os dados para preencher o formulário
         if (result_editar.next()) {
             alerta_para_editar = new HashMap<>();
-            alerta_para_editar.put("id", result_editar.getInt("id"));
+            alerta_para_editar.put("id", String.valueOf(result_editar.getInt("id")));
             alerta_para_editar.put("mensagem", result_editar.getString("mensagem"));
             alerta_para_editar.put("data_inicio", result_editar.getString("data_inicio"));
             alerta_para_editar.put("data_fim", result_editar.getString("data_fim"));
         }
+        
         // Liberta recursos da consulta
         result_editar.close();
         stmt_editar.close();

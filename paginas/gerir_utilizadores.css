@@ -508,7 +508,102 @@ footer img {
     }
 }
 
+/* Estilos para os botões de ação nas tabelas */
+.btn-edit, .btn-delete {
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-block;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+}
 
+.btn-edit {
+    background-color: #007BFF;
+    color: white;
+}
 
+.btn-edit:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilo para a coluna de ações */
+.actions-column {
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* Estilo para o indicador de estado */
+.status-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    min-width: 80px;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Ajustes para a tabela */
+.utilizadores-table {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.utilizadores-table th {
+    background-color: #f0f4f8;
+    color: #333;
+    font-weight: 600;
+    padding: 15px;
+    text-align: left;
+}
+
+.utilizadores-table td {
+    padding: 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid #eee;
+}
+
+.utilizadores-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.utilizadores-table tr:hover {
+    background-color: #f0f7ff;
+}
+
+/* Estilo para a coluna de ações */
+.actions-column {
+    white-space: nowrap;
+    text-align: center;
+}
 
 

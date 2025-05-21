@@ -178,82 +178,75 @@ th {
     background-color: #f2f2f2;
 }
 
-/* Estilos para os botões de ação nas tabelas */
+/* Estilos simplificados para os botões de ação */
 .action-buttons {
     display: flex;
     gap: 8px;
     justify-content: center;
 }
 
-.action-btn {
+.btn-edit, .btn-delete {
     padding: 6px 12px;
     border-radius: 4px;
     text-decoration: none;
-    color: white;
-    font-size: 13px;
-    text-align: center;
-    min-width: 70px;
-    transition: all 0.2s ease;
+    font-size: 14px;
     font-weight: 500;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
 }
 
-.edit {
+.btn-edit {
     background-color: #4a90e2;
-    border: 1px solid #3a80d2;
-    display: inline-block;
-    position: relative;
-    overflow: hidden;
-}
-
-.edit:before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: all 0.6s ease;
-}
-
-.edit:hover {
-    background-color: #357abd;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     color: white;
+    border: none;
 }
 
-.edit:hover:before {
-    left: 100%;
+.btn-edit:hover {
+    background-color: #3a7bc8;
 }
 
-.edit:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-}
-
-.delete {
+.btn-delete {
     background-color: #e74c3c;
-    border: 1px solid #d73c2c;
+    color: white;
+    border: none;
 }
 
-.delete:hover {
+.btn-delete:hover {
     background-color: #c0392b;
-    transform: translateY(-2px);
 }
 
-/* Ajustes para responsividade dos botões */
+/* Melhorias simples para a tabela */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background-color: #f2f2f2;
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+}
+
+tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Responsividade para os botões */
 @media (max-width: 768px) {
     .action-buttons {
         flex-direction: column;
-        align-items: center;
-        gap: 5px;
+        gap: 8px;
     }
     
-    .action-btn {
+    .btn-edit, .btn-delete {
         width: 100%;
-        margin-bottom: 3px;
     }
 }
 
@@ -379,5 +372,70 @@ footer img {
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
+/* Estilos para os botões de ação nas tabelas */
+.btn-edit, .btn-delete {
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-block;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+}
 
+.btn-edit {
+    background-color: #007BFF;
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Ajustes para a tabela */
+.alertas-table {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.alertas-table th {
+    background-color: #f0f4f8;
+    color: #333;
+    font-weight: 600;
+    padding: 15px;
+}
+
+.alertas-table td {
+    padding: 15px;
+    vertical-align: middle;
+}
+
+.alertas-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.alertas-table tr:hover {
+    background-color: #f0f7ff;
+}
+
+/* Estilo para a coluna de ações */
+.actions-column {
+    white-space: nowrap;
+    text-align: center;
+}
 
