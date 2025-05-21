@@ -297,7 +297,7 @@ try {
                                 for (Map<String, Object> transacao : transacoes) { 
                                     String tipo = (String)transacao.get("tipo");
                                     double valor = (Double)transacao.get("valor");
-                                    Date dataTransacao = (Date)transacao.get("data_transacao");
+                                    java.sql.Timestamp dataTransacao = (java.sql.Timestamp)transacao.get("data_transacao");
                                     String descricao = (String)transacao.get("descricao");
                                     
                                     String classeValor = "";
