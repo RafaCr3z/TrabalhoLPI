@@ -171,9 +171,9 @@ try {
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="gerir_alertas.css">
-    <link rel="stylesheet" href="common.css">
     <title>FelixBus - Gestão de Alertas</title>
 </head>
 <body>
@@ -182,8 +182,8 @@ try {
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
         </div>
-        <div class="links" style="display: flex; justify-content: center; width: 50%;">
-            <div class="link"> <a href="pg_admin.jsp" style="font-size: 1.2rem; font-weight: 500;">Voltar para Página Inicial</a></div>
+        <div class="links">
+            <div class="link"><a href="pg_admin.jsp">Voltar para Página Inicial</a></div>
         </div>
         <div class="buttons">
             <div class="btn"><a href="logout.jsp"><button>Logout</button></a></div>
@@ -193,15 +193,15 @@ try {
 
     <!-- MAIN CONTENT -->
     <section>
+        <h1>Gestão de Alertas</h1>
+        
+        <% if (!mensagem_feedback.isEmpty()) { %>
+            <div class="alert <%= "success".equals(tipo_mensagem) ? "alert-success" : "alert-danger" %>">
+                <%= mensagem_feedback %>
+            </div>
+        <% } %>
+        
         <div class="container">
-            <h1>Gestão de Alertas</h1>
-            
-            <% if (!mensagem_feedback.isEmpty()) { %>
-                <div class="alert <%= "success".equals(tipo_mensagem) ? "alert-success" : "alert-danger" %>">
-                    <%= mensagem_feedback %>
-                </div>
-            <% } %>
-            
             <div class="form-container">
                 <h2><%= alerta_para_editar != null ? "Editar Alerta" : "Adicionar Novo Alerta" %></h2>
                 <form method="post" action="gerir_alertas.jsp">
