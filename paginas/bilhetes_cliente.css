@@ -168,6 +168,32 @@ input, select {
     background-color: #f2f2f2;
 }
 
+/* Dropdown da tabela */
+.table-dropdown-header {
+    background-color: #0056b3;
+    color: white;
+    padding: 10px 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-dropdown-header:hover {
+    background-color: #004494;
+}
+
+.table-dropdown-content {
+    display: none;
+    background-color: white;
+    border: 1px solid #ddd;
+    padding: 15px;
+}
+
+.table-dropdown-content.open {
+    display: block;
+}
+
 /* Informações de viagem */
 .info-viagem-box {
     background-color: #f8f9fa;
@@ -188,15 +214,40 @@ input, select {
     .content-wrapper {
         flex-direction: column;
     }
-    
+
     .comprar-bilhete, .meus-bilhetes {
         min-width: 100%;
     }
-    
+
     .info-viagem-grid {
         grid-template-columns: 1fr;
     }
 }
 
+/* Footer */
+footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    padding: 6px;
+    text-align: center;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    z-index: 100;
+}
+
+footer span {
+    font-weight: bold;
+}
+
+footer img {
+    height: 14px;
+    width: auto;
+}
 
 

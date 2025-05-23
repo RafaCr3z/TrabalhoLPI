@@ -1,5 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="java.sql.*, java.util.*, java.text.*" %>
+<%@ page import="java.sql.*, java.util.*, java.text.*, java.math.BigDecimal, java.math.RoundingMode" %>
 <%@ include file="../basedados/basedados.jsp" %>
 
 <%
@@ -21,6 +21,11 @@ double saldo = 0.0;
 String mensagem = "";
 String tipo_mensagem = "";
 List<Map<String, Object>> transacoes = new ArrayList<>();
+
+// Adicionar antes do try principal
+String filtroTipo = request.getParameter("filtro_tipo");
+String ordenacao = request.getParameter("ordenacao");
+String periodoFiltro = request.getParameter("periodo");
 
 try {
     conn = getConnection();
@@ -57,15 +62,46 @@ try {
         pstmt.close();
     }
     
-    // Busca o histórico de transações do cliente
-    pstmt = conn.prepareStatement(
+    // Busca o histórico de transações do cliente com filtros
+    StringBuilder sqlTransacoes = new StringBuilder(
         "SELECT id, valor, tipo, descricao, data_transacao " +
         "FROM transacoes " +
-        "WHERE id_cliente = ? " +
-        "ORDER BY data_transacao DESC " +
-        "LIMIT 20"
+        "WHERE id_cliente = ? "
     );
+
+    // Aplicar filtro por tipo
+    if (filtroTipo != null && !filtroTipo.equals("todos")) {
+        sqlTransacoes.append("AND tipo = ? ");
+    }
+
+    // Aplicar filtro por período
+    if (periodoFiltro != null) {
+        if (periodoFiltro.equals("hoje")) {
+            sqlTransacoes.append("AND DATE(data_transacao) = CURDATE() ");
+        } else if (periodoFiltro.equals("semana")) {
+            sqlTransacoes.append("AND data_transacao >= DATE_SUB(NOW(), INTERVAL 7 DAY) ");
+        } else if (periodoFiltro.equals("mes")) {
+            sqlTransacoes.append("AND data_transacao >= DATE_SUB(NOW(), INTERVAL 30 DAY) ");
+        }
+    }
+
+    // Aplicar ordenação
+    if (ordenacao != null && ordenacao.equals("valor")) {
+        sqlTransacoes.append("ORDER BY valor DESC ");
+    } else {
+        sqlTransacoes.append("ORDER BY data_transacao DESC ");
+    }
+
+    sqlTransacoes.append("LIMIT 20");
+
+    pstmt = conn.prepareStatement(sqlTransacoes.toString());
     pstmt.setInt(1, id_cliente);
+
+    // Se tiver filtro por tipo, adicionar o parâmetro
+    if (filtroTipo != null && !filtroTipo.equals("todos")) {
+        pstmt.setString(2, filtroTipo);
+    }
+
     rs = pstmt.executeQuery();
     
     while (rs.next()) {
@@ -92,112 +128,134 @@ try {
     
     // Verifica se o formulário foi submetido
     if ("POST".equals(request.getMethod())) {
-        // Obtém os valores do formulário
-        double valor = Double.parseDouble(request.getParameter("valor"));
+        // Sanitização e validação do valor
+        String valorStr = request.getParameter("valor");
         String operacao = request.getParameter("operacao");
+        BigDecimal valor = null;
         
-        // Verifica se o valor é válido (maior que zero)
-        if (valor <= 0) {
-            session.setAttribute("mensagem", "Valor inválido. Por favor, introduza um valor superior a zero.");
-            session.setAttribute("tipo_mensagem", "danger");
+        try {
+            // Converter para BigDecimal com 2 casas decimais
+            valor = new BigDecimal(valorStr).setScale(2, RoundingMode.HALF_UP);
             
-            // Redireciona para evitar reenvio do formulário ao atualizar a página
+            // Verificar se o valor é positivo
+            if (valor.compareTo(BigDecimal.ZERO) <= 0) {
+                session.setAttribute("mensagem", "Valor inválido. Por favor, introduza um valor superior a zero.");
+                session.setAttribute("tipo_mensagem", "danger");
+                response.sendRedirect("carteira_cliente.jsp");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            session.setAttribute("mensagem", "Formato de valor inválido. Use apenas números e ponto decimal.");
+            session.setAttribute("tipo_mensagem", "danger");
             response.sendRedirect("carteira_cliente.jsp");
             return;
-        } else {
-            // Inicia uma transação para garantir a integridade dos dados
-            conn.setAutoCommit(false);
+        }
+        
+        // Inicia uma transação para garantir a integridade dos dados
+        conn.setAutoCommit(false);
+        
+        try {
+            String sql_atualiza = null;
+            String tipo_transacao = null;
+            String descricao = null;
             
-            try {
-                String sql_atualiza = null;
-                String tipo_transacao = null;
-                String descricao = null;
+            // Define a operação a realizar com base na escolha do utilizador
+            if ("depositar".equals(operacao)) {
+                sql_atualiza = "UPDATE carteiras SET saldo = saldo + ? WHERE id_cliente = ?";
+                tipo_transacao = "deposito";
+                descricao = "Depósito de €" + valor + " na carteira";
                 
-                // Define a operação a realizar com base na escolha do utilizador
-                if ("depositar".equals(operacao)) {
-                    // Adiciona valor à carteira
-                    sql_atualiza = "UPDATE carteiras SET saldo = saldo + ? WHERE id_cliente = ?";
-                    tipo_transacao = "deposito";
-                    descricao = "Depósito de €" + valor + " na carteira";
-                } else if ("levantar".equals(operacao) && saldo >= valor) {
-                    // Retira valor da carteira se houver saldo suficiente
+                // Atualizar carteira FelixBus
+                pstmt = conn.prepareStatement("UPDATE carteira_felixbus SET saldo = saldo + ? WHERE id = ?");
+                pstmt.setBigDecimal(1, valor);
+                pstmt.setInt(2, id_carteira_felixbus);
+                pstmt.executeUpdate();
+                pstmt.close();
+            } else if ("levantar".equals(operacao)) {
+                // Verificar saldo suficiente
+                BigDecimal saldoBD = new BigDecimal(saldo).setScale(2, RoundingMode.HALF_UP);
+                if (saldoBD.compareTo(valor) >= 0) {
                     sql_atualiza = "UPDATE carteiras SET saldo = saldo - ? WHERE id_cliente = ?";
                     tipo_transacao = "levantamento";
                     descricao = "Levantamento de €" + valor + " da carteira";
+                    
+                    // Atualizar carteira FelixBus
+                    pstmt = conn.prepareStatement("UPDATE carteira_felixbus SET saldo = saldo - ? WHERE id = ?");
+                    pstmt.setBigDecimal(1, valor);
+                    pstmt.setInt(2, id_carteira_felixbus);
+                    pstmt.executeUpdate();
+                    pstmt.close();
                 } else {
-                    // Mensagem de erro se não houver saldo suficiente
                     session.setAttribute("mensagem", "Saldo insuficiente para realizar esta operação.");
+                    session.setAttribute("tipo_mensagem", "danger");
+                    response.sendRedirect("carteira_cliente.jsp");
+                    return;
+                }
+            }
+            
+            // Executa a atualização do saldo
+            if (sql_atualiza != null) {
+                pstmt = conn.prepareStatement(sql_atualiza);
+                pstmt.setBigDecimal(1, valor);
+                pstmt.setInt(2, id_cliente);
+                
+                if (pstmt.executeUpdate() > 0) {
+                    pstmt.close();
+                    
+                    // Registra a transação
+                    pstmt = conn.prepareStatement("INSERT INTO transacoes (id_cliente, valor, tipo, descricao, data_transacao) VALUES (?, ?, ?, ?, NOW())");
+                    pstmt.setInt(1, id_cliente);
+                    pstmt.setBigDecimal(2, valor);
+                    pstmt.setString(3, tipo_transacao);
+                    pstmt.setString(4, descricao);
+                    
+                    if (pstmt.executeUpdate() > 0) {
+                        // Confirma a transação na base de dados
+                        conn.commit();
+                        
+                        // Atualiza o saldo exibido
+                        pstmt = conn.prepareStatement("SELECT saldo FROM carteiras WHERE id_cliente = ?");
+                        pstmt.setInt(1, id_cliente);
+                        rs = pstmt.executeQuery();
+                        
+                        if (rs.next()) {
+                            saldo = rs.getDouble("saldo");
+                        }
+                        
+                        // Define mensagem de sucesso
+                        session.setAttribute("mensagem", "Operação realizada com sucesso!");
+                        session.setAttribute("tipo_mensagem", "success");
+                        
+                        // Redireciona para evitar reenvio do formulário
+                        response.sendRedirect("carteira_cliente.jsp");
+                        return;
+                    } else {
+                        // Lança exceção se houver erro ao registar a transação
+                        throw new Exception("Erro ao registrar transação");
+                    }
+                } else {
+                    // Cancela a transação e mostra mensagem de erro
+                    conn.rollback();
+                    session.setAttribute("mensagem", "Erro ao atualizar saldo");
                     session.setAttribute("tipo_mensagem", "danger");
                     
                     // Redireciona para evitar reenvio do formulário
                     response.sendRedirect("carteira_cliente.jsp");
                     return;
                 }
-                
-                // Executa a atualização do saldo
-                if (sql_atualiza != null) {
-                    pstmt = conn.prepareStatement(sql_atualiza);
-                    pstmt.setDouble(1, valor);
-                    pstmt.setInt(2, id_cliente);
-                    
-                    if (pstmt.executeUpdate() > 0) {
-                        pstmt.close();
-                        
-                        // Registra a transação
-                        pstmt = conn.prepareStatement("INSERT INTO transacoes (id_cliente, valor, tipo, descricao, data_transacao) VALUES (?, ?, ?, ?, NOW())");
-                        pstmt.setInt(1, id_cliente);
-                        pstmt.setDouble(2, valor);
-                        pstmt.setString(3, tipo_transacao);
-                        pstmt.setString(4, descricao);
-                        
-                        if (pstmt.executeUpdate() > 0) {
-                            // Confirma a transação na base de dados
-                            conn.commit();
-                            
-                            // Atualiza o saldo exibido
-                            pstmt = conn.prepareStatement("SELECT saldo FROM carteiras WHERE id_cliente = ?");
-                            pstmt.setInt(1, id_cliente);
-                            rs = pstmt.executeQuery();
-                            
-                            if (rs.next()) {
-                                saldo = rs.getDouble("saldo");
-                            }
-                            
-                            // Define mensagem de sucesso
-                            session.setAttribute("mensagem", "Operação realizada com sucesso!");
-                            session.setAttribute("tipo_mensagem", "success");
-                            
-                            // Redireciona para evitar reenvio do formulário
-                            response.sendRedirect("carteira_cliente.jsp");
-                            return;
-                        } else {
-                            // Lança exceção se houver erro ao registar a transação
-                            throw new Exception("Erro ao registrar transação");
-                        }
-                    } else {
-                        // Cancela a transação e mostra mensagem de erro
-                        conn.rollback();
-                        session.setAttribute("mensagem", "Erro ao atualizar saldo");
-                        session.setAttribute("tipo_mensagem", "danger");
-                        
-                        // Redireciona para evitar reenvio do formulário
-                        response.sendRedirect("carteira_cliente.jsp");
-                        return;
-                    }
-                }
-            } catch (Exception e) {
-                // Cancela a transação em caso de exceção
-                conn.rollback();
-                session.setAttribute("mensagem", e.getMessage());
-                session.setAttribute("tipo_mensagem", "danger");
-                
-                // Redireciona para evitar reenvio do formulário
-                response.sendRedirect("carteira_cliente.jsp");
-                return;
-            } finally {
-                // Restaura o modo de auto-commit
-                conn.setAutoCommit(true);
             }
+        } catch (Exception e) {
+            // Cancela a transação em caso de exceção
+            conn.rollback();
+            session.setAttribute("mensagem", e.getMessage());
+            session.setAttribute("tipo_mensagem", "danger");
+            
+            // Redireciona para evitar reenvio do formulário
+            response.sendRedirect("carteira_cliente.jsp");
+            return;
+        } finally {
+            // Restaura o modo de auto-commit
+            conn.setAutoCommit(true);
         }
     }
 } catch (Exception e) {
@@ -278,6 +336,42 @@ try {
             
             <div class="transaction-history">
                 <h2>Histórico de Transações</h2>
+                
+                <!-- Formulário de filtros -->
+                <div class="filter-form">
+                    <form method="get" action="carteira_cliente.jsp">
+                        <div class="filter-group">
+                            <label for="filtro_tipo">Tipo:</label>
+                            <select id="filtro_tipo" name="filtro_tipo">
+                                <option value="todos" <%= "todos".equals(request.getParameter("filtro_tipo")) ? "selected" : "" %>>Todos</option>
+                                <option value="deposito" <%= "deposito".equals(request.getParameter("filtro_tipo")) ? "selected" : "" %>>Depósitos</option>
+                                <option value="levantamento" <%= "levantamento".equals(request.getParameter("filtro_tipo")) ? "selected" : "" %>>Levantamentos</option>
+                                <option value="compra" <%= "compra".equals(request.getParameter("filtro_tipo")) ? "selected" : "" %>>Compras</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="periodo">Período:</label>
+                            <select id="periodo" name="periodo">
+                                <option value="todos" <%= "todos".equals(request.getParameter("periodo")) ? "selected" : "" %>>Todos</option>
+                                <option value="hoje" <%= "hoje".equals(request.getParameter("periodo")) ? "selected" : "" %>>Hoje</option>
+                                <option value="semana" <%= "semana".equals(request.getParameter("periodo")) ? "selected" : "" %>>Última semana</option>
+                                <option value="mes" <%= "mes".equals(request.getParameter("periodo")) ? "selected" : "" %>>Último mês</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="ordenacao">Ordenar por:</label>
+                            <select id="ordenacao" name="ordenacao">
+                                <option value="data" <%= "data".equals(request.getParameter("ordenacao")) || request.getParameter("ordenacao") == null ? "selected" : "" %>>Data</option>
+                                <option value="valor" <%= "valor".equals(request.getParameter("ordenacao")) ? "selected" : "" %>>Valor</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn-filter">Filtrar</button>
+                    </form>
+                </div>
+                
                 <% if (transacoes.isEmpty()) { %>
                     <p class="no-transactions">Nenhuma transação encontrada.</p>
                 <% } else { %>

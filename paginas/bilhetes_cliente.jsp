@@ -1,6 +1,14 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="java.sql.*, java.util.*, java.text.*, java.util.Set, java.util.HashSet" %>
+<%@ page import="java.sql.*, java.util.*, java.text.*, java.util.Set, java.util.HashSet, java.util.logging.*" %>
 <%@ include file="../basedados/basedados.jsp" %>
+
+<%!
+    // Método para registrar erros no log
+    private void logError(String mensagem, Exception e) {
+        Logger logger = Logger.getLogger("bilhetes_cliente.jsp");
+        logger.log(Level.SEVERE, mensagem, e);
+    }
+%>
 
 <%
 // Verifica se o utilizador está autenticado e se é um cliente (nível 3)
@@ -31,10 +39,26 @@ if ("POST".equals(request.getMethod()) && request.getParameter("horario") != nul
     try {
         conn = getConnection();
 
-        // Obter parâmetros do formulário
-        int id_horario = Integer.parseInt(request.getParameter("horario"));
-        int quantidade = Integer.parseInt(request.getParameter("quantidade"));
-        int id_rota = Integer.parseInt(request.getParameter("rota"));
+        // Obter e validar parâmetros do formulário
+        int id_horario = 0;
+        int quantidade = 0;
+        int id_rota = 0;
+        
+        // Sanitização e validação de inputs
+        try {
+            id_horario = Integer.parseInt(request.getParameter("horario"));
+            quantidade = Integer.parseInt(request.getParameter("quantidade"));
+            id_rota = Integer.parseInt(request.getParameter("rota"));
+            
+            // Validação adicional dos valores
+            if (id_horario <= 0 || id_rota <= 0) {
+                throw new NumberFormatException("ID inválido");
+            }
+        } catch (NumberFormatException e) {
+            mensagem = "Dados inválidos no formulário. Por favor, tente novamente.";
+            tipo_mensagem = "danger";
+            throw new Exception("Erro de validação de parâmetros: " + e.getMessage());
+        }
 
         // Validar quantidade
         if (quantidade <= 0 || quantidade > 10) {
@@ -42,7 +66,7 @@ if ("POST".equals(request.getMethod()) && request.getParameter("horario") != nul
             tipo_mensagem = "danger";
         } else {
             // Verificar se o horário existe e tem lugares disponíveis
-            pstmt = conn.prepareStatement("SELECT h.lugares_disponiveis, r.preco, r.origem, r.destino FROM horarios h JOIN rotas r ON h.id_rota = r.id WHERE h.id = ?");
+            pstmt = conn.prepareStatement("SELECT h.lugares_disponiveis, r.preco, r.origem, r.destino FROM horarios h JOIN rotas r ON h.id_rota = r.id WHERE h.id = ? AND h.disponivel = 1");
             pstmt.setInt(1, id_horario);
             rs = pstmt.executeQuery();
 
@@ -196,8 +220,11 @@ if ("POST".equals(request.getMethod()) && request.getParameter("horario") != nul
                             } catch (Exception e) {
                                 // Reverter transação em caso de erro
                                 conn.rollback();
-                                mensagem = "Erro ao processar a compra: " + e.getMessage();
+                                mensagem = "Erro ao processar a compra. Por favor, tente novamente.";
                                 tipo_mensagem = "danger";
+                                // Log do erro real para depuração (não mostrado ao usuário)
+                                logError("Erro na transação", e);
+                                e.printStackTrace();
                             } finally {
                                 conn.setAutoCommit(true);
                             }
@@ -219,8 +246,10 @@ if ("POST".equals(request.getMethod()) && request.getParameter("horario") != nul
             }
         }
     } catch (Exception e) {
-        mensagem = "Erro ao processar a compra: " + e.getMessage();
+        mensagem = "Erro ao processar a compra. Por favor, tente novamente mais tarde.";
         tipo_mensagem = "danger";
+        // Log do erro real para depuração (não mostrado ao usuário)
+        logError("Erro geral na compra de bilhete", e);
         e.printStackTrace();
     } finally {
         if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
@@ -273,7 +302,8 @@ try {
             out.println("<!-- Tabela bilhetes criada com sucesso -->");
         }
     } catch (Exception e) {
-        out.println("<!-- Erro ao verificar estrutura da tabela bilhetes: " + e.getMessage() + " -->");
+        // Comentário removido para não expor detalhes da estrutura no HTML
+        logError("Erro ao verificar estrutura da tabela bilhetes", e);
 
         try {
             // Tentar criar a tabela bilhetes
@@ -290,9 +320,10 @@ try {
                 ")";
             stmt = conn.prepareStatement(sql_create_bilhetes);
             stmt.executeUpdate();
-            out.println("<!-- Tabela bilhetes criada com sucesso após erro -->");
+            // Comentário removido para não expor detalhes da estrutura no HTML
         } catch (Exception ex) {
-            out.println("<!-- Erro ao criar tabela bilhetes: " + ex.getMessage() + " -->");
+            // Comentário removido para não expor detalhes da estrutura no HTML
+            logError("Erro ao criar tabela bilhetes", ex);
         }
     }
 
@@ -407,13 +438,13 @@ try {
 
     // Não precisamos mais construir JSON, pois os dados são usados diretamente no HTML
 
-    // Buscar bilhetes do cliente
+    // Buscar bilhetes do cliente ordenados por data de compra (mais recentes primeiro)
     String sql_bilhetes = "SELECT b.id, b.data_compra, b.data_viagem, b.hora_viagem, b.numero_lugar, " +
                          "r.origem, r.destino, r.preco " +
                          "FROM bilhetes b " +
                          "JOIN rotas r ON b.id_rota = r.id " +
                          "WHERE b.id_cliente = ? " +
-                         "ORDER BY b.data_viagem DESC, b.hora_viagem DESC";
+                         "ORDER BY b.data_compra DESC";
 
     stmt = conn.prepareStatement(sql_bilhetes);
     stmt.setInt(1, id_cliente);
@@ -457,7 +488,8 @@ try {
     rs.close();
 
 } catch (Exception e) {
-    out.println("<!-- Erro: " + e.getMessage() + " -->");
+    // Não expor detalhes do erro no HTML
+    logError("Erro ao carregar dados", e);
     e.printStackTrace();
 } finally {
     if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
@@ -465,8 +497,6 @@ try {
     if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }
 }
 
-// Informação para depuração
-out.println("<!-- Número de rotas com horários: " + horarios_por_rota.size() + " -->");
 %>
 
 <!DOCTYPE html>
@@ -612,52 +642,57 @@ out.println("<!-- Número de rotas com horários: " + horarios_por_rota.size() +
             </div>
 
             <div class="meus-bilhetes">
-                <div class="card-header">
-                    <h2>Meus Bilhetes</h2>
-                </div>
-                <div class="card-body">
-                    <div class="bilhetes-list">
-                        <% if (!bilhetes.isEmpty()) { %>
-                            <div class="table-responsive">
-                                <table class="bilhetes-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Origem</th>
-                                            <th>Destino</th>
-                                            <th>Data</th>
-                                            <th>Hora</th>
-                                            <th>Lugares</th>
-                                            <th>Preço</th>
-                                            <th>Data Compra</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <% for (Map<String, String> bilhete : bilhetes) { %>
-                                            <tr>
-                                                <td><%= bilhete.get("origem") %></td>
-                                                <td><%= bilhete.get("destino") %></td>
-                                                <td><%= bilhete.get("data_viagem") %></td>
-                                                <td><%= bilhete.get("horario_partida") %></td>
-                                                <td><%= bilhete.get("lugares") %></td>
-                                                <td>€<%= bilhete.get("preco_total") %></td>
-                                                <td><%= bilhete.get("data_compra") %></td>
-                                            </tr>
-                                        <% } %>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <% } else { %>
-                            <div class="empty-state">
-                                <p>Ainda não possui nenhum bilhete. Compre o seu primeiro bilhete agora!</p>
-                            </div>
-                        <% } %>
+                <div class="table-dropdown">
+                    <div class="table-dropdown-header" onclick="toggleTableDropdown()">
+                        <h2>Meus Bilhetes (<%= bilhetes.size() %>)</h2>
+                        <span>▼</span>
+                    </div>
+                    <div class="table-dropdown-content open" id="tableDropdownContent">
+                        <div class="bilhetes-list">
+                                <% if (!bilhetes.isEmpty()) { %>
+                                    <div class="table-responsive">
+                                        <table class="bilhetes-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Origem</th>
+                                                    <th>Destino</th>
+                                                    <th>Data</th>
+                                                    <th>Hora</th>
+                                                    <th>Lugares</th>
+                                                    <th>Preço</th>
+                                                    <th>Data Compra</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% for (Map<String, String> bilhete : bilhetes) { %>
+                                                    <tr>
+                                                        <td><%= bilhete.get("origem") %></td>
+                                                        <td><%= bilhete.get("destino") %></td>
+                                                        <td><%= bilhete.get("data_viagem") %></td>
+                                                        <td><%= bilhete.get("horario_partida") %></td>
+                                                        <td><%= bilhete.get("lugares") %></td>
+                                                        <td>€<%= bilhete.get("preco_total") %></td>
+                                                        <td><%= bilhete.get("data_compra") %></td>
+                                                    </tr>
+                                                <% } %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <% } else { %>
+                                    <div class="empty-state">
+                                        <p>Ainda não possui nenhum bilhete. Compre o seu primeiro bilhete agora!</p>
+                                    </div>
+                                <% } %>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <footer><%= new java.util.Date().getYear() + 1900 %><img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span></footer>
+    <footer>
+    <%= new java.util.Date().getYear() + 1900 %><img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
+    </footer>
 </body>
 </html>
 
@@ -792,4 +827,15 @@ out.println("<!-- Número de rotas com horários: " + horarios_por_rota.size() +
     }
 
     }); // Fim do evento DOMContentLoaded
+
+    // Função para controlar o dropdown da tabela
+    function toggleTableDropdown() {
+        const content = document.getElementById('tableDropdownContent');
+
+        if (content.classList.contains('open')) {
+            content.classList.remove('open');
+        } else {
+            content.classList.add('open');
+        }
+    }
 </script>
