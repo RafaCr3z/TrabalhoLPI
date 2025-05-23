@@ -3,7 +3,7 @@
 <%@ include file="../basedados/basedados.jsp" %>
 
 <%!
-// Método para gerar hash da senha usando SHA-256
+// Função utilitária para gerar hash SHA-256 da palavra-passe
 public static String hashPassword(String password) {
     try {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -19,24 +19,23 @@ public static String hashPassword(String password) {
     }
 }
 
-// Método para verificar senha
+// Função para comparar a palavra-passe fornecida com o hash armazenado
 public static boolean checkPassword(String password, String storedHash) {
     return storedHash.equals(hashPassword(password));
 }
 %>
 
 <%
-// Verificar se o usuário é cliente
+// Verifica se o utilizador é cliente (nível 3)
 if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 3) {
     response.sendRedirect("erro.jsp");
     return;
 }
 
+// Inicializa variáveis do utilizador
 int id_utilizador = (Integer)session.getAttribute("id_utilizador");
 String mensagem = "";
 String tipo_mensagem = "";
-
-// Declarar variáveis para os dados do utilizador
 String nome = "";
 String email = "";
 String telemovel = "";
@@ -48,48 +47,51 @@ ResultSet rs = null;
 
 try {
     conn = getConnection();
-    conn.setAutoCommit(false); // Iniciar transação
-    
-    // Buscar dados do utilizador
+    conn.setAutoCommit(false); // Inicia transação
+
+    // Busca dados atuais do utilizador
     pstmt = conn.prepareStatement("SELECT nome, email, telemovel, morada FROM utilizadores WHERE id = ?");
     pstmt.setInt(1, id_utilizador);
     rs = pstmt.executeQuery();
-    
+
     if (!rs.next()) {
         throw new Exception("Erro ao buscar dados do utilizador.");
     }
-    
+
+    // Preenche variáveis com dados atuais
     nome = rs.getString("nome");
     email = rs.getString("email");
     telemovel = rs.getString("telemovel");
     morada = rs.getString("morada");
-    
-    // Processar formulário de atualização
+
+    // Se o formulário de atualização de dados foi submetido
     if ("POST".equals(request.getMethod()) && request.getParameter("atualizar") != null) {
         String novoEmail = request.getParameter("email");
         String novoTelemovel = request.getParameter("telemovel");
         String novaMorada = request.getParameter("morada");
-        
-        // Verificar se o email já existe
+
+        // Verifica se o novo email já existe para outro utilizador
         pstmt = conn.prepareStatement("SELECT id FROM utilizadores WHERE email = ? AND id != ?");
         pstmt.setString(1, novoEmail);
         pstmt.setInt(2, id_utilizador);
         rs = pstmt.executeQuery();
-        
+
         if (rs.next()) {
-            mensagem = "Este email já está em uso por outro utilizador.";
+            mensagem = "Este email já está a ser utilizado por outro utilizador.";
             tipo_mensagem = "danger";
         } else {
+            // Atualiza dados do utilizador
             pstmt = conn.prepareStatement("UPDATE utilizadores SET email = ?, telemovel = ?, morada = ? WHERE id = ?");
             pstmt.setString(1, novoEmail);
             pstmt.setString(2, novoTelemovel);
             pstmt.setString(3, novaMorada);
             pstmt.setInt(4, id_utilizador);
-            
+
             if (pstmt.executeUpdate() > 0) {
                 conn.commit();
                 mensagem = "Dados atualizados com sucesso!";
                 tipo_mensagem = "success";
+                // Atualiza variáveis para refletir as alterações
                 email = novoEmail;
                 telemovel = novoTelemovel;
                 morada = novaMorada;
@@ -100,17 +102,17 @@ try {
             }
         }
     }
-    // Processar alteração de senha
+    // Se o formulário de alteração de palavra-passe foi submetido
     else if ("POST".equals(request.getMethod()) && request.getParameter("alterar_senha") != null) {
         String senhaAtual = request.getParameter("senha_atual");
         String novaSenha = request.getParameter("nova_senha");
         String confirmarSenha = request.getParameter("confirmar_senha");
-        
+
         if (!novaSenha.equals(confirmarSenha)) {
-            mensagem = "A nova senha e a confirmação não coincidem.";
+            mensagem = "A nova palavra-passe e a confirmação não coincidem.";
             tipo_mensagem = "danger";
         } else {
-            // Verificar senha atual
+            // Busca hash da palavra-passe atual
             pstmt = conn.prepareStatement("SELECT pwd FROM utilizadores WHERE id = ?");
             pstmt.setInt(1, id_utilizador);
             rs = pstmt.executeQuery();
@@ -118,30 +120,32 @@ try {
             if (rs.next()) {
                 String pwdStored = rs.getString("pwd");
                 boolean senhaValida = checkPassword(senhaAtual, pwdStored);
-                
+
                 if (senhaValida) {
+                    // Atualiza palavra-passe para o novo hash
                     String hashedPwd = hashPassword(novaSenha);
                     pstmt = conn.prepareStatement("UPDATE utilizadores SET pwd = ? WHERE id = ?");
                     pstmt.setString(1, hashedPwd);
                     pstmt.setInt(2, id_utilizador);
-                    
+
                     if (pstmt.executeUpdate() > 0) {
                         conn.commit();
-                        mensagem = "Senha alterada com sucesso!";
+                        mensagem = "Palavra-passe alterada com sucesso!";
                         tipo_mensagem = "success";
                     } else {
                         conn.rollback();
-                        mensagem = "Erro ao alterar senha.";
+                        mensagem = "Erro ao alterar a palavra-passe.";
                         tipo_mensagem = "danger";
                     }
                 } else {
-                    mensagem = "Senha atual incorreta.";
+                    mensagem = "Palavra-passe atual incorreta.";
                     tipo_mensagem = "danger";
                 }
             }
         }
     }
 } catch (Exception e) {
+    // Em caso de erro, faz rollback e mostra mensagem
     if (conn != null) {
         try {
             conn.rollback();
@@ -152,6 +156,7 @@ try {
     mensagem = "Erro no sistema: " + e.getMessage();
     tipo_mensagem = "danger";
 } finally {
+    // Fecha recursos
     if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
     if (pstmt != null) try { pstmt.close(); } catch (SQLException e) { /* ignorar */ }
     if (conn != null) try { 

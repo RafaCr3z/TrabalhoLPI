@@ -826,7 +826,7 @@ try {
         resumoCompra.style.display = 'block';
     }
 
-    }); // Fim do evento DOMContentLoaded
+    }); 
 
     // Função para controlar o dropdown da tabela
     function toggleTableDropdown() {
