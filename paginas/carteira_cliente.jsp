@@ -12,69 +12,74 @@ if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("i
 
 // Obtém o ID do cliente a partir da sessão
 int id_cliente = (Integer)session.getAttribute("id_utilizador");
-
-// Inicializa variáveis
-Connection conn = null;
-PreparedStatement pstmt = null;
-ResultSet rs = null;
 double saldo = 0.0;
-String mensagem = "";
-String tipo_mensagem = "";
 List<Map<String, Object>> transacoes = new ArrayList<>();
+String mensagem = null;
+String tipo_mensagem = null;
 
-// Adicionar antes do try principal
+// Recupera mensagens da sessão, se existirem
+if (session.getAttribute("mensagem") != null) {
+    mensagem = (String)session.getAttribute("mensagem");
+    tipo_mensagem = (String)session.getAttribute("tipo_mensagem");
+    
+    // Limpa as mensagens da sessão após recuperá-las
+    session.removeAttribute("mensagem");
+    session.removeAttribute("tipo_mensagem");
+}
+
+// Obtém os parâmetros de filtro da consulta
 String filtroTipo = request.getParameter("filtro_tipo");
 String ordenacao = request.getParameter("ordenacao");
 String periodoFiltro = request.getParameter("periodo");
 
+Connection conn = null;
+PreparedStatement pstmt = null;
+ResultSet rs = null;
+
 try {
+    // Estabelece a ligação à base de dados usando o método getConnection()
     conn = getConnection();
     
-    // Obtém o ID da carteira FelixBus (sistema)
+    // Obtém o ID da carteira FelixBus (para transferências)
+    int id_carteira_felixbus = 1; // Valor predefinido
     pstmt = conn.prepareStatement("SELECT id FROM carteira_felixbus LIMIT 1");
     rs = pstmt.executeQuery();
-    int id_carteira_felixbus = 0;
     if (rs.next()) {
         id_carteira_felixbus = rs.getInt("id");
     }
     rs.close();
     pstmt.close();
     
-    // Consulta o saldo atual do cliente na base de dados
+    // Obtém o saldo atual do cliente
     pstmt = conn.prepareStatement("SELECT saldo FROM carteiras WHERE id_cliente = ?");
     pstmt.setInt(1, id_cliente);
     rs = pstmt.executeQuery();
     
-    // Se o cliente não tiver carteira, cria uma com saldo zero
-    if (!rs.next()) {
-        rs.close();
+    if (rs.next()) {
+        saldo = rs.getDouble("saldo");
+    } else {
+        // Se o cliente não tiver carteira, cria uma nova com saldo zero
         pstmt.close();
-        
-        pstmt = conn.prepareStatement("INSERT INTO carteiras (id_cliente, saldo) VALUES (?, 0.00)");
+        pstmt = conn.prepareStatement("INSERT INTO carteiras (id_cliente, saldo) VALUES (?, 0.0)");
         pstmt.setInt(1, id_cliente);
         pstmt.executeUpdate();
-        pstmt.close();
-        
-        saldo = 0.00;
-    } else {
-        saldo = rs.getDouble("saldo");
-        rs.close();
-        pstmt.close();
     }
+    rs.close();
+    pstmt.close();
     
-    // Busca o histórico de transações do cliente com filtros
+    // Constrói a consulta SQL para o histórico de transações com filtros
     StringBuilder sqlTransacoes = new StringBuilder(
         "SELECT id, valor, tipo, descricao, data_transacao " +
         "FROM transacoes " +
         "WHERE id_cliente = ? "
     );
 
-    // Aplicar filtro por tipo
+    // Aplica filtro por tipo de transação
     if (filtroTipo != null && !filtroTipo.equals("todos")) {
         sqlTransacoes.append("AND tipo = ? ");
     }
 
-    // Aplicar filtro por período
+    // Aplica filtro por período de tempo
     if (periodoFiltro != null) {
         if (periodoFiltro.equals("hoje")) {
             sqlTransacoes.append("AND DATE(data_transacao) = CURDATE() ");
@@ -85,25 +90,27 @@ try {
         }
     }
 
-    // Aplicar ordenação
+    // Aplica ordenação dos resultados
     if (ordenacao != null && ordenacao.equals("valor")) {
         sqlTransacoes.append("ORDER BY valor DESC ");
     } else {
         sqlTransacoes.append("ORDER BY data_transacao DESC ");
     }
 
+    // Limita o número de resultados para melhor desempenho
     sqlTransacoes.append("LIMIT 20");
 
     pstmt = conn.prepareStatement(sqlTransacoes.toString());
     pstmt.setInt(1, id_cliente);
 
-    // Se tiver filtro por tipo, adicionar o parâmetro
+    // Se tiver filtro por tipo, adiciona o parâmetro à consulta
     if (filtroTipo != null && !filtroTipo.equals("todos")) {
         pstmt.setString(2, filtroTipo);
     }
 
     rs = pstmt.executeQuery();
     
+    // Processa os resultados da consulta
     while (rs.next()) {
         Map<String, Object> transacao = new HashMap<>();
         transacao.put("id", rs.getInt("id"));
@@ -116,28 +123,18 @@ try {
     rs.close();
     pstmt.close();
     
-    // Verifica se existem mensagens na sessão
-    if (session.getAttribute("mensagem") != null) {
-        mensagem = (String)session.getAttribute("mensagem");
-        tipo_mensagem = (String)session.getAttribute("tipo_mensagem");
-        
-        // Limpa as mensagens da sessão após exibi-las
-        session.removeAttribute("mensagem");
-        session.removeAttribute("tipo_mensagem");
-    }
-    
-    // Verifica se o formulário foi submetido
+    // Processa o formulário de depósito/levantamento se for um pedido POST
     if ("POST".equals(request.getMethod())) {
-        // Sanitização e validação do valor
+        // Sanitização e validação do valor introduzido
         String valorStr = request.getParameter("valor");
         String operacao = request.getParameter("operacao");
         BigDecimal valor = null;
         
         try {
-            // Converter para BigDecimal com 2 casas decimais
+            // Converte para BigDecimal com 2 casas decimais para evitar problemas de arredondamento
             valor = new BigDecimal(valorStr).setScale(2, RoundingMode.HALF_UP);
             
-            // Verificar se o valor é positivo
+            // Verifica se o valor é positivo
             if (valor.compareTo(BigDecimal.ZERO) <= 0) {
                 session.setAttribute("mensagem", "Valor inválido. Por favor, introduza um valor superior a zero.");
                 session.setAttribute("tipo_mensagem", "danger");
@@ -145,13 +142,14 @@ try {
                 return;
             }
         } catch (NumberFormatException e) {
-            session.setAttribute("mensagem", "Formato de valor inválido. Use apenas números e ponto decimal.");
+            // Trata erro de formato de número inválido
+            session.setAttribute("mensagem", "Formato de valor inválido. Utilize apenas números e ponto decimal.");
             session.setAttribute("tipo_mensagem", "danger");
             response.sendRedirect("carteira_cliente.jsp");
             return;
         }
         
-        // Inicia uma transação para garantir a integridade dos dados
+        // Inicia uma transação para garantir consistência dos dados
         conn.setAutoCommit(false);
         
         try {
@@ -165,27 +163,28 @@ try {
                 tipo_transacao = "deposito";
                 descricao = "Depósito de €" + valor + " na carteira";
                 
-                // Atualizar carteira FelixBus
+                // Atualiza a carteira FelixBus (sistema)
                 pstmt = conn.prepareStatement("UPDATE carteira_felixbus SET saldo = saldo + ? WHERE id = ?");
                 pstmt.setBigDecimal(1, valor);
                 pstmt.setInt(2, id_carteira_felixbus);
                 pstmt.executeUpdate();
                 pstmt.close();
             } else if ("levantar".equals(operacao)) {
-                // Verificar saldo suficiente
+                // Verifica se há saldo suficiente para o levantamento
                 BigDecimal saldoBD = new BigDecimal(saldo).setScale(2, RoundingMode.HALF_UP);
                 if (saldoBD.compareTo(valor) >= 0) {
                     sql_atualiza = "UPDATE carteiras SET saldo = saldo - ? WHERE id_cliente = ?";
                     tipo_transacao = "levantamento";
                     descricao = "Levantamento de €" + valor + " da carteira";
                     
-                    // Atualizar carteira FelixBus
+                    // Atualiza a carteira FelixBus (sistema)
                     pstmt = conn.prepareStatement("UPDATE carteira_felixbus SET saldo = saldo - ? WHERE id = ?");
                     pstmt.setBigDecimal(1, valor);
                     pstmt.setInt(2, id_carteira_felixbus);
                     pstmt.executeUpdate();
                     pstmt.close();
                 } else {
+                    // Saldo insuficiente para realizar a operação
                     session.setAttribute("mensagem", "Saldo insuficiente para realizar esta operação.");
                     session.setAttribute("tipo_mensagem", "danger");
                     response.sendRedirect("carteira_cliente.jsp");
@@ -193,7 +192,7 @@ try {
                 }
             }
             
-            // Executa a atualização do saldo
+            // Executa a atualização do saldo na carteira do cliente
             if (sql_atualiza != null) {
                 pstmt = conn.prepareStatement(sql_atualiza);
                 pstmt.setBigDecimal(1, valor);
@@ -202,7 +201,7 @@ try {
                 if (pstmt.executeUpdate() > 0) {
                     pstmt.close();
                     
-                    // Registra a transação
+                    // Regista a transação no histórico
                     pstmt = conn.prepareStatement("INSERT INTO transacoes (id_cliente, valor, tipo, descricao, data_transacao) VALUES (?, ?, ?, ?, NOW())");
                     pstmt.setInt(1, id_cliente);
                     pstmt.setBigDecimal(2, valor);
@@ -231,7 +230,7 @@ try {
                         return;
                     } else {
                         // Lança exceção se houver erro ao registar a transação
-                        throw new Exception("Erro ao registrar transação");
+                        throw new Exception("Erro ao registar transação");
                     }
                 } else {
                     // Cancela a transação e mostra mensagem de erro
@@ -244,10 +243,38 @@ try {
                     return;
                 }
             }
-        } catch (Exception e) {
-            // Cancela a transação em caso de exceção
+        } catch (SQLException sqlEx) {
+            // Cancela a transação em caso de exceção SQL
             conn.rollback();
-            session.setAttribute("mensagem", e.getMessage());
+            
+            // Mensagens mais específicas baseadas no código de erro SQL
+            if (sqlEx.getErrorCode() == 1264) {
+                session.setAttribute("mensagem", "O valor excede o limite permitido para transações.");
+            } else if (sqlEx.getErrorCode() == 1452) {
+                session.setAttribute("mensagem", "Erro de referência: verifique se a sua conta está ativa.");
+            } else {
+                session.setAttribute("mensagem", "Erro na base de dados: " + sqlEx.getMessage());
+            }
+            session.setAttribute("tipo_mensagem", "danger");
+            
+            // Redireciona para evitar reenvio do formulário
+            response.sendRedirect("carteira_cliente.jsp");
+            return;
+        } catch (Exception e) {
+            // Cancela a transação em caso de exceção genérica
+            conn.rollback();
+            
+            // Mensagem mais detalhada sobre o tipo de erro
+            String mensagemErro = "Erro ao processar a operação: ";
+            if (e instanceof NumberFormatException) {
+                mensagemErro += "formato de número inválido.";
+            } else if (e instanceof NullPointerException) {
+                mensagemErro += "dados incompletos ou inválidos.";
+            } else {
+                mensagemErro += e.getMessage();
+            }
+            
+            session.setAttribute("mensagem", mensagemErro);
             session.setAttribute("tipo_mensagem", "danger");
             
             // Redireciona para evitar reenvio do formulário
@@ -259,9 +286,11 @@ try {
         }
     }
 } catch (Exception e) {
+    // Trata exceções gerais
     mensagem = "Erro: " + e.getMessage();
     tipo_mensagem = "danger";
 } finally {
+    // Fecha todos os recursos da base de dados
     if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
     if (pstmt != null) try { pstmt.close(); } catch (SQLException e) { /* ignorar */ }
     if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }
