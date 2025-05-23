@@ -3,15 +3,17 @@
 <%@ include file="../basedados/basedados.jsp" %>
 
 <%
-// Verificar se o utilizador está autenticado e se é um cliente (nível 3)
+// Verifica se o utilizador está autenticado e se é um cliente (nível 3).
+// Se não for, redireciona para a página de erro.
 if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 3) {
     response.sendRedirect("erro.jsp");
     return;
 }
 
+// Obtém o ID do utilizador a partir da sessão
 int id_utilizador = (Integer)session.getAttribute("id_utilizador");
 
-// Buscar dados do utilizador
+// Inicializa ligação à base de dados e variáveis para os dados do perfil
 Connection conn = null;
 PreparedStatement pstmt = null;
 ResultSet rs = null;
@@ -23,7 +25,7 @@ String morada = "";
 try {
     conn = getConnection();
     
-    // Consulta SQL para obter os dados do utilizador
+    // Consulta SQL para obter os dados do utilizador autenticado
     pstmt = conn.prepareStatement("SELECT nome, email, telemovel, morada FROM utilizadores WHERE id = ?");
     pstmt.setInt(1, id_utilizador);
     rs = pstmt.executeQuery();
@@ -41,6 +43,7 @@ try {
     out.println("Erro: " + e.getMessage());
     return;
 } finally {
+    // Fecha recursos da base de dados
     if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
     if (pstmt != null) try { pstmt.close(); } catch (SQLException e) { /* ignorar */ }
     if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }
@@ -71,7 +74,7 @@ try {
             <div class="btn-cliente">Área do Cliente</div>
     </nav>
     <section>
-        <h1>Meu Perfil</h1>
+        <h1>O Meu Perfil</h1>
 
         <div class="profile-container">
             <!-- Informações do perfil do utilizador -->

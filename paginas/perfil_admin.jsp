@@ -3,17 +3,21 @@
 <%@ include file="../basedados/basedados.jsp" %>
 
 <%
-// Verificar se é administrador
+/*
+    Verifica se o utilizador tem sessão iniciada e se é administrador (nível 1).
+    Se não for, redireciona para a página de erro.
+*/
 if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 1) {
     response.sendRedirect("erro.jsp");
     return;
 }
 
+// Obtém o ID do utilizador a partir da sessão
 int id_utilizador = (Integer)session.getAttribute("id_utilizador");
 String mensagem = "";
 String tipo_mensagem = "";
 
-// Buscar dados do utilizador
+// Inicializa ligação à base de dados e estrutura para guardar dados do perfil
 Connection conn = null;
 PreparedStatement pstmt = null;
 ResultSet rs = null;
@@ -22,6 +26,7 @@ Map<String, String> dados = new HashMap<>();
 try {
     conn = getConnection();
     
+    // Busca os dados atuais do administrador
     pstmt = conn.prepareStatement("SELECT nome, email, telemovel, morada FROM utilizadores WHERE id = ?");
     pstmt.setInt(1, id_utilizador);
     rs = pstmt.executeQuery();
@@ -35,13 +40,13 @@ try {
         throw new Exception("Erro ao buscar dados do utilizador.");
     }
 
-    // Processar formulário de atualização
+    // Processa o formulário de atualização de dados pessoais
     if ("POST".equals(request.getMethod()) && request.getParameter("atualizar") != null) {
         String email = request.getParameter("email");
         String telemovel = request.getParameter("telemovel");
         String morada = request.getParameter("morada");
 
-        // Verificar se email já existe
+        // Verifica se o novo email já existe para outro utilizador
         pstmt = conn.prepareStatement("SELECT * FROM utilizadores WHERE email = ? AND id != ?");
         pstmt.setString(1, email);
         pstmt.setInt(2, id_utilizador);
@@ -70,7 +75,7 @@ try {
         }
     }
 
-    // Processar alteração de palavra-passe
+    // Processa o formulário de alteração de palavra-passe
     if ("POST".equals(request.getMethod()) && request.getParameter("alterar_senha") != null) {
         String senha_atual = request.getParameter("senha_atual");
         String nova_senha = request.getParameter("nova_senha");
@@ -80,7 +85,7 @@ try {
             mensagem = "A nova palavra-passe e a confirmação não coincidem.";
             tipo_mensagem = "error";
         } else {
-            // Verificar palavra-passe atual
+            // Verifica a palavra-passe atual
             pstmt = conn.prepareStatement("SELECT pwd FROM utilizadores WHERE id = ?");
             pstmt.setInt(1, id_utilizador);
             rs = pstmt.executeQuery();
@@ -93,11 +98,12 @@ try {
                     // Implementar verificação de senha bcrypt se necessário
                     senha_valida = false; // Placeholder - JSP não suporta nativamente bcrypt
                 } else {
+                    // Para SHA-256, compara diretamente (atenção: idealmente deve comparar hashes)
                     senha_valida = senha_atual.equals(pwd_armazenada);
                 }
 
                 if (senha_valida) {
-                    // Usar SHA-256 para hash da senha
+                    // Gera o hash SHA-256 da nova palavra-passe
                     MessageDigest md = MessageDigest.getInstance("SHA-256");
                     byte[] messageDigest = md.digest(nova_senha.getBytes());
                     BigInteger no = new BigInteger(1, messageDigest);
@@ -128,6 +134,7 @@ try {
     mensagem = "Erro: " + e.getMessage();
     tipo_mensagem = "error";
 } finally {
+    // Fecha recursos da base de dados
     if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
     if (pstmt != null) try { pstmt.close(); } catch (SQLException e) { /* ignorar */ }
     if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }

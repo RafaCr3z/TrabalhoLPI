@@ -3,36 +3,36 @@
 <%@ include file="../basedados/basedados.jsp" %>
 
 <%
-// Verificar se o utilizador é administrador
+// Verifica se o utilizador tem nível de administrador (id_nivel == 1).
 if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 1) {
     response.sendRedirect("erro.jsp");
     return;
 }
 
-// Gerar CSRF token
+// Gera um token CSRF para segurança dos formulários
 String csrfToken = UUID.randomUUID().toString();
 session.setAttribute("csrfToken", csrfToken);
 
-// Inicializa variáveis para mensagens de feedback e controlo de estado
+// Variáveis para feedback ao utilizador e controlo de estado
 String mensagem_feedback = "";
 String tipo_mensagem = "";
 Map<String, String> alerta_para_editar = null;
 
-// Parâmetros de ordenação e filtro
+// Parâmetros de ordenação e filtro para a tabela de alertas
 String ordenacao = request.getParameter("ordenacao") != null ? request.getParameter("ordenacao") : "id";
 String direcao = request.getParameter("direcao") != null ? request.getParameter("direcao") : "asc";
 String filtro = request.getParameter("filtro") != null ? request.getParameter("filtro") : "";
 
-// Inicializa a conexão com o banco de dados
+// Inicializa a ligação à base de dados
 Connection conn = null;
 PreparedStatement pstmt = null;
 ResultSet rs = null;
 
 try {
-    // Obtém a conexão com o banco de dados
+    // Obtém a ligação à base de dados
     conn = getConnection();
     
-    // Verifica se foi solicitada a edição de um alerta
+    // Se foi pedido para editar um alerta, carrega os dados desse alerta
     if (request.getParameter("editar") != null) {
         int id_editar = Integer.parseInt(request.getParameter("editar"));
         
@@ -45,11 +45,11 @@ try {
             alerta_para_editar.put("id", String.valueOf(rs_editar.getInt("id")));
             alerta_para_editar.put("mensagem", rs_editar.getString("mensagem"));
             
-            // Formatar as datas para o formato esperado pelo input type="date"
+            // Formata as datas para o formato do input type="date"
             String dataInicio = rs_editar.getString("data_inicio");
             String dataFim = rs_editar.getString("data_fim");
             
-            // Extrair apenas a parte da data (YYYY-MM-DD)
+            // Extrai apenas a parte da data (YYYY-MM-DD)
             if (dataInicio != null && dataInicio.length() >= 10) {
                 dataInicio = dataInicio.substring(0, 10);
             }
@@ -67,7 +67,7 @@ try {
     
     // Processa o formulário para adicionar um novo alerta
     if ("POST".equals(request.getMethod()) && request.getParameter("adicionar") != null) {
-        // Verificar CSRF token
+        // Verifica o token CSRF
         String requestToken = request.getParameter("csrfToken");
         String sessionToken = (String)session.getAttribute("csrfToken");
         
@@ -76,13 +76,13 @@ try {
             tipo_mensagem = "error";
         } else {
             String mensagem = request.getParameter("mensagem");
-            // Sanitizar conteúdo HTML
+            // Sanitiza o conteúdo HTML da mensagem
             mensagem = mensagem.replace("<", "&lt;").replace(">", "&gt;");
             
             String data_inicio = request.getParameter("data_inicio");
             String data_fim = request.getParameter("data_fim");
             
-            // Validações do servidor
+            // Validação do lado do servidor
             if (mensagem == null || mensagem.trim().length() < 5) {
                 mensagem_feedback = "A mensagem deve ter pelo menos 5 caracteres!";
                 tipo_mensagem = "error";
@@ -96,6 +96,7 @@ try {
                 stmt.close();
                 
                 if (linhasAfetadas > 0) {
+                    // Redireciona para evitar reenvio do formulário
                     response.sendRedirect("gerir_alertas.jsp?msg=added");
                     return;
                 } else {
@@ -108,7 +109,7 @@ try {
     
     // Processa o formulário para atualizar um alerta existente
     if ("POST".equals(request.getMethod()) && request.getParameter("atualizar") != null) {
-        // Verificar CSRF token
+        // Verifica o token CSRF
         String requestToken = request.getParameter("csrfToken");
         String sessionToken = (String)session.getAttribute("csrfToken");
         
@@ -119,13 +120,13 @@ try {
             // Converte o ID para inteiro para evitar injeção SQL
             int id_alerta = Integer.parseInt(request.getParameter("id_alerta"));
             String mensagem = request.getParameter("mensagem");
-            // Sanitizar conteúdo HTML
+            // Sanitiza o conteúdo HTML da mensagem
             mensagem = mensagem.replace("<", "&lt;").replace(">", "&gt;");
             
             String data_inicio = request.getParameter("data_inicio");
             String data_fim = request.getParameter("data_fim");
             
-            // Validações do servidor
+            // Validação do lado do servidor
             if (mensagem == null || mensagem.trim().length() < 5) {
                 mensagem_feedback = "A mensagem deve ter pelo menos 5 caracteres!";
                 tipo_mensagem = "error";
@@ -140,6 +141,7 @@ try {
                 stmt.close();
                 
                 if (linhasAfetadas > 0) {
+                    // Redireciona para evitar reenvio do formulário
                     response.sendRedirect("gerir_alertas.jsp?msg=updated&id=" + id_alerta);
                     return;
                 } else {
@@ -161,6 +163,7 @@ try {
         stmt.close();
         
         if (linhasAfetadas > 0) {
+            // Redireciona após exclusão
             response.sendRedirect("gerir_alertas.jsp?msg=deleted&id=" + id);
             return;
         } else {
@@ -383,7 +386,7 @@ try {
             const form = document.getElementById('alertaForm');
             
             form.addEventListener('submit', function(e) {
-                // Validar mensagem
+                // Valida a mensagem
                 const mensagem = document.getElementById('mensagem').value.trim();
                 if (mensagem.length < 5) {
                     alert('A mensagem deve ter pelo menos 5 caracteres!');
@@ -391,7 +394,7 @@ try {
                     return false;
                 }
                 
-                // Validar datas
+                // Valida as datas
                 const dataInicio = new Date(document.getElementById('data_inicio').value);
                 const dataFim = new Date(document.getElementById('data_fim').value);
                 
@@ -409,12 +412,14 @@ try {
             });
         });
         
+        // Confirmação antes de excluir um alerta
         function confirmarExclusao(id) {
-            if (confirm("Tem certeza que deseja excluir o alerta ID " + id + "?")) {
+            if (confirm("Tem a certeza que deseja eliminar o alerta ID " + id + "?")) {
                 window.location.href = "gerir_alertas.jsp?excluir=" + id;
             }
         }
         
+        // Confirmação antes de editar um alerta
         function confirmarEdicao(id) {
             if (confirm("Deseja editar o alerta ID " + id + "?")) {
                 window.location.href = "gerir_alertas.jsp?editar=" + id;
@@ -424,7 +429,7 @@ try {
 
 <%
 } finally {
-    // Fechar recursos
+    // Fecha recursos da base de dados
     if (rs != null) {
         try { rs.close(); } catch (SQLException e) { e.printStackTrace(); }
     }

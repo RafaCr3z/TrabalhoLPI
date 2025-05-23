@@ -3,13 +3,14 @@
 <%@ include file="../basedados/basedados.jsp" %>
 
 <%
-    // Verificar se o utilizador é administrador
+    // Verifica se o utilizador tem sessão iniciada e se é administrador (nível 1).
+    // Se não for, redireciona para a página de erro.
     if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 1) {
         response.sendRedirect("erro.jsp");
         return;
     }
     
-    // Obter conexão com o banco de dados
+    // Obtém ligação à base de dados para mostrar resumos financeiros e estatísticas.
     Connection conn = null;
     try {
         conn = getConnection();
@@ -27,7 +28,7 @@
     <title>FelixBus - Área de Administração</title>
 </head>
 <body>
-    <!--NAVBAR -->
+    <!-- NAVBAR -->
     <nav>
         <div class="logo">
             <h1>Felix<span>Bus</span></h1>
@@ -38,11 +39,12 @@
         </div>
     </nav>
 
-    <!--SECTION -->
+    <!-- SECÇÃO PRINCIPAL DO PAINEL DE ADMINISTRAÇÃO -->
     <section>
         <div class="admin-dashboard">
             <h1>Painel do Administração</h1>
 
+            <!-- Cartões de navegação para as principais áreas de gestão -->
             <div class="dashboard-cards">
                 <div class="card">
                     <h2>Alertas</h2>
@@ -75,12 +77,14 @@
                 </div>
             </div>
 
+            <!-- Resumo financeiro e estatísticas rápidas -->
             <div class="resumo-financeiro">
                 <h2>Resumo Financeiro</h2>
                 <div class="resumo-cards">
                     <div class="resumo-card">
                         <h3>Saldo FelixBus</h3>
                         <p class="valor">€<%
+                            // Mostra o saldo total da carteira FelixBus
                             String saldoFormatado = "0,00";
                             try {
                                 Statement stmt = conn.createStatement();
@@ -101,6 +105,7 @@
                     <div class="resumo-card">
                         <h3>Total de Transações</h3>
                         <p class="valor"><%
+                            // Mostra o número total de transações registadas
                             int totalTransacoes = 0;
                             try {
                                 Statement stmt = conn.createStatement();
@@ -120,6 +125,7 @@
                     <div class="resumo-card">
                         <h3>Bilhetes Vendidos</h3>
                         <p class="valor"><%
+                            // Mostra o número total de bilhetes vendidos
                             int totalBilhetes = 0;
                             try {
                                 Statement stmt = conn.createStatement();
@@ -140,13 +146,13 @@
         </div>
     </section>
     
-    <!--FOOTER -->
+    <!-- FOOTER -->
     <footer>
         © <%= new java.util.Date().getYear() + 1900 %> <img src="estcb.png" alt="ESTCB"> <span>João Resina & Rafael Cruz</span>
     </footer>
 
 <%
-    // Fechar conexão com o banco de dados
+    // Fecha a ligação à base de dados no fim da página
     if (conn != null) {
         try {
             conn.close();

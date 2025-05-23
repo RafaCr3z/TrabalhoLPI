@@ -6,7 +6,7 @@
 <%@ include file="../basedados/basedados.jsp" %>
 
 <%!
-// Método para gerar hash da senha usando SHA-256
+// Função para gerar o hash da palavra-passe usando SHA-256
 public static String hashPassword(String password) {
     try {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -24,17 +24,18 @@ public static String hashPassword(String password) {
 %>
 
 <%
-// Verificar se o utilizador já está autenticado
+// Verifica se o utilizador já está autenticado.
+// Se sim, redireciona para a página de erro.
 if (session.getAttribute("id_nivel") != null && (Integer)session.getAttribute("id_nivel") > 0) {
     response.sendRedirect("erro.jsp");
     return;
 }
 
-// Inicializar variáveis
+// Inicializa variáveis para mensagens de erro e controlo de sucesso do registo
 String mensagemErro = "";
 boolean registoSucesso = false;
 
-// Processar o formulário quando enviado
+// Processa o formulário de registo quando submetido
 if ("POST".equals(request.getMethod())) {
     String user = request.getParameter("user");
     String pwd = request.getParameter("pwd");

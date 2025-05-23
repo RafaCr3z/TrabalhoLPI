@@ -6,7 +6,7 @@
 <%@ include file="../basedados/basedados.jsp" %>
 
 <%!
-// Método para escapar strings HTML
+// Função para escapar caracteres HTML (evita XSS)
 public String h(String string) {
     if (string == null) return "";
     return string.replace("&", "&amp;")
@@ -16,7 +16,7 @@ public String h(String string) {
                 .replace("'", "&#x27;");
 }
 
-// Método para gerar hash da senha
+// Função para gerar hash SHA-256 da palavra-passe
 public String passwordHash(String password) {
     try {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -34,13 +34,13 @@ public String passwordHash(String password) {
 %>
 
 <%
-// Verificar se é administrador
+// Verifica se o utilizador é administrador
 if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 1) {
     response.sendRedirect("erro.jsp");
     return;
 }
 
-// Obter conexão com o banco de dados
+// Inicializa ligação à base de dados e variáveis de controlo
 Connection conn = null;
 Statement stmt = null;
 ResultSet rs = null;
@@ -56,23 +56,21 @@ try {
     conn = getConnection();
     stmt = conn.createStatement();
     
-    // Verificar campo 'ativo'
+    // Garante que existe o campo 'ativo' na tabela utilizadores
     rs = stmt.executeQuery("SHOW COLUMNS FROM utilizadores LIKE 'ativo'");
     if (!rs.next()) {
         stmt.executeUpdate("ALTER TABLE utilizadores ADD ativo TINYINT(1) NOT NULL DEFAULT 1");
     }
     
-    // Inicializar variáveis para mensagens de feedback
-    
-    // Verificar se deve mostrar utilizadores inativos (parâmetro do URL)
+    // Lê o parâmetro para mostrar utilizadores inativos
     mostrar_inativos = request.getParameter("mostrar_inativos") != null ? 
                       Integer.parseInt(request.getParameter("mostrar_inativos")) : 0;
     
-    // Adicionar após a inicialização de mostrar_inativos
+    // Lê o parâmetro de pesquisa
     pesquisa = request.getParameter("pesquisa") != null ? 
               request.getParameter("pesquisa") : "";
     
-    // Verificar se há um ID de utilizador para editar
+    // Se for pedido para editar um utilizador, carrega os dados desse utilizador
     if (request.getParameter("editar") != null) {
         int idEditar = Integer.parseInt(request.getParameter("editar"));
         pstmt = conn.prepareStatement("SELECT id, user, nome, email, telemovel, morada, tipo_perfil FROM utilizadores WHERE id = ?");
@@ -91,36 +89,36 @@ try {
         }
     }
     
-    // Processar formulário de adição de novo utilizador
+    // Processa o formulário de adição de novo utilizador
     if ("POST".equals(request.getMethod()) && request.getParameter("adicionar") != null) {
-        // Validação de dados
+        // Validação dos dados do formulário
         List<String> erros = new ArrayList<>();
         
-        // Validar telemóvel (9 dígitos)
+        // Valida telemóvel (9 dígitos)
         String telemovel = request.getParameter("telemovel");
         if (telemovel == null || !telemovel.matches("^[0-9]{9}$")) {
             erros.add("O telemóvel deve conter exatamente 9 dígitos numéricos");
         }
         
-        // Validar email
+        // Valida email
         String email = request.getParameter("email");
         if (email == null || !email.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
             erros.add("O email é inválido");
         }
         
-        // Verificar se há erros
+        // Se houver erros, mostra mensagem
         if (!erros.isEmpty()) {
             mensagem = "Erros de validação: " + String.join(", ", erros);
             tipo_mensagem = "danger";
         } else {
-            // Capturar e sanitizar dados do formulário
+            // Captura e sanitiza dados do formulário
             String user = request.getParameter("user");
             String nome = request.getParameter("nome");
-            String pwd = passwordHash(request.getParameter("pwd")); // Hash da palavra-passe para segurança
+            String pwd = passwordHash(request.getParameter("pwd")); // Hash da palavra-passe
             int tipo_perfil = Integer.parseInt(request.getParameter("tipo_perfil"));
             String morada = request.getParameter("morada");
             
-            // Verificar se o utilizador ou email já existem no sistema
+            // Verifica se o utilizador ou email já existem
             pstmt = conn.prepareStatement("SELECT * FROM utilizadores WHERE user = ? OR email = ?");
             pstmt.setString(1, user);
             pstmt.setString(2, email);
@@ -130,7 +128,7 @@ try {
                 mensagem = "O utilizador ou email já existe";
                 tipo_mensagem = "danger";
             } else {
-                // Inserir novo utilizador na base de dados
+                // Insere novo utilizador na base de dados
                 pstmt = conn.prepareStatement(
                     "INSERT INTO utilizadores (user, nome, email, pwd, telemovel, morada, tipo_perfil) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?)", 
@@ -148,7 +146,7 @@ try {
                     rs = pstmt.getGeneratedKeys();
                     if (rs.next()) {
                         int id_novo = rs.getInt(1);
-                        // Se for cliente (tipo_perfil 3), criar carteira com saldo inicial 0
+                        // Se for cliente, cria carteira com saldo inicial 0
                         if (tipo_perfil == 3) {
                             pstmt = conn.prepareStatement("INSERT INTO carteiras (id_cliente, saldo) VALUES (?, 0.00)");
                             pstmt.setInt(1, id_novo);
@@ -165,9 +163,9 @@ try {
         }
     }
     
-    // Processar formulário de edição de utilizador existente
+    // Processa o formulário de edição de utilizador existente
     if ("POST".equals(request.getMethod()) && request.getParameter("editar") != null) {
-        // Capturar dados do formulário
+        // Captura dados do formulário
         int id = Integer.parseInt(request.getParameter("id"));
         String nome = request.getParameter("nome");
         String email = request.getParameter("email");
@@ -176,7 +174,7 @@ try {
         String pwd = request.getParameter("pwd");
         
         if (pwd != null && !pwd.trim().isEmpty()) {
-            // Se senha fornecida, atualizar também a senha
+            // Se for fornecida nova palavra-passe, atualiza também a palavra-passe
             String pwd_hash = passwordHash(pwd);
             pstmt = conn.prepareStatement(
                 "UPDATE utilizadores SET nome = ?, email = ?, telemovel = ?, morada = ?, pwd = ? WHERE id = ?"
@@ -188,7 +186,7 @@ try {
             pstmt.setString(5, pwd_hash);
             pstmt.setInt(6, id);
         } else {
-            // Sem atualização de senha
+            // Sem atualização de palavra-passe
             pstmt = conn.prepareStatement(
                 "UPDATE utilizadores SET nome = ?, email = ?, telemovel = ?, morada = ? WHERE id = ?"
             );
@@ -199,7 +197,7 @@ try {
             pstmt.setInt(5, id);
         }
         
-        // Executar a atualização
+        // Executa a atualização
         if (pstmt.executeUpdate() > 0) {
             mensagem = "Utilizador editado com sucesso!";
             tipo_mensagem = "success";
@@ -209,16 +207,16 @@ try {
         }
     }
     
-    // Processar solicitação para alterar estado (ativar/inativar utilizador)
+    // Processa pedido para ativar/inativar utilizador
     if (request.getParameter("alterar_estado") != null && request.getParameter("id") != null) {
         int id = Integer.parseInt(request.getParameter("id"));
         int id_utilizador = (Integer)session.getAttribute("id_utilizador");
         
-        // Não permitir que o administrador desative a sua própria conta
+        // Não permite que o administrador desative a sua própria conta
         if (id != id_utilizador) {
             int ativo = Integer.parseInt(request.getParameter("ativo"));
             
-            // Atualizar estado do utilizador
+            // Atualiza estado do utilizador
             pstmt = conn.prepareStatement("UPDATE utilizadores SET ativo = ? WHERE id = ?");
             pstmt.setInt(1, ativo);
             pstmt.setInt(2, id);
@@ -236,7 +234,7 @@ try {
         }
     }
     
-    // Buscar lista de utilizadores
+    // Busca lista de utilizadores para mostrar na tabela
     StringBuilder sql = new StringBuilder();
     sql.append("SELECT u.id, u.user, u.nome, u.email, u.telemovel, u.morada, p.descricao as tipo, ");
     sql.append("u.tipo_perfil, u.ativo, IFNULL(c.saldo, 0) as saldo, ");
@@ -246,12 +244,12 @@ try {
     sql.append("LEFT JOIN carteiras c ON u.id = c.id_cliente ");
     sql.append("WHERE 1=1 ");
     
-    // Filtrar por estado (ativo/inativo)
+    // Filtro por estado (ativo/inativo)
     if (mostrar_inativos == 0) {
         sql.append("AND u.ativo = 1 ");
     }
     
-    // Filtrar por pesquisa
+    // Filtro por pesquisa
     if (pesquisa != null && !pesquisa.trim().isEmpty()) {
         sql.append("AND (u.nome LIKE ? OR u.email LIKE ? OR u.user LIKE ?) ");
     }
@@ -260,7 +258,7 @@ try {
     
     pstmt = conn.prepareStatement(sql.toString());
     
-    // Definir parâmetros de pesquisa se necessário
+    // Define parâmetros de pesquisa se necessário
     if (pesquisa != null && !pesquisa.trim().isEmpty()) {
         String termoPesquisa = "%" + pesquisa + "%";
         pstmt.setString(1, termoPesquisa);

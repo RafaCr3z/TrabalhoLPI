@@ -9,24 +9,24 @@ if (session.getAttribute("id_nivel") != null && (Integer)session.getAttribute("i
     return;
 }
 
-// Inicializa variáveis para a pesquisa
+// Inicializa variáveis para a pesquisa de rotas
 String origem = "";
 String destino = "";
 List<Map<String, String>> resultados = new ArrayList<>();
 boolean pesquisa_realizada = false;
 
-// Obter conexão com o banco de dados
+// Obter ligação à base de dados
 Connection conn = null;
 try {
     conn = getConnection();
 
-    // Verifica se o formulário foi enviado
+    // Verifica se o formulário de pesquisa foi submetido
     if ("POST".equals(request.getMethod()) && request.getParameter("pesquisar") != null) {
         origem = request.getParameter("origem") != null ? request.getParameter("origem").trim() : "";
         destino = request.getParameter("destino") != null ? request.getParameter("destino").trim() : "";
         pesquisa_realizada = true;
 
-        // Constrói a consulta SQL
+        // Constrói a consulta SQL para pesquisar rotas
         StringBuilder sql = new StringBuilder("SELECT r.id, r.origem, r.destino, r.preco, h.horario_partida, h.data_viagem " +
                                              "FROM rotas r " +
                                              "JOIN horarios h ON r.id = h.id_rota " +
@@ -34,7 +34,7 @@ try {
 
         List<String> params = new ArrayList<>();
 
-        // Adiciona filtros se foram fornecidos
+        // Adiciona filtros de origem e destino se fornecidos
         if (!origem.isEmpty()) {
             sql.append(" AND r.origem LIKE ?");
             params.add("%" + origem + "%");
@@ -47,15 +47,13 @@ try {
         sql.append(" ORDER BY r.origem ASC, r.destino ASC, h.data_viagem ASC, h.horario_partida ASC");
 
         try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-            // Define os parâmetros
+            // Define os parâmetros da pesquisa
             for (int i = 0; i < params.size(); i++) {
                 stmt.setString(i + 1, params.get(i));
             }
 
-            // Executa a consulta
+            // Executa a consulta e armazena os resultados
             ResultSet rs = stmt.executeQuery();
-
-            // Armazena os resultados
             while (rs.next()) {
                 Map<String, String> row = new HashMap<>();
                 row.put("id", rs.getString("id"));
@@ -71,7 +69,7 @@ try {
         }
     }
 
-    // Busca alertas dinâmicos
+    // Busca alertas dinâmicos para mostrar na página
     List<Map<String, String>> mensagens = new ArrayList<>();
     String data_atual = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
 
@@ -86,7 +84,7 @@ try {
         out.println("<!-- Erro na consulta: " + e.getMessage() + " -->");
     }
     
-    // Armazenar as variáveis para uso na página
+    // Armazena as variáveis para uso no JSP
     pageContext.setAttribute("mensagens", mensagens);
     pageContext.setAttribute("resultados", resultados);
     pageContext.setAttribute("origem", origem);

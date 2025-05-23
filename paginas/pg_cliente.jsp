@@ -3,13 +3,17 @@
 <%@ include file="../basedados/basedados.jsp" %>
 
 <%
-// Verificar se o utilizador é cliente
+/*
+    Verifica se o utilizador tem sessão iniciada e se é cliente (nível 3).
+    Se não for, redireciona para a página de erro.
+*/
 if (session.getAttribute("id_nivel") == null || (Integer)session.getAttribute("id_nivel") != 3) {
     response.sendRedirect("erro.jsp");
     return;
 }
 
-// Nome do cliente para exibição
+// Obtém o nome do cliente para exibição personalizada.
+// Se não existir na sessão, usa "Cliente" como valor por defeito.
 String nomeCliente = (String)session.getAttribute("nome");
 if (nomeCliente == null) {
     nomeCliente = "Cliente";
@@ -44,13 +48,13 @@ if (nomeCliente == null) {
 
         <div class="welcome-container">
             <p>Olá, <%= nomeCliente %>! Bem-vindo à sua área pessoal no FelixBus.</p>
-            <p>Aqui você pode gerenciar sua carteira, comprar bilhetes e visualizar suas informações pessoais.</p>
+            <p>Aqui pode gerir a sua carteira, comprar bilhetes e visualizar as suas informações pessoais.</p>
         </div>
 
         <div class="options-container">
             <div class="option-card">
-                <h3>Meu Perfil</h3>
-                <p>Visualize e edite suas informações pessoais.</p>
+                <h3>O Meu Perfil</h3>
+                <p>Visualize e edite as suas informações pessoais.</p>
                 <a href="perfil_cliente.jsp">Aceder</a>
             </div>
 
