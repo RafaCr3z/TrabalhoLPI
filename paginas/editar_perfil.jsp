@@ -1,6 +1,29 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="java.sql.*, java.util.*, java.text.*, java.security.*, java.math.BigInteger" %>
+<%@ page import="java.sql.*, java.util.*, java.security.*, java.math.BigInteger" %>
 <%@ include file="../basedados/basedados.jsp" %>
+
+<%!
+// Método para gerar hash da senha usando SHA-256
+public static String hashPassword(String password) {
+    try {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] messageDigest = md.digest(password.getBytes());
+        BigInteger no = new BigInteger(1, messageDigest);
+        String hashtext = no.toString(16);
+        while (hashtext.length() < 32) {
+            hashtext = "0" + hashtext;
+        }
+        return hashtext;
+    } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException(e);
+    }
+}
+
+// Método para verificar senha
+public static boolean checkPassword(String password, String storedHash) {
+    return storedHash.equals(hashPassword(password));
+}
+%>
 
 <%
 // Verificar se o usuário é cliente
@@ -13,12 +36,19 @@ int id_utilizador = (Integer)session.getAttribute("id_utilizador");
 String mensagem = "";
 String tipo_mensagem = "";
 
+// Declarar variáveis para os dados do utilizador
+String nome = "";
+String email = "";
+String telemovel = "";
+String morada = "";
+
 Connection conn = null;
 PreparedStatement pstmt = null;
 ResultSet rs = null;
 
 try {
     conn = getConnection();
+    conn.setAutoCommit(false); // Iniciar transação
     
     // Buscar dados do utilizador
     pstmt = conn.prepareStatement("SELECT nome, email, telemovel, morada FROM utilizadores WHERE id = ?");
@@ -29,10 +59,10 @@ try {
         throw new Exception("Erro ao buscar dados do utilizador.");
     }
     
-    String nome = rs.getString("nome");
-    String email = rs.getString("email");
-    String telemovel = rs.getString("telemovel");
-    String morada = rs.getString("morada");
+    nome = rs.getString("nome");
+    email = rs.getString("email");
+    telemovel = rs.getString("telemovel");
+    morada = rs.getString("morada");
     
     // Processar formulário de atualização
     if ("POST".equals(request.getMethod()) && request.getParameter("atualizar") != null) {
@@ -57,20 +87,21 @@ try {
             pstmt.setInt(4, id_utilizador);
             
             if (pstmt.executeUpdate() > 0) {
+                conn.commit();
                 mensagem = "Dados atualizados com sucesso!";
                 tipo_mensagem = "success";
                 email = novoEmail;
                 telemovel = novoTelemovel;
                 morada = novaMorada;
             } else {
+                conn.rollback();
                 mensagem = "Erro ao atualizar dados.";
                 tipo_mensagem = "danger";
             }
         }
     }
-    
     // Processar alteração de senha
-    if ("POST".equals(request.getMethod()) && request.getParameter("alterar_senha") != null) {
+    else if ("POST".equals(request.getMethod()) && request.getParameter("alterar_senha") != null) {
         String senhaAtual = request.getParameter("senha_atual");
         String novaSenha = request.getParameter("nova_senha");
         String confirmarSenha = request.getParameter("confirmar_senha");
@@ -83,25 +114,10 @@ try {
             pstmt = conn.prepareStatement("SELECT pwd FROM utilizadores WHERE id = ?");
             pstmt.setInt(1, id_utilizador);
             rs = pstmt.executeQuery();
-            
+
             if (rs.next()) {
                 String pwdStored = rs.getString("pwd");
-                boolean senhaValida = false;
-                
-                // Verifica se a senha está armazenada como hash (começa com $2y$ ou $2a$)
-                if (pwdStored.startsWith("$2y$") || pwdStored.startsWith("$2a$")) {
-                    // Para implementação completa, seria necessário usar BCrypt
-                    // Como simplificação, vamos apenas verificar se é a senha padrão
-                    String nomeUsuario = (String)session.getAttribute("nome");
-                    if ((nomeUsuario.equals("admin") && senhaAtual.equals("admin")) ||
-                        (nomeUsuario.equals("funcionario") && senhaAtual.equals("funcionario")) ||
-                        (nomeUsuario.equals("cliente") && senhaAtual.equals("cliente"))) {
-                        senhaValida = true;
-                    }
-                } else {
-                    // Senha armazenada em texto simples ou com hash SHA-256
-                    senhaValida = pwdStored.equals(hashPassword(senhaAtual));
-                }
+                boolean senhaValida = checkPassword(senhaAtual, pwdStored);
                 
                 if (senhaValida) {
                     String hashedPwd = hashPassword(novaSenha);
@@ -110,9 +126,11 @@ try {
                     pstmt.setInt(2, id_utilizador);
                     
                     if (pstmt.executeUpdate() > 0) {
+                        conn.commit();
                         mensagem = "Senha alterada com sucesso!";
                         tipo_mensagem = "success";
                     } else {
+                        conn.rollback();
                         mensagem = "Erro ao alterar senha.";
                         tipo_mensagem = "danger";
                     }
@@ -123,6 +141,24 @@ try {
             }
         }
     }
+} catch (Exception e) {
+    if (conn != null) {
+        try {
+            conn.rollback();
+        } catch (SQLException ex) {
+            // Ignorar
+        }
+    }
+    mensagem = "Erro no sistema: " + e.getMessage();
+    tipo_mensagem = "danger";
+} finally {
+    if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
+    if (pstmt != null) try { pstmt.close(); } catch (SQLException e) { /* ignorar */ }
+    if (conn != null) try { 
+        conn.setAutoCommit(true);
+        conn.close(); 
+    } catch (SQLException e) { /* ignorar */ }
+}
 %>
 
 <!DOCTYPE html>
@@ -132,6 +168,45 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="editar_perfil.css">
     <title>FelixBus - Editar o Meu Perfil</title>
+    <script>
+    function validarFormulario() {
+        const email = document.getElementById('email').value;
+        const telemovel = document.getElementById('telemovel').value;
+        
+        // Validar email
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            alert('Por favor, insira um email válido.');
+            return false;
+        }
+        
+        // Validar telemóvel (9 dígitos)
+        if (!/^[0-9]{9}$/.test(telemovel)) {
+            alert('O telemóvel deve conter exatamente 9 dígitos.');
+            return false;
+        }
+        
+        return true;
+    }
+
+    function validarSenha() {
+        const novaSenha = document.getElementById('nova_senha').value;
+        const confirmarSenha = document.getElementById('confirmar_senha').value;
+        
+        // Verificar força da senha
+        if (novaSenha.length < 8) {
+            alert('A senha deve ter pelo menos 8 caracteres.');
+            return false;
+        }
+        
+        // Verificar se senhas coincidem
+        if (novaSenha !== confirmarSenha) {
+            alert('A nova senha e a confirmação não coincidem.');
+            return false;
+        }
+        
+        return true;
+    }
+    </script>
 </head>
 <body>
     <nav>
@@ -162,7 +237,7 @@ try {
         <div class="container">
             <div class="form-container">
                 <h2>Dados Pessoais</h2>
-                <form method="post" action="editar_perfil.jsp">
+                <form method="post" action="editar_perfil.jsp" onsubmit="return validarFormulario()">
                     <div class="form-group">
                         <label for="nome">Nome:</label>
                         <input type="text" id="nome" name="nome" value="<%= nome %>" readonly>
@@ -192,7 +267,7 @@ try {
 
             <div class="form-container">
                 <h2>Alterar Senha</h2>
-                <form method="post" action="editar_perfil.jsp">
+                <form method="post" action="editar_perfil.jsp" onsubmit="return validarSenha()">
                     <div class="form-group">
                         <label for="senha_atual">Senha Atual:</label>
                         <input type="password" id="senha_atual" name="senha_atual" required>
@@ -222,33 +297,6 @@ try {
 </body>
 </html>
 
-<%!
-// Método para gerar hash da senha usando SHA-256
-public static String hashPassword(String password) {
-    try {
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
-        byte[] messageDigest = md.digest(password.getBytes());
-        BigInteger no = new BigInteger(1, messageDigest);
-        String hashtext = no.toString(16);
-        while (hashtext.length() < 32) {
-            hashtext = "0" + hashtext;
-        }
-        return hashtext;
-    } catch (NoSuchAlgorithmException e) {
-        throw new RuntimeException(e);
-    }
-}
-%>
 
-<%
-} catch (Exception e) {
-    mensagem = "Erro: " + e.getMessage();
-    tipo_mensagem = "danger";
-} finally {
-    if (rs != null) try { rs.close(); } catch (SQLException e) { /* ignorar */ }
-    if (pstmt != null) try { pstmt.close(); } catch (SQLException e) { /* ignorar */ }
-    if (conn != null) try { conn.close(); } catch (SQLException e) { /* ignorar */ }
-}
-%>
 
 
