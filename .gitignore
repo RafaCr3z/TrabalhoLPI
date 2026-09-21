@@ -1,13 +1,32 @@
-# Configurações locais sensíveis (credenciais da BD)
-basedados/ligabd.local.php
+# ==============================================================================
+# Git Ignore Rules: Dual-Stack PHP & Java JSP Web Platform
+# ==============================================================================
+
+# Configurações locais sensíveis (credenciais de conexão à BD)
+php/basedados/ligabd.local.php
 .env
 .env.local
 
-# Ficheiros temporários e logs do PHP/Apache
+# Ficheiros compilados e artefactos Java / Tomcat
+*.class
+*.war
+*.ear
+*.jar
+target/
+build/
+.metadata/
+.settings/
+.project
+.classpath
+.gradle/
+
+# Ficheiros temporários e logs do PHP / Apache / Tomcat
 *.log
 error_log
 access_log
 error_log.txt
+catalina.out
+localhost.*.log
 
 # Backups e ficheiros temporários do MySQL
 *.sql.bak
@@ -18,12 +37,13 @@ error_log.txt
 uploads/tmp/*
 !uploads/tmp/.gitkeep
 
-# IDEs e Editores de Código
+# IDEs e Editores de Código (VS Code, Eclipse, NetBeans, IntelliJ)
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
 nbproject/
+nb-configuration.xml
 
 # Ficheiros de Sistema Operativo
 .DS_Store

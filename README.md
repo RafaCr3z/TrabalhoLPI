@@ -1,9 +1,11 @@
-# 🚌 FelixBus — Plataforma de Gestão de Viagens de Autocarro
+# 🚌 FelixBus — Plataforma Dual-Stack de Gestão de Viagens (PHP & Java JSP)
 
 <p align="left">
   <img src="https://img.shields.io/badge/PHP-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP" />
+  <img src="https://img.shields.io/badge/Java_JSP-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java JSP" />
   <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL" />
-  <img src="https://img.shields.io/badge/Apache-D22128?style=for-the-badge&logo=apache&logoColor=white" alt="Apache" />
+  <img src="https://img.shields.io/badge/Apache_HTTPD-D22128?style=for-the-badge&logo=apache&logoColor=white" alt="Apache HTTPD" />
+  <img src="https://img.shields.io/badge/Apache_Tomcat-F8DC75?style=for-the-badge&logo=apache-tomcat&logoColor=black" alt="Apache Tomcat" />
   <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript" />
   <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="HTML5" />
   <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" alt="CSS3" />
@@ -16,15 +18,30 @@
 
 ---
 
-## 📌 Visão Geral do Projeto
+## 📌 Visão Geral & Abordagem Dual-Stack
 
-O **FelixBus** é uma aplicação web desenvolvida para a gestão e reserva de viagens rodoviárias de passageiros. O sistema implementa controlo de acessos baseado em perfis (**RBAC**), emissão e validação eletrónica de bilhetes, gestão de rotas e horários em tempo real, e um sistema de **carteira virtual com auditoria transacional estrita**.
+O **FelixBus** é uma plataforma web para gestão de reservas de viagens rodoviárias de passageiros, desenvolvida em duas implementações de referência independentes que partilham a mesma base de dados relacional:
+1. **Stack PHP 8.x + Apache HTTP Server (Runtime Interpretado)**
+2. **Stack Java JSP / Servlets + Apache Tomcat (Runtime Compilado na JVM)**
+
+O sistema implementa controlo de acessos baseado em perfis (**RBAC** com 4 níveis), emissão eletrónica de bilhetes, gestão de rotas e horários em tempo real, e uma **carteira virtual com auditoria transacional estrita**.
 
 ---
 
-## 👥 Funcionalidades por Perfil de Utilizador
+## ⚖️ Comparativo Arquitetural Dual-Stack
 
-O sistema encontra-se segmentado em **4 níveis de privilégios e permissões**:
+| Dimensão / Camada | Implementação PHP (`/php`) | Implementação Java / JSP (`/jsp`) |
+| :--- | :--- | :--- |
+| **Servidor Web / Container** | Apache HTTP Server (mod_php / XAMPP) | Apache Tomcat 9+ (Servlet Engine) |
+| **Acesso a Dados & Driver** | PHP MySQLi Extension (`mysqli_connect`) | Java JDBC Connector/J (`com.mysql.cj.jdbc.Driver`) |
+| **Gestão de Sessão & RBAC** | Sessões Nativas PHP (`$_SESSION['id_perfil']`) | Java Servlet Session (`session.getAttribute("id_perfil")`) |
+| **Renderização de Vistas** | PHP Native Templating & Includes | JSP Dynamic Pages & Scriptlets |
+| **Tratamento de Exceções** | `mysqli_connect_error()` & Fallbacks | `try-catch` com `SQLException` & `ClassNotFoundException` |
+| **Base de Dados Partilhada** | MySQL 8.x (`basedados/felixbus.sql`) | MySQL 8.x (`basedados/felixbus.sql`) |
+
+---
+
+## 👥 Funcionalidades por Perfil de Utilizador (RBAC)
 
 ```mermaid
 graph TD
@@ -52,7 +69,7 @@ graph TD
 ### 🌍 1. Visitante (Anónimo)
 * Consulta pública do catálogo de rotas, paragens e horários disponíveis.
 * Pesquisa dinâmica de viagens por origem, destino e data.
-* Módulo de registo de nova conta e autenticação com gestão segura de sessões PHP.
+* Módulo de registo de nova conta e autenticação com validação de credenciais.
 
 ### 👤 2. Cliente
 * **Gestão de Perfil:** Atualização de dados pessoais e credenciais.
@@ -72,9 +89,9 @@ graph TD
 
 ---
 
-## 🗄️ Modelo e Arquitetura da Base de Dados
+## 🗄️ Modelo Relacional da Base de Dados (MySQL)
 
-O modelo relacional em **MySQL** foi desenhado com integridade referencial estrita e normalização até à 3ª Forma Normal (3NF):
+A base de dados encontra-se normalizada até à **3ª Forma Normal (3NF)** com integridade referencial estrita (`ON DELETE RESTRICT / CASCADE`):
 
 ```text
 ├── utilizadores        # Credenciais, hash de passwords e estado da conta
@@ -99,9 +116,18 @@ O modelo relacional em **MySQL** foi desenhado com integridade referencial estri
 ```text
 TrabalhoLPI/
 │
-├── basedados/                 # Scripts SQL de criação e módulo de ligação
-│   ├── felixbus.sql           # Schema DDL e dados relacionais
-│   └── ligabd.php             # Módulo de ligação MySQLi com suporte UTF-8
+├── basedados/                 # Esquema MySQL comum e scripts de povoamento
+│   ├── felixbus.sql           # Schema DDL principal com 9 tabelas relacionais
+│   ├── criar_bd.sql           # Script alternativo de inicialização
+│   └── apagar_bd.sql          # Script de teardown / limpeza
+│
+├── php/                       # 🐘 Implementação em PHP 8.x + Apache HTTPD
+│   ├── basedados/             # Módulo ligabd.php (Conexão MySQLi)
+│   └── paginas/               # Controladores e vistas PHP
+│
+├── jsp/                       # ☕ Implementação em Java / JSP + Apache Tomcat
+│   ├── basedados/             # Módulo basedados.jsp (Conexão JDBC MySQL)
+│   └── paginas/               # Ficheiros .jsp, estilos CSS e assets gráficos
 │
 ├── screenshots/               # Capturas de ecrã dos módulos da aplicação
 │   ├── PaginaHome.PNG
@@ -112,62 +138,46 @@ TrabalhoLPI/
 ├── relatorio/                 # Documentação académica e especificações
 │   ├── Modelo_ER.png          # Diagrama Entidade-Relacionamento
 │   ├── Casos_de_Uso.png       # Diagrama de Casos de Uso
-│   └── Relatorio_LPI.pdf      # Relatório técnico do projeto
+│   ├── Relatorio_LPI.pdf      # Relatório técnico do projeto
+│   └── Criterios_Avaliacao.pdf # Critérios pedagógicos da UC
 │
-├── .gitignore                 # Regras de exclusão de ficheiros temporários
+├── .gitignore                 # Exclusões para PHP e Java/Tomcat
 ├── LICENSE                    # Licença MIT
 └── README.md                  # Documentação do projeto
 ```
 
 ---
 
-## 🚀 Instalação e Configuração Local
+## 🚀 Instalação e Execução Local
 
-### Pré-requisitos
-* Servidor Web **Apache** e interpretador **PHP 7.4+ ou 8.x** (ex.: [XAMPP](https://www.apachefriends.org/), WampServer ou Docker).
-* Sistema de Gestão de Base de Dados **MySQL / MariaDB**.
-
-### Passo a Passo
-
-#### 1. Clonar o Repositório
-Coloca o projeto dentro da pasta `htdocs` do teu servidor Apache (ex.: `C:\xampp\htdocs\TrabalhoLPI`):
-```bash
-git clone https://github.com/RafaCr3z/TrabalhoLPI.git
-```
-
-#### 2. Importar a Base de Dados
+### 1. Base de Dados Comum (MySQL)
 1. Abre o **phpMyAdmin** (`http://localhost/phpmyadmin`) ou o terminal do MySQL.
-2. Cria a base de dados `felixbus`:
-   ```sql
-   CREATE DATABASE felixbus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-3. Importa o esquema SQL localizado em `basedados/felixbus.sql`:
+2. Cria e popula a base de dados a partir de `basedados/felixbus.sql`:
    ```bash
-   mysql -u root -p felixbus < basedados/felixbus.sql
+   mysql -u root -p < basedados/felixbus.sql
    ```
 
-#### 3. Configurar a Conexão à Base de Dados
-Verifica o ficheiro `basedados/ligabd.php` e confirma as credenciais locais:
-```php
-<?php
-$servidor   = "localhost";
-$utilizador = "root";
-$password   = "";
-$basedados  = "felixbus";
+---
 
-$conn = mysqli_connect($servidor, $utilizador, $password, $basedados);
+### 2. Execução da Versão PHP (Apache / XAMPP)
+1. Coloca a pasta `php/` dentro de `htdocs` (ex.: `C:\xampp\htdocs\felixbus-php`).
+2. Verifica as credenciais em `php/basedados/ligabd.php` (`localhost`, `root`, sem password).
+3. Inicia o **Apache** e **MySQL** no XAMPP Control Panel.
+4. Acede no navegador:
+   ```text
+   http://localhost/felixbus-php/paginas/index.php
+   ```
 
-if (!$conn) {
-    die("Falha na ligação à base de dados: " . mysqli_connect_error());
-}
-?>
-```
+---
 
-#### 4. Executar a Aplicação
-Inicia os módulos **Apache** e **MySQL** no XAMPP e acede no teu navegador a:
-```text
-http://localhost/TrabalhoLPI
-```
+### 3. Execução da Versão Java / JSP (Apache Tomcat)
+1. Coloca a pasta `jsp/` dentro do diretório `webapps` do Apache Tomcat (ex.: `C:\apache-tomcat-9.x\webapps\felixbus-jsp`).
+2. Garante que o driver JDBC `mysql-connector-j-8.x.jar` se encontra em `tomcat/lib/`.
+3. Inicia o servidor Tomcat através do executável `startup.bat` (ou via Eclipse / NetBeans).
+4. Acede no navegador:
+   ```text
+   http://localhost:8080/felixbus-jsp/paginas/index.jsp
+   ```
 
 ---
 
@@ -180,5 +190,5 @@ http://localhost/TrabalhoLPI
 
 ---
 <p align="center">
-  <sub>Desenvolvido no âmbito académico com foco em desenvolvimento web modular, segurança de sessões e integridade de dados.</sub>
+  <sub>Desenvolvido no âmbito académico com foco em engenharia web dual-stack, segurança de sessões e integridade de dados.</sub>
 </p>
