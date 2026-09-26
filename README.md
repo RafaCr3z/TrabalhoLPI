@@ -114,7 +114,7 @@ A base de dados encontra-se normalizada até à **3ª Forma Normal (3NF)** com i
 ## 📂 Estrutura do Repositório
 
 ```text
-TrabalhoLPI/
+felixbus-travel-platform/
 │
 ├── basedados/                 # Esquema MySQL comum e scripts de povoamento
 │   ├── felixbus.sql           # Schema DDL principal com 9 tabelas relacionais
